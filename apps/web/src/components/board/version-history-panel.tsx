@@ -55,7 +55,7 @@ export function VersionHistoryPanel({
     } catch (e: unknown) {
       toast.error(errorMessage(e, t('Не удалось загрузить историю')));
     }
-  }, [boardId]);
+  }, [boardId, t]);
 
   useEffect(() => {
     if (open) void load();

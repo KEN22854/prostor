@@ -376,7 +376,7 @@ export function BoardCanvas({
       laser: () => laserRef.current,
       onError: (e) => toast.error(errorMessage(e, t('Не удалось выполнить действие'))),
     };
-  }, [store, overlay, doc, openImagePicker]);
+  }, [store, overlay, doc, openImagePicker, t]);
 
   useCanvasInteractions(containerRef, controllerDeps);
   useBoardHotkeys({ actions, store, undoManager, openImagePicker: () => openImagePicker() });

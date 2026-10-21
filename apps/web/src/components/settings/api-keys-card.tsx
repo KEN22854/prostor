@@ -28,7 +28,7 @@ export function ApiKeysCard() {
     apiRequest<{ keys: ApiKeyDto[] }>('/api/account/api-keys')
       .then((r) => setKeys(r.keys))
       .catch((e: unknown) => toast.error(errorMessage(e, t('Не удалось загрузить ключи'))));
-  }, []);
+  }, [t]);
 
   async function create() {
     setBusy(true);

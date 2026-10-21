@@ -49,7 +49,7 @@ export function FolderShareDialog({
     } catch (e: unknown) {
       toast.error(errorMessage(e, t('Не удалось загрузить участников')));
     }
-  }, [folderId]);
+  }, [folderId, t]);
 
   useEffect(() => {
     if (open) void load();

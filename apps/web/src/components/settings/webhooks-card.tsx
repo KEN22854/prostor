@@ -1,7 +1,7 @@
 'use client';
 
 import { Copy, Send, Trash2, Webhook } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import {
   WEBHOOK_EVENTS,
@@ -31,11 +31,14 @@ export function WebhooksCard() {
   const [created, setCreated] = useState<CreatedWebhookDto | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = () =>
-    apiRequest<{ webhooks: WebhookDto[] }>('/api/account/webhooks')
-      .then((r) => setHooks(r.webhooks))
-      .catch((e: unknown) => toast.error(errorMessage(e, t('Не удалось загрузить вебхуки'))));
-  useEffect(() => void load(), []);
+  const load = useCallback(
+    () =>
+      apiRequest<{ webhooks: WebhookDto[] }>('/api/account/webhooks')
+        .then((r) => setHooks(r.webhooks))
+        .catch((e: unknown) => toast.error(errorMessage(e, t('Не удалось загрузить вебхуки')))),
+    [t],
+  );
+  useEffect(() => void load(), [load]);
 
   async function create() {
     setBusy(true);
