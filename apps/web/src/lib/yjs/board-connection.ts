@@ -225,7 +225,8 @@ export class BoardConnection {
       const event = parsed.data;
       if (event.type === 'role-changed') this.setState({ role: event.role });
       if (event.type === 'snapshot-saved') this.setState({ lastSnapshotAt: event.at });
-      if (event.type === 'comments-changed') for (const l of this.commentListeners) l(event.threadId);
+      if (event.type === 'comments-changed')
+        for (const l of this.commentListeners) l(event.threadId);
       if (event.type === 'voting-changed') for (const l of this.votingListeners) l();
     } catch {
       // Неизвестное событие от более новой версии сервера — игнорируем

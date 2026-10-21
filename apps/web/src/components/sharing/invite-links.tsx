@@ -41,7 +41,9 @@ interface InviteLinksProps {
  * восстановить её нельзя (это и есть защита при утечке дампа БД).
  */
 export function InviteLinks({ state, onChanged }: InviteLinksProps) {
-  const [role, setRole] = useState<AssignableRole>(state.grantableRoles.includes('EDITOR') ? 'EDITOR' : (state.grantableRoles[0] ?? 'VIEWER'));
+  const [role, setRole] = useState<AssignableRole>(
+    state.grantableRoles.includes('EDITOR') ? 'EDITOR' : (state.grantableRoles[0] ?? 'VIEWER'),
+  );
   const [ttl, setTtl] = useState<InviteTtl>('7d');
   const [maxUses, setMaxUses] = useState('');
   const [creating, setCreating] = useState(false);
@@ -85,7 +87,11 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
           <Label htmlFor="link-role">Роль</Label>
-          <NativeSelect id="link-role" value={role} onChange={(e) => setRole(e.target.value as AssignableRole)}>
+          <NativeSelect
+            id="link-role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as AssignableRole)}
+          >
             {state.grantableRoles.map((r) => (
               <option key={r} value={r}>
                 {ROLE_LABELS[r]}
@@ -95,7 +101,11 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="link-ttl">Срок действия</Label>
-          <NativeSelect id="link-ttl" value={ttl} onChange={(e) => setTtl(e.target.value as InviteTtl)}>
+          <NativeSelect
+            id="link-ttl"
+            value={ttl}
+            onChange={(e) => setTtl(e.target.value as InviteTtl)}
+          >
             {INVITE_TTLS.map((t) => (
               <option key={t} value={t}>
                 {INVITE_TTL_LABELS[t]}
@@ -121,9 +131,17 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
 
       {created ? (
         <div className="space-y-1.5 rounded-lg border border-primary/40 bg-accent/40 p-3">
-          <Label htmlFor="created-link">Новая ссылка — скопируйте сейчас, позже её не будет видно</Label>
+          <Label htmlFor="created-link">
+            Новая ссылка — скопируйте сейчас, позже её не будет видно
+          </Label>
           <div className="flex gap-2">
-            <Input id="created-link" readOnly value={created.url} onFocus={(e) => e.currentTarget.select()} data-testid="created-invite-url" />
+            <Input
+              id="created-link"
+              readOnly
+              value={created.url}
+              onFocus={(e) => e.currentTarget.select()}
+              data-testid="created-invite-url"
+            />
             <Button
               variant="outline"
               size="icon"
@@ -141,14 +159,25 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
         {state.invites.length === 0 ? (
           <p className="text-sm text-muted-foreground">Нет активных приглашений</p>
         ) : (
-          <ul className="max-h-56 divide-y overflow-y-auto rounded-lg border" data-testid="invite-list">
+          <ul
+            className="max-h-56 divide-y overflow-y-auto rounded-lg border"
+            data-testid="invite-list"
+          >
             {state.invites.map((i) => (
               <li key={i.id} className="flex items-center gap-3 p-2.5 text-sm">
-                {i.email ? <Mail className="size-4 shrink-0 text-muted-foreground" /> : <Link2 className="size-4 shrink-0 text-muted-foreground" />}
+                {i.email ? (
+                  <Mail className="size-4 shrink-0 text-muted-foreground" />
+                ) : (
+                  <Link2 className="size-4 shrink-0 text-muted-foreground" />
+                )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate">{i.email ?? 'Ссылка-приглашение'} · {ROLE_LABELS[i.role]}</p>
+                  <p className="truncate">
+                    {i.email ?? 'Ссылка-приглашение'} · {ROLE_LABELS[i.role]}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {i.maxUses ? `использовано ${i.uses} из ${i.maxUses}` : `использовано ${i.uses}`}
+                    {i.maxUses
+                      ? `использовано ${i.uses} из ${i.maxUses}`
+                      : `использовано ${i.uses}`}
                     {' · '}
                     {i.expiresAt
                       ? `истекает ${formatDistanceToNow(new Date(i.expiresAt), { addSuffix: true, locale: ru })}`
@@ -156,7 +185,13 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
                     {i.createdByName ? ` · создал(а) ${i.createdByName}` : ''}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" className="size-8" aria-label="Отозвать приглашение" onClick={() => void revoke(i.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-8"
+                  aria-label="Отозвать приглашение"
+                  onClick={() => void revoke(i.id)}
+                >
                   <Trash2 />
                 </Button>
               </li>

@@ -51,11 +51,21 @@ export function StartVotingButton({ boardId }: { boardId: string }) {
           <p className="text-sm font-medium">Новое голосование</p>
           <div className="space-y-1.5">
             <Label htmlFor="voting-title">Вопрос</Label>
-            <Input id="voting-title" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.stopPropagation()} />
+            <Input
+              id="voting-title"
+              value={title}
+              maxLength={200}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => e.stopPropagation()}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="voting-votes">Голосов у каждого</Label>
-            <NativeSelect id="voting-votes" value={votes} onChange={(e) => setVotes(e.target.value)}>
+            <NativeSelect
+              id="voting-votes"
+              value={votes}
+              onChange={(e) => setVotes(e.target.value)}
+            >
               {[1, 2, 3, 5, 10].map((n) => (
                 <option key={n} value={n}>
                   {n}
@@ -63,7 +73,9 @@ export function StartVotingButton({ boardId }: { boardId: string }) {
               ))}
             </NativeSelect>
           </div>
-          <p className="text-xs text-muted-foreground">Чужие голоса скрыты до завершения — так меньше эффекта «голосую за лидера».</p>
+          <p className="text-xs text-muted-foreground">
+            Чужие голоса скрыты до завершения — так меньше эффекта «голосую за лидера».
+          </p>
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? <Loader2 className="animate-spin" /> : <Vote />}
             Начать

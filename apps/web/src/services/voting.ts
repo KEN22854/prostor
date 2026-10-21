@@ -29,10 +29,22 @@ export async function getVoting(boardId: string, userId: string | null): Promise
 
   const [mine, totals, voters] = await Promise.all([
     userId
-      ? prisma.vote.groupBy({ by: ['elementId'], where: { sessionId: session.id, userId }, _count: { _all: true } })
+      ? prisma.vote.groupBy({
+          by: ['elementId'],
+          where: { sessionId: session.id, userId },
+          _count: { _all: true },
+        })
       : Promise.resolve([]),
-    prisma.vote.groupBy({ by: ['elementId'], where: { sessionId: session.id }, _count: { _all: true } }),
-    prisma.vote.findMany({ where: { sessionId: session.id }, distinct: ['userId'], select: { userId: true } }),
+    prisma.vote.groupBy({
+      by: ['elementId'],
+      where: { sessionId: session.id },
+      _count: { _all: true },
+    }),
+    prisma.vote.findMany({
+      where: { sessionId: session.id },
+      distinct: ['userId'],
+      select: { userId: true },
+    }),
   ]);
   const myVotes: Record<string, number> = {};
   let used = 0;
@@ -47,19 +59,27 @@ export async function getVoting(boardId: string, userId: string | null): Promise
     votesPerUser: session.votesPerUser,
     status: ended ? 'ended' : 'active',
     createdByName: session.createdBy.name ?? session.createdBy.email,
-    canManage: Boolean(userId) && (session.createdById === userId || can(access.role, 'edit', access.policy)),
+    canManage:
+      Boolean(userId) &&
+      (session.createdById === userId || can(access.role, 'edit', access.policy)),
     canVote: Boolean(userId) && !ended && can(access.role, 'vote', access.policy),
     myVotes,
     myRemaining: Math.max(0, session.votesPerUser - used),
     totalVotes: totals.reduce((n, t) => n + t._count._all, 0),
     voters: voters.length,
     results: ended
-      ? totals.map((t) => ({ elementId: t.elementId, count: t._count._all })).sort((a, b) => b.count - a.count)
+      ? totals
+          .map((t) => ({ elementId: t.elementId, count: t._count._all }))
+          .sort((a, b) => b.count - a.count)
       : null,
   };
 }
 
-export async function startVoting(user: SessionUser, boardId: string, input: StartVotingInput): Promise<{ id: string }> {
+export async function startVoting(
+  user: SessionUser,
+  boardId: string,
+  input: StartVotingInput,
+): Promise<{ id: string }> {
   await requireBoardAccess(boardId, user.id, 'edit');
   const data = startVotingSchema.parse(input);
   const session = await prisma.$transaction(async (tx) => {
@@ -80,13 +100,24 @@ export async function startVoting(user: SessionUser, boardId: string, input: Sta
 async function loadSession(sessionId: string) {
   const session = await prisma.voteSession.findUnique({
     where: { id: sessionId },
-    select: { id: true, boardId: true, votesPerUser: true, endedAt: true, closedAt: true, createdById: true },
+    select: {
+      id: true,
+      boardId: true,
+      votesPerUser: true,
+      endedAt: true,
+      closedAt: true,
+      createdById: true,
+    },
   });
   if (!session || session.closedAt) throw new ApiError(404, 'not_found', 'Голосование не найдено');
   return session;
 }
 
-export async function castVote(user: SessionUser, sessionId: string, elementId: string): Promise<void> {
+export async function castVote(
+  user: SessionUser,
+  sessionId: string,
+  elementId: string,
+): Promise<void> {
   const session = await loadSession(sessionId);
   await requireBoardAccess(session.boardId, user.id, 'vote');
   if (session.endedAt) throw new ApiError(409, 'voting_ended', 'Голосование уже завершено');
@@ -95,7 +126,11 @@ export async function castVote(user: SessionUser, sessionId: string, elementId: 
     await tx.$queryRaw`SELECT id FROM "VoteSession" WHERE id = ${sessionId} FOR UPDATE`;
     const used = await tx.vote.count({ where: { sessionId, userId: user.id } });
     if (used >= session.votesPerUser) {
-      throw new ApiError(409, 'no_votes_left', `Голоса закончились: у каждого ${session.votesPerUser}`);
+      throw new ApiError(
+        409,
+        'no_votes_left',
+        `Голоса закончились: у каждого ${session.votesPerUser}`,
+      );
     }
     await tx.vote.create({ data: { sessionId, userId: user.id, elementId } });
   });
@@ -103,7 +138,11 @@ export async function castVote(user: SessionUser, sessionId: string, elementId: 
 }
 
 /** Забрать один свой голос с объекта */
-export async function retractVote(user: SessionUser, sessionId: string, elementId: string): Promise<void> {
+export async function retractVote(
+  user: SessionUser,
+  sessionId: string,
+  elementId: string,
+): Promise<void> {
   const session = await loadSession(sessionId);
   await requireBoardAccess(session.boardId, user.id, 'vote');
   if (session.endedAt) throw new ApiError(409, 'voting_ended', 'Голосование уже завершено');
@@ -127,7 +166,10 @@ async function requireManager(user: SessionUser, sessionId: string) {
 
 export async function endVoting(user: SessionUser, sessionId: string): Promise<void> {
   const session = await requireManager(user, sessionId);
-  await prisma.voteSession.update({ where: { id: sessionId }, data: { endedAt: session.endedAt ?? new Date() } });
+  await prisma.voteSession.update({
+    where: { id: sessionId },
+    data: { endedAt: session.endedAt ?? new Date() },
+  });
   await changed(session.boardId);
 }
 
@@ -135,6 +177,9 @@ export async function endVoting(user: SessionUser, sessionId: string): Promise<v
 export async function closeVoting(user: SessionUser, sessionId: string): Promise<void> {
   const session = await requireManager(user, sessionId);
   const now = new Date();
-  await prisma.voteSession.update({ where: { id: sessionId }, data: { closedAt: now, endedAt: session.endedAt ?? now } });
+  await prisma.voteSession.update({
+    where: { id: sessionId },
+    data: { closedAt: now, endedAt: session.endedAt ?? now },
+  });
   await changed(session.boardId);
 }

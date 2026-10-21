@@ -1,6 +1,11 @@
 import 'server-only';
 import { prisma, type Prisma } from '@prostor/db';
-import { AUDIT_ACTION_LABELS, AUDIT_ACTIONS, type AuditAction, type AuditEntryDto } from '@prostor/shared';
+import {
+  AUDIT_ACTION_LABELS,
+  AUDIT_ACTIONS,
+  type AuditAction,
+  type AuditEntryDto,
+} from '@prostor/shared';
 import type { SessionUser } from '@/lib/session';
 import { requireBoardAccess } from '@/services/boards';
 import { requireOrgRole } from '@/services/orgs';
@@ -19,7 +24,11 @@ function isAction(value: string | undefined): value is AuditAction {
   return Boolean(value && (AUDIT_ACTIONS as readonly string[]).includes(value));
 }
 
-async function read(where: Prisma.AuditLogWhereInput, query: AuditQuery, take: number): Promise<AuditEntryDto[]> {
+async function read(
+  where: Prisma.AuditLogWhereInput,
+  query: AuditQuery,
+  take: number,
+): Promise<AuditEntryDto[]> {
   const and: Prisma.AuditLogWhereInput[] = [where];
   if (isAction(query.action)) and.push({ action: query.action });
   if (query.actorId) and.push({ actorId: query.actorId });
@@ -64,13 +73,23 @@ async function read(where: Prisma.AuditLogWhereInput, query: AuditQuery, take: n
 }
 
 /** Журнал организации: её события и события её досок (администраторам) */
-export async function orgAudit(user: SessionUser, orgId: string, query: AuditQuery, exportAll = false): Promise<AuditEntryDto[]> {
+export async function orgAudit(
+  user: SessionUser,
+  orgId: string,
+  query: AuditQuery,
+  exportAll = false,
+): Promise<AuditEntryDto[]> {
   await requireOrgRole(orgId, user.id, true);
   return read({ OR: [{ orgId }, { board: { orgId } }] }, query, exportAll ? MAX_EXPORT : PAGE);
 }
 
 /** Журнал доски (владельцу) */
-export async function boardAudit(user: SessionUser, boardId: string, query: AuditQuery, exportAll = false): Promise<AuditEntryDto[]> {
+export async function boardAudit(
+  user: SessionUser,
+  boardId: string,
+  query: AuditQuery,
+  exportAll = false,
+): Promise<AuditEntryDto[]> {
   await requireBoardAccess(boardId, user.id, 'manage');
   return read({ boardId }, query, exportAll ? MAX_EXPORT : PAGE);
 }
@@ -83,9 +102,29 @@ export function auditToCsv(entries: readonly AuditEntryDto[]): string {
     const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
     return `"${safe.replace(/"/g, '""')}"`;
   };
-  const header = ['Время (UTC)', 'Действие', 'Код', 'Кто', 'Email', 'Доска', 'Объект', 'Подробности', 'IP'];
+  const header = [
+    'Время (UTC)',
+    'Действие',
+    'Код',
+    'Кто',
+    'Email',
+    'Доска',
+    'Объект',
+    'Подробности',
+    'IP',
+  ];
   const lines = entries.map((e) =>
-    [e.createdAt, e.actionLabel, e.action, e.actorName, e.actorEmail, e.boardTitle, e.targetId ? `${e.targetType ?? ''}:${e.targetId}` : '', e.metadata, e.ip]
+    [
+      e.createdAt,
+      e.actionLabel,
+      e.action,
+      e.actorName,
+      e.actorEmail,
+      e.boardTitle,
+      e.targetId ? `${e.targetType ?? ''}:${e.targetId}` : '',
+      e.metadata,
+      e.ip,
+    ]
       .map(cell)
       .join(';'),
   );

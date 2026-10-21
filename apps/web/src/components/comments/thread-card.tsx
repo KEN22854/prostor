@@ -5,13 +5,30 @@ import { ru } from 'date-fns/locale';
 import { Check, MoreHorizontal, RotateCcw, SmilePlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { REACTION_EMOJIS, colorForUser, initials, type CommentDto, type CommentThreadDto } from '@prostor/shared';
+import {
+  REACTION_EMOJIS,
+  colorForUser,
+  initials,
+  type CommentDto,
+  type CommentThreadDto,
+} from '@prostor/shared';
 import { CommentBody } from '@/components/comments/comment-body';
 import { CommentComposer } from '@/components/comments/comment-composer';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { editComment, postComment, removeComment, setResolved, toggleReaction } from '@/lib/comments-api';
+import {
+  editComment,
+  postComment,
+  removeComment,
+  setResolved,
+  toggleReaction,
+} from '@/lib/comments-api';
 import { cn, errorMessage } from '@/lib/utils';
 
 interface CommentItemProps {
@@ -24,7 +41,9 @@ interface CommentItemProps {
 function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
   const [editing, setEditing] = useState(false);
   const react = (emoji: string) =>
-    toggleReaction(boardId, comment.id, emoji).catch((e: unknown) => toast.error(errorMessage(e, 'Не удалось поставить реакцию')));
+    toggleReaction(boardId, comment.id, emoji).catch((e: unknown) =>
+      toast.error(errorMessage(e, 'Не удалось поставить реакцию')),
+    );
 
   return (
     <div className="group space-y-1" data-testid="comment">
@@ -44,19 +63,30 @@ function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
         {comment.canEdit || comment.canDelete ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="ml-auto size-6 opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label="Действия с комментарием">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="ml-auto size-6 opacity-0 focus:opacity-100 group-hover:opacity-100"
+                aria-label="Действия с комментарием"
+              >
                 <MoreHorizontal className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {comment.canEdit ? <DropdownMenuItem onSelect={() => setEditing(true)}>Изменить</DropdownMenuItem> : null}
+              {comment.canEdit ? (
+                <DropdownMenuItem onSelect={() => setEditing(true)}>Изменить</DropdownMenuItem>
+              ) : null}
               {comment.canDelete ? (
                 <DropdownMenuItem
                   className="text-destructive"
                   onSelect={() => {
-                    const msg = isRoot ? 'Удалить обсуждение вместе с ответами?' : 'Удалить комментарий?';
+                    const msg = isRoot
+                      ? 'Удалить обсуждение вместе с ответами?'
+                      : 'Удалить комментарий?';
                     if (window.confirm(msg)) {
-                      void removeComment(boardId, comment.id).catch((e: unknown) => toast.error(errorMessage(e, 'Не удалось удалить')));
+                      void removeComment(boardId, comment.id).catch((e: unknown) =>
+                        toast.error(errorMessage(e, 'Не удалось удалить')),
+                      );
                     }
                   }}
                 >
@@ -92,7 +122,10 @@ function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
             type="button"
             disabled={!canReact}
             onClick={() => void react(r.emoji)}
-            className={cn('rounded-full border px-1.5 text-xs', r.mine ? 'border-primary bg-primary/10' : 'hover:bg-muted')}
+            className={cn(
+              'rounded-full border px-1.5 text-xs',
+              r.mine ? 'border-primary bg-primary/10' : 'hover:bg-muted',
+            )}
             aria-label={`${r.emoji} ${r.count}`}
           >
             {r.emoji} {r.count}
@@ -101,13 +134,22 @@ function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
         {canReact ? (
           <Popover>
             <PopoverTrigger asChild>
-              <button type="button" className="rounded-full p-0.5 text-muted-foreground opacity-0 hover:bg-muted group-hover:opacity-100 focus:opacity-100" aria-label="Добавить реакцию">
+              <button
+                type="button"
+                className="rounded-full p-0.5 text-muted-foreground opacity-0 hover:bg-muted focus:opacity-100 group-hover:opacity-100"
+                aria-label="Добавить реакцию"
+              >
                 <SmilePlus className="size-3.5" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="flex w-auto gap-1 p-1" side="top">
               {REACTION_EMOJIS.map((e) => (
-                <button key={e} type="button" className="rounded p-1 text-base hover:bg-muted" onClick={() => void react(e)}>
+                <button
+                  key={e}
+                  type="button"
+                  className="rounded p-1 text-base hover:bg-muted"
+                  onClick={() => void react(e)}
+                >
                   {e}
                 </button>
               ))}
@@ -130,9 +172,16 @@ interface ThreadCardProps {
 export function ThreadCard({ boardId, thread, canComment, onClose }: ThreadCardProps) {
   const resolved = thread.resolvedAt !== null;
   return (
-    <div className="w-80 rounded-xl border bg-background shadow-xl" data-testid="thread-card" onPointerDown={(e) => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
+    <div
+      className="w-80 rounded-xl border bg-background shadow-xl"
+      data-testid="thread-card"
+      onPointerDown={(e) => e.stopPropagation()}
+      onWheel={(e) => e.stopPropagation()}
+    >
       <div className="flex items-center justify-between border-b px-3 py-2">
-        <span className="text-xs font-medium text-muted-foreground">{resolved ? 'Обсуждение решено' : 'Обсуждение'}</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {resolved ? 'Обсуждение решено' : 'Обсуждение'}
+        </span>
         <div className="flex items-center gap-0.5">
           {thread.canResolve ? (
             <Button
@@ -149,7 +198,13 @@ export function ThreadCard({ boardId, thread, canComment, onClose }: ThreadCardP
               {resolved ? 'Открыть снова' : 'Решено'}
             </Button>
           ) : null}
-          <Button variant="ghost" size="icon" className="size-7" aria-label="Закрыть обсуждение" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            aria-label="Закрыть обсуждение"
+            onClick={onClose}
+          >
             <X className="size-3.5" />
           </Button>
         </div>
@@ -157,7 +212,13 @@ export function ThreadCard({ boardId, thread, canComment, onClose }: ThreadCardP
       <div className="max-h-80 space-y-3 overflow-y-auto p-3">
         <CommentItem boardId={boardId} comment={thread} canReact={canComment} isRoot />
         {thread.replies.map((r) => (
-          <CommentItem key={r.id} boardId={boardId} comment={r} canReact={canComment} isRoot={false} />
+          <CommentItem
+            key={r.id}
+            boardId={boardId}
+            comment={r}
+            canReact={canComment}
+            isRoot={false}
+          />
         ))}
       </div>
       {canComment ? (

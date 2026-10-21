@@ -2,7 +2,14 @@
 
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
 interface PromptOptions {
@@ -44,7 +51,9 @@ export function usePrompt(): [ReactNode, (options: PromptOptions) => Promise<str
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{options?.title}</DialogTitle>
-          {options?.description ? <DialogDescription>{options.description}</DialogDescription> : null}
+          {options?.description ? (
+            <DialogDescription>{options.description}</DialogDescription>
+          ) : null}
         </DialogHeader>
         <form
           className="space-y-4"
@@ -54,7 +63,15 @@ export function usePrompt(): [ReactNode, (options: PromptOptions) => Promise<str
             if (trimmed) close(trimmed);
           }}
         >
-          <Input autoFocus aria-label={options?.label} placeholder={options?.label} value={value} maxLength={options?.maxLength ?? 100} onChange={(e) => setValue(e.target.value)} onFocus={(e) => e.currentTarget.select()} />
+          <Input
+            autoFocus
+            aria-label={options?.label}
+            placeholder={options?.label}
+            value={value}
+            maxLength={options?.maxLength ?? 100}
+            onChange={(e) => setValue(e.target.value)}
+            onFocus={(e) => e.currentTarget.select()}
+          />
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => close(null)}>
               Отмена

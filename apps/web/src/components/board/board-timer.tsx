@@ -7,7 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useBoardTimer } from '@/hooks/use-board-timer';
-import { addTime, formatClock, pauseTimer, resumeTimer, startTimer, stopTimer } from '@/lib/board-timer';
+import {
+  addTime,
+  formatClock,
+  pauseTimer,
+  resumeTimer,
+  startTimer,
+  stopTimer,
+} from '@/lib/board-timer';
 import { cn } from '@/lib/utils';
 
 const PRESETS = [1, 3, 5, 10, 15];
@@ -36,7 +43,11 @@ export function BoardTimerControl({ doc, canControl, userName }: BoardTimerContr
           <Button
             variant="outline"
             size="sm"
-            className={cn('h-8 gap-1.5 font-mono tabular-nums', (finished || urgent) && 'border-destructive text-destructive', finished && 'animate-pulse')}
+            className={cn(
+              'h-8 gap-1.5 font-mono tabular-nums',
+              (finished || urgent) && 'border-destructive text-destructive',
+              finished && 'animate-pulse',
+            )}
             aria-label={`Таймер: ${formatClock(left)}${timer.status === 'paused' ? ', на паузе' : ''}`}
             data-testid="board-timer"
           >
@@ -54,11 +65,20 @@ export function BoardTimerControl({ doc, canControl, userName }: BoardTimerContr
         {timer ? (
           <>
             <p className="text-center font-mono text-3xl tabular-nums">{formatClock(left)}</p>
-            {timer.startedByName ? <p className="text-center text-xs text-muted-foreground">Запустил(а) {timer.startedByName}</p> : null}
+            {timer.startedByName ? (
+              <p className="text-center text-xs text-muted-foreground">
+                Запустил(а) {timer.startedByName}
+              </p>
+            ) : null}
             {canControl ? (
               <div className="flex justify-center gap-1">
                 {timer.status === 'running' ? (
-                  <Button size="sm" variant="outline" onClick={() => pauseTimer(doc)} disabled={finished}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => pauseTimer(doc)}
+                    disabled={finished}
+                  >
                     <Pause /> Пауза
                   </Button>
                 ) : (
@@ -66,10 +86,20 @@ export function BoardTimerControl({ doc, canControl, userName }: BoardTimerContr
                     <Play /> Дальше
                   </Button>
                 )}
-                <Button size="sm" variant="outline" onClick={() => addTime(doc, 60_000)} aria-label="Добавить минуту">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addTime(doc, 60_000)}
+                  aria-label="Добавить минуту"
+                >
                   <Plus /> 1 мин
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => stopTimer(doc)} aria-label="Остановить таймер">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => stopTimer(doc)}
+                  aria-label="Остановить таймер"
+                >
                   <Square />
                 </Button>
               </div>

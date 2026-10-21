@@ -11,7 +11,8 @@ describe('шаблоны досок', () => {
     it(`«${key}»: валидные элементы, уникальные id и zIndex, корректные фреймы`, () => {
       const elements = buildTemplate(key, 'u1');
       expect(elements.length).toBeGreaterThan(3);
-      for (const el of elements) expect(boardElementSchema.safeParse(el).success, el.type).toBe(true);
+      for (const el of elements)
+        expect(boardElementSchema.safeParse(el).success, el.type).toBe(true);
       expect(new Set(elements.map((e) => e.id)).size).toBe(elements.length);
       expect(new Set(elements.map((e) => e.zIndex)).size).toBe(elements.length);
       const frames = new Map(elements.filter((e) => e.type === 'frame').map((f) => [f.id, f]));
@@ -22,7 +23,12 @@ describe('шаблоны досок', () => {
         if (!frame) continue;
         const cx = el.x + el.width / 2;
         const cy = el.y + el.height / 2;
-        expect(cx >= frame.x && cx <= frame.x + frame.width && cy >= frame.y && cy <= frame.y + frame.height).toBe(true);
+        expect(
+          cx >= frame.x &&
+            cx <= frame.x + frame.width &&
+            cy >= frame.y &&
+            cy <= frame.y + frame.height,
+        ).toBe(true);
       }
     });
   }

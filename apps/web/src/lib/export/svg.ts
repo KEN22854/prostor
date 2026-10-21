@@ -7,10 +7,12 @@ import type {
   PathElement,
   ShapeElement,
   StickyElement,
+  TableElement,
   TextElement,
   RichParagraph,
 } from '@prostor/shared';
 import { midpointOf } from '@/lib/canvas/connectors';
+import { TABLE_CELL_PADDING, cellText, tableLayout } from '@/lib/canvas/table';
 import { isRichFormatted } from '@prostor/shared';
 import { compareRenderOrder } from '@/lib/canvas/frames';
 import { layoutRich } from '@/lib/rich-text/layout';
@@ -439,6 +441,59 @@ function frameBody(el: FrameElement, opts: SvgExportOptions): string {
   );
 }
 
+/** Таблица: фон, заголовок, сетка и текст ячеек той же раскладкой, что на холсте */
+function table(el: TableElement, opts: SvgExportOptions): string {
+  const { xs, ys } = tableLayout(el);
+  const parts = [
+    `<rect ${attrs({ width: el.width, height: el.height, fill: el.fill, stroke: el.stroke, 'stroke-width': 1 })}/>`,
+  ];
+  if (el.headerRow) {
+    parts.push(`<rect ${attrs({ width: el.width, height: ys[1] ?? 0, fill: el.headerFill })}/>`);
+  }
+  for (let c = 1; c < el.cols; c++) {
+    parts.push(
+      `<line ${attrs({ x1: xs[c] ?? 0, y1: 0, x2: xs[c] ?? 0, y2: el.height, stroke: el.stroke, 'stroke-width': 1 })}/>`,
+    );
+  }
+  for (let r = 1; r < el.rows; r++) {
+    parts.push(
+      `<line ${attrs({ x1: 0, y1: ys[r] ?? 0, x2: el.width, y2: ys[r] ?? 0, stroke: el.stroke, 'stroke-width': 1 })}/>`,
+    );
+  }
+  parts.push(
+    `<rect ${attrs({ width: el.width, height: el.height, fill: 'none', stroke: el.stroke, 'stroke-width': 1 })}/>`,
+  );
+  for (let r = 0; r < el.rows; r++) {
+    for (let c = 0; c < el.cols; c++) {
+      const text = cellText(el, r, c);
+      if (!text) continue;
+      const x = xs[c] ?? 0;
+      const y = ys[r] ?? 0;
+      parts.push(
+        textBlock(
+          {
+            text,
+            x: x + TABLE_CELL_PADDING,
+            y: y + TABLE_CELL_PADDING,
+            width: Math.max(0, (xs[c + 1] ?? el.width) - x - TABLE_CELL_PADDING * 2),
+            height: Math.max(0, (ys[r + 1] ?? el.height) - y - TABLE_CELL_PADDING * 2),
+            align: 'left',
+            verticalAlign: 'middle',
+            ellipsis: true,
+          },
+          {
+            fontSize: el.fontSize,
+            fontWeight: el.headerRow && r === 0 ? 'bold' : undefined,
+            color: el.color,
+          },
+          opts,
+        ),
+      );
+    }
+  }
+  return parts.join('');
+}
+
 function placeholder(el: BoardElement): string {
   return `<rect ${attrs({ width: el.width, height: el.height, rx: 8, fill: '#f8fafc', stroke: '#94a3b8', 'stroke-dasharray': '6 4' })}/>`;
 }
@@ -460,6 +515,8 @@ export function elementToSvg(el: BoardElement, opts: SvgExportOptions): string {
       return wrapElement(el, image(el as ImageElement, opts));
     case 'frame':
       return wrapElement(el, frameBody(el as FrameElement, opts));
+    case 'table':
+      return wrapElement(el, table(el as TableElement, opts));
     default:
       return wrapElement(el, placeholder(el));
   }

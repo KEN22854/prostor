@@ -3,7 +3,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { prisma, resolveBoardAccess } from '@prostor/db';
-import { INVITE_PROBLEM_TEXT, ROLE_HINTS, ROLE_LABELS, hasRole, joinBoardSchema } from '@prostor/shared';
+import {
+  INVITE_PROBLEM_TEXT,
+  ROLE_HINTS,
+  ROLE_LABELS,
+  hasRole,
+  joinBoardSchema,
+} from '@prostor/shared';
 import { AuthCard } from '@/components/auth/auth-card';
 import { AcceptInviteButton } from '@/components/board/accept-invite-button';
 import { Button } from '@/components/ui/button';
@@ -31,7 +37,9 @@ function Shell({ children }: { children: ReactNode }) {
           Простор
         </Link>
       </header>
-      <main className="flex flex-1 items-start justify-center px-4 pb-16 pt-6 sm:items-center sm:pt-0">{children}</main>
+      <main className="flex flex-1 items-start justify-center px-4 pb-16 pt-6 sm:items-center sm:pt-0">
+        {children}
+      </main>
     </div>
   );
 }
@@ -47,12 +55,17 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
   const user = await getSessionUser();
 
   const valid = joinBoardSchema.safeParse({ token });
-  const preview = valid.success ? await previewInvite(id, valid.data.token, user?.email ?? null) : null;
+  const preview = valid.success
+    ? await previewInvite(id, valid.data.token, user?.email ?? null)
+    : null;
 
   if (!valid.success || !preview) {
     return (
       <Shell>
-        <AuthCard title="Приглашение не найдено" description="Ссылка повреждена или приглашение удалено. Попросите прислать новое.">
+        <AuthCard
+          title="Приглашение не найдено"
+          description="Ссылка повреждена или приглашение удалено. Попросите прислать новое."
+        >
           <ShieldX className="mx-auto size-10 text-muted-foreground" aria-hidden />
         </AuthCard>
       </Shell>
@@ -64,7 +77,10 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
   if (preview.problem) {
     return (
       <Shell>
-        <AuthCard title={`Доска «${preview.boardTitle}»`} description={INVITE_PROBLEM_TEXT[preview.problem]}>
+        <AuthCard
+          title={`Доска «${preview.boardTitle}»`}
+          description={INVITE_PROBLEM_TEXT[preview.problem]}
+        >
           {preview.problem === 'wrong_email' ? (
             <div className="space-y-3 text-center text-sm">
               <MailWarning className="mx-auto size-10 text-amber-500" aria-hidden />
@@ -78,7 +94,9 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
               </form>
             </div>
           ) : (
-            <p className="text-center text-sm text-muted-foreground">Попросите автора приглашения прислать новую ссылку.</p>
+            <p className="text-center text-sm text-muted-foreground">
+              Попросите автора приглашения прислать новую ссылку.
+            </p>
           )}
         </AuthCard>
       </Shell>
@@ -94,14 +112,18 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
         <AuthCard title={`Доска «${preview.boardTitle}»`} description={description}>
           <div className="space-y-2">
             <Button asChild className="w-full">
-              <Link href={`/register?callbackUrl=${callback}`}>Зарегистрироваться и присоединиться</Link>
+              <Link href={`/register?callbackUrl=${callback}`}>
+                Зарегистрироваться и присоединиться
+              </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
               <Link href={`/login?callbackUrl=${callback}`}>У меня есть аккаунт</Link>
             </Button>
           </div>
           {preview.email ? (
-            <p className="text-center text-xs text-muted-foreground">Приглашение для адреса {preview.email}</p>
+            <p className="text-center text-xs text-muted-foreground">
+              Приглашение для адреса {preview.email}
+            </p>
           ) : null}
         </AuthCard>
       </Shell>

@@ -35,9 +35,15 @@ export async function rasterizePdf(
 ): Promise<PdfPage[]> {
   if (file.size > MAX_PDF_BYTES) throw new Error('PDF больше 50 МБ');
   const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString();
   // isEvalSupported: false — защита от исполнения кода из шрифтов PDF (CVE-2024-4367)
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+  const pdf = await pdfjs.getDocument({
+    data: new Uint8Array(await file.arrayBuffer()),
+    isEvalSupported: false,
+  }).promise;
   try {
     const total = Math.min(pdf.numPages, MAX_PDF_PAGES);
     const pages: PdfPage[] = [];
@@ -58,9 +64,16 @@ export async function rasterizePdf(
       await page.render({ canvasContext: ctx, viewport }).promise;
       page.cleanup();
       const blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Не удалось отрисовать страницу'))), 'image/jpeg', 0.88),
+        canvas.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error('Не удалось отрисовать страницу'))),
+          'image/jpeg',
+          0.88,
+        ),
       );
-      const asset = await uploadImage(boardId, new File([blob], `${file.name}-p${n}.jpg`, { type: 'image/jpeg' }));
+      const asset = await uploadImage(
+        boardId,
+        new File([blob], `${file.name}-p${n}.jpg`, { type: 'image/jpeg' }),
+      );
       pages.push({ assetId: asset.id, width: asset.width, height: asset.height });
     }
     onProgress(total, total);

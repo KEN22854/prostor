@@ -10,7 +10,11 @@ import { retractVote, useVotingStore } from '@/stores/voting-store';
 
 const noop = () => () => undefined;
 const zero = () => 0;
-const MEDALS = ['bg-amber-400 text-amber-950', 'bg-slate-300 text-slate-900', 'bg-orange-300 text-orange-950'];
+const MEDALS = [
+  'bg-amber-400 text-amber-950',
+  'bg-slate-300 text-slate-900',
+  'bg-orange-300 text-orange-950',
+];
 
 /**
  * Голоса на объектах: во время голосования — только свои (клик снимает голос),
@@ -26,10 +30,17 @@ export function VotesLayer({ store }: { store: ElementStore | null }) {
   const entries =
     voting.status === 'ended'
       ? (voting.results ?? []).map((r, i) => ({ elementId: r.elementId, count: r.count, rank: i }))
-      : Object.entries(voting.myVotes).map(([elementId, count]) => ({ elementId, count, rank: -1 }));
+      : Object.entries(voting.myVotes).map(([elementId, count]) => ({
+          elementId,
+          count,
+          rank: -1,
+        }));
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[14] overflow-hidden" data-testid="votes-layer">
+    <div
+      className="pointer-events-none absolute inset-0 z-[14] overflow-hidden"
+      data-testid="votes-layer"
+    >
       {entries.map(({ elementId, count, rank }) => {
         const el = store.get(elementId);
         if (!el) return null;
@@ -42,7 +53,9 @@ export function VotesLayer({ store }: { store: ElementStore | null }) {
             disabled={!mine}
             className={cn(
               'absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-full border-2 border-background px-2 py-0.5 text-xs font-bold shadow-md',
-              mine ? 'pointer-events-auto bg-primary text-primary-foreground hover:bg-destructive' : (MEDALS[rank] ?? 'bg-background text-foreground'),
+              mine
+                ? 'pointer-events-auto bg-primary text-primary-foreground hover:bg-destructive'
+                : (MEDALS[rank] ?? 'bg-background text-foreground'),
             )}
             style={{ left: p.x, top: p.y }}
             title={mine ? 'Забрать голос' : undefined}
@@ -51,7 +64,9 @@ export function VotesLayer({ store }: { store: ElementStore | null }) {
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => {
               if (!boardId) return;
-              void retractVote(boardId, voting.id, elementId).catch((e: unknown) => toast.error(errorMessage(e, 'Не удалось забрать голос')));
+              void retractVote(boardId, voting.id, elementId).catch((e: unknown) =>
+                toast.error(errorMessage(e, 'Не удалось забрать голос')),
+              );
             }}
           >
             {mine ? '✓' : null}

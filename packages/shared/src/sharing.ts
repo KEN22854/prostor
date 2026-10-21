@@ -53,7 +53,10 @@ export const createInviteLinkSchema = z.object({
 export type CreateInviteLinkInput = z.input<typeof createInviteLinkSchema>;
 
 export const emailInvitesSchema = z.object({
-  emails: z.array(emailSchema).min(1, 'Укажите хотя бы один email').max(20, 'Не больше 20 адресов за раз'),
+  emails: z
+    .array(emailSchema)
+    .min(1, 'Укажите хотя бы один email')
+    .max(20, 'Не больше 20 адресов за раз'),
   role: assignableRoleSchema.default('EDITOR'),
   message: z.string().trim().max(500).optional(),
 });
@@ -75,7 +78,8 @@ export const INVITE_PROBLEM_TEXT: Record<InviteProblem, string> = {
   expired: 'Срок действия приглашения истёк',
   exhausted: 'Ссылка уже использована максимальное число раз',
   wrong_board: 'Приглашение относится к другой доске',
-  wrong_email: 'Приглашение отправлено на другой email. Войдите в аккаунт, на который пришло письмо',
+  wrong_email:
+    'Приглашение отправлено на другой email. Войдите в аккаунт, на который пришло письмо',
 };
 
 export interface InviteLike {

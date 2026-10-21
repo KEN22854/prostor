@@ -18,7 +18,12 @@ const P = 1;
 const KEY_LEN = 64;
 const PREFIX = 'scrypt$';
 
-function scryptAsync(password: string, salt: Buffer, keyLen: number, options: ScryptOptions): Promise<Buffer> {
+function scryptAsync(
+  password: string,
+  salt: Buffer,
+  keyLen: number,
+  options: ScryptOptions,
+): Promise<Buffer> {
   return new Promise((resolve, reject) =>
     scrypt(password, salt, keyLen, options, (error, key) => (error ? reject(error) : resolve(key))),
   );
@@ -39,9 +44,15 @@ export async function verifyPassword(password: string, stored: string): Promise<
   if (!stored.startsWith(PREFIX)) return bcrypt.compare(password, stored);
   const [logN, r, p, salt, hash] = stored.slice(PREFIX.length).split('$');
   const params = [Number(logN), Number(r), Number(p)];
-  if (!salt || !hash || params.some((n) => !Number.isInteger(n) || n <= 0) || Number(logN) > 20) return false;
+  if (!salt || !hash || params.some((n) => !Number.isInteger(n) || n <= 0) || Number(logN) > 20)
+    return false;
   const expected = Buffer.from(hash, 'base64');
-  const key = await scryptAsync(password.normalize('NFKC'), Buffer.from(salt, 'base64'), expected.length, options(Number(logN), Number(r), Number(p)));
+  const key = await scryptAsync(
+    password.normalize('NFKC'),
+    Buffer.from(salt, 'base64'),
+    expected.length,
+    options(Number(logN), Number(r), Number(p)),
+  );
   return key.length === expected.length && timingSafeEqual(key, expected);
 }
 

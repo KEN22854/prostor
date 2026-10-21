@@ -6,7 +6,14 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { hasRole, type BoardListItem, type FolderDto } from '@prostor/shared';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
 
@@ -35,7 +42,10 @@ export function MoveBoardDialog({ board, open, onOpenChange }: MoveBoardDialogPr
   async function move() {
     setPending(true);
     try {
-      await apiRequest(`/api/boards/${board.id}/folder`, { method: 'PATCH', body: { folderId: target } });
+      await apiRequest(`/api/boards/${board.id}/folder`, {
+        method: 'PATCH',
+        body: { folderId: target },
+      });
       toast.success('Доска перемещена');
       onOpenChange(false);
       router.refresh();
@@ -54,15 +64,24 @@ export function MoveBoardDialog({ board, open, onOpenChange }: MoveBoardDialogPr
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Переместить «{board.title}»</DialogTitle>
-          <DialogDescription>Участники папки получат доступ к доске по наследованию.</DialogDescription>
+          <DialogDescription>
+            Участники папки получат доступ к доске по наследованию.
+          </DialogDescription>
         </DialogHeader>
-        <ul className="max-h-72 overflow-y-auto rounded-lg border p-1" role="listbox" aria-label="Папка назначения">
+        <ul
+          className="max-h-72 overflow-y-auto rounded-lg border p-1"
+          role="listbox"
+          aria-label="Папка назначения"
+        >
           <li>
             <button
               type="button"
               role="option"
               aria-selected={target === null}
-              className={cn('flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-muted', target === null && 'bg-accent')}
+              className={cn(
+                'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-muted',
+                target === null && 'bg-accent',
+              )}
               onClick={() => setTarget(null)}
             >
               <Home className="size-4" /> Без папки
@@ -79,7 +98,10 @@ export function MoveBoardDialog({ board, open, onOpenChange }: MoveBoardDialogPr
                   type="button"
                   role="option"
                   aria-selected={target === f.id}
-                  className={cn('flex w-full items-center gap-2 rounded py-1.5 pr-2 text-left text-sm hover:bg-muted', target === f.id && 'bg-accent')}
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded py-1.5 pr-2 text-left text-sm hover:bg-muted',
+                    target === f.id && 'bg-accent',
+                  )}
                   style={{ paddingLeft: 8 + depth(f) * 14 }}
                   onClick={() => setTarget(f.id)}
                 >

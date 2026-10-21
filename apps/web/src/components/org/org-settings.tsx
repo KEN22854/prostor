@@ -4,7 +4,12 @@ import { Loader2, ShieldCheck, ShieldOff, UserMinus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ORG_ROLE_LABELS, type OrgDetailsDto, type OrgPolicyUpdate, type OrgRole } from '@prostor/shared';
+import {
+  ORG_ROLE_LABELS,
+  type OrgDetailsDto,
+  type OrgPolicyUpdate,
+  type OrgRole,
+} from '@prostor/shared';
 import { AuditLogView } from '@/components/audit/audit-log-view';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +20,36 @@ import { Textarea } from '@/components/ui/textarea';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
 
-const POLICIES: Array<{ key: keyof Omit<OrgPolicyUpdate, 'allowedEmailDomains' | 'require2fa'>; title: string; hint: string }> = [
-  { key: 'allowExport', title: 'Экспорт досок', hint: 'PNG, PDF и SVG. Владелец доски может экспортировать всегда' },
-  { key: 'allowCopy', title: 'Копирование', hint: 'Копирование объектов в буфер и дублирование досок' },
-  { key: 'allowDeleteOthers', title: 'Удаление чужих объектов', hint: 'Иначе редакторы удаляют только созданное собой — проверяет и сервер' },
-  { key: 'allowPublicBoards', title: 'Публичные доски', hint: 'Доступ по ссылке без входа. Отключение сразу закрывает существующие ссылки' },
-  { key: 'guestCanVote', title: 'Гости голосуют', hint: 'Участники с ролью «Гость» могут голосовать' },
+const POLICIES: Array<{
+  key: keyof Omit<OrgPolicyUpdate, 'allowedEmailDomains' | 'require2fa'>;
+  title: string;
+  hint: string;
+}> = [
+  {
+    key: 'allowExport',
+    title: 'Экспорт досок',
+    hint: 'PNG, PDF и SVG. Владелец доски может экспортировать всегда',
+  },
+  {
+    key: 'allowCopy',
+    title: 'Копирование',
+    hint: 'Копирование объектов в буфер и дублирование досок',
+  },
+  {
+    key: 'allowDeleteOthers',
+    title: 'Удаление чужих объектов',
+    hint: 'Иначе редакторы удаляют только созданное собой — проверяет и сервер',
+  },
+  {
+    key: 'allowPublicBoards',
+    title: 'Публичные доски',
+    hint: 'Доступ по ссылке без входа. Отключение сразу закрывает существующие ссылки',
+  },
+  {
+    key: 'guestCanVote',
+    title: 'Гости голосуют',
+    hint: 'Участники с ролью «Гость» могут голосовать',
+  },
   { key: 'guestCanUseTimer', title: 'Гости управляют таймером', hint: '' },
 ];
 
@@ -56,9 +85,16 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
     }
   }
 
-  async function member(method: 'POST' | 'PATCH' | 'DELETE', userId: string | null, body?: unknown) {
+  async function member(
+    method: 'POST' | 'PATCH' | 'DELETE',
+    userId: string | null,
+    body?: unknown,
+  ) {
     try {
-      await apiRequest(`/api/orgs/${org.id}/members${userId ? `/${userId}` : ''}`, { method, body });
+      await apiRequest(`/api/orgs/${org.id}/members${userId ? `/${userId}` : ''}`, {
+        method,
+        body,
+      });
       if (method === 'DELETE' && userId && org.members.find((m) => m.userId === userId)?.isYou) {
         router.push('/dashboard');
         return;
@@ -91,7 +127,12 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
         >
           <div className="flex-1 space-y-1.5">
             <Label htmlFor="org-name">Название</Label>
-            <Input id="org-name" value={name} disabled={!org.canManage} onChange={(e) => setName(e.target.value)} />
+            <Input
+              id="org-name"
+              value={name}
+              disabled={!org.canManage}
+              onChange={(e) => setName(e.target.value)}
+            />
           </div>
           {org.canManage ? (
             <Button type="submit" disabled={busy || name.trim() === org.name}>
@@ -102,7 +143,10 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
         <p className="text-sm text-muted-foreground">
           Ваша роль: {ORG_ROLE_LABELS[org.role]} · досок: {org.boardCount}
         </p>
-        <Button variant="outline" onClick={() => void member('DELETE', org.members.find((m) => m.isYou)?.userId ?? null)}>
+        <Button
+          variant="outline"
+          onClick={() => void member('DELETE', org.members.find((m) => m.isYou)?.userId ?? null)}
+        >
           Покинуть организацию
         </Button>
       </TabsContent>
@@ -117,9 +161,20 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
               void member('POST', null, { email: email.trim(), role }).then(() => setEmail(''));
             }}
           >
-            <Input type="email" className="min-w-56 flex-1" placeholder="email зарегистрированного пользователя" aria-label="Email участника" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              type="email"
+              className="min-w-56 flex-1"
+              placeholder="email зарегистрированного пользователя"
+              aria-label="Email участника"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
             <div className="w-44">
-              <NativeSelect aria-label="Роль в организации" value={role} onChange={(e) => setRole(e.target.value as OrgRole)}>
+              <NativeSelect
+                aria-label="Роль в организации"
+                value={role}
+                onChange={(e) => setRole(e.target.value as OrgRole)}
+              >
                 <option value="MEMBER">{ORG_ROLE_LABELS.MEMBER}</option>
                 <option value="ADMIN">{ORG_ROLE_LABELS.ADMIN}</option>
                 {org.isOwner ? <option value="OWNER">{ORG_ROLE_LABELS.OWNER}</option> : null}
@@ -130,26 +185,45 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
         ) : null}
         <ul className="divide-y rounded-lg border" aria-label="Участники организации">
           {org.members.map((m) => (
-            <li key={m.userId} className="flex items-center gap-3 p-2.5 text-sm" data-testid="org-member">
+            <li
+              key={m.userId}
+              className="flex items-center gap-3 p-2.5 text-sm"
+              data-testid="org-member"
+            >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
-                  {m.name ?? m.email} {m.isYou ? <span className="text-muted-foreground">(вы)</span> : null}
+                  {m.name ?? m.email}{' '}
+                  {m.isYou ? <span className="text-muted-foreground">(вы)</span> : null}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">{m.email}</p>
               </div>
               <span title={m.twoFactorEnabled ? '2FA включена' : '2FA не включена'}>
-                {m.twoFactorEnabled ? <ShieldCheck className="size-4 text-green-600" /> : <ShieldOff className="size-4 text-muted-foreground" />}
+                {m.twoFactorEnabled ? (
+                  <ShieldCheck className="size-4 text-green-600" />
+                ) : (
+                  <ShieldOff className="size-4 text-muted-foreground" />
+                )}
               </span>
               {org.canManage && !m.isYou && (m.role !== 'OWNER' || org.isOwner) ? (
                 <>
                   <div className="w-40">
-                    <NativeSelect aria-label={`Роль ${m.email}`} value={m.role} onChange={(e) => void member('PATCH', m.userId, { role: e.target.value })}>
+                    <NativeSelect
+                      aria-label={`Роль ${m.email}`}
+                      value={m.role}
+                      onChange={(e) => void member('PATCH', m.userId, { role: e.target.value })}
+                    >
                       <option value="MEMBER">{ORG_ROLE_LABELS.MEMBER}</option>
                       <option value="ADMIN">{ORG_ROLE_LABELS.ADMIN}</option>
                       {org.isOwner ? <option value="OWNER">{ORG_ROLE_LABELS.OWNER}</option> : null}
                     </NativeSelect>
                   </div>
-                  <Button variant="ghost" size="icon" className="size-8" aria-label={`Удалить ${m.email}`} onClick={() => void member('DELETE', m.userId)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label={`Удалить ${m.email}`}
+                    onClick={() => void member('DELETE', m.userId)}
+                  >
                     <UserMinus />
                   </Button>
                 </>
@@ -164,7 +238,10 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
       {org.canManage ? (
         <TabsContent value="policies" className="space-y-3">
           {POLICIES.map((p) => (
-            <label key={p.key} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm">
+            <label
+              key={p.key}
+              className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm"
+            >
               <input
                 type="checkbox"
                 className="mt-0.5 size-4"
@@ -193,7 +270,12 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
       {org.canManage ? (
         <TabsContent value="security" className="space-y-4">
           <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm">
-            <input type="checkbox" className="mt-0.5 size-4" checked={policies.require2fa} onChange={(e) => setPolicies({ ...policies, require2fa: e.target.checked })} />
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4"
+              checked={policies.require2fa}
+              onChange={(e) => setPolicies({ ...policies, require2fa: e.target.checked })}
+            />
             <span>
               <span className="block font-medium">Обязательная двухфакторная аутентификация</span>
               <span className="block text-muted-foreground">
@@ -203,8 +285,17 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
           </label>
           <div className="space-y-1.5">
             <Label htmlFor="org-domains">Автоприсоединение по домену почты</Label>
-            <Textarea id="org-domains" rows={3} placeholder={'company.ru\ncompany.com'} value={domains} onChange={(e) => setDomains(e.target.value)} />
-            <p className="text-xs text-muted-foreground">По одному домену в строке. Новые пользователи с такой почтой сразу становятся участниками.</p>
+            <Textarea
+              id="org-domains"
+              rows={3}
+              placeholder={'company.ru\ncompany.com'}
+              value={domains}
+              onChange={(e) => setDomains(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              По одному домену в строке. Новые пользователи с такой почтой сразу становятся
+              участниками.
+            </p>
           </div>
           <Button
             disabled={busy}

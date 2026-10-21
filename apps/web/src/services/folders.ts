@@ -20,7 +20,8 @@ const MAX_FOLDERS = 1_000;
 async function requireFolder(folderId: string, userId: string, required: BoardRole) {
   const access = await resolveFolderAccess(prisma, folderId, userId);
   if (!access) throw new ApiError(404, 'not_found', 'Папка не найдена');
-  if (!hasRole(access.role, required)) throw new ApiError(403, 'forbidden', 'Недостаточно прав на папку');
+  if (!hasRole(access.role, required))
+    throw new ApiError(403, 'forbidden', 'Недостаточно прав на папку');
   return access;
 }
 
@@ -72,12 +73,23 @@ export async function listFolders(user: SessionUser, orgId: string | null): Prom
   for (const f of folders) {
     const access = await resolveFolderAccess(prisma, f.id, user.id);
     if (!access) continue;
-    result.push({ id: f.id, name: f.name, parentId: f.parentId, orgId: f.orgId, path: f.path, role: access.role, boardCount: f._count.boards });
+    result.push({
+      id: f.id,
+      name: f.name,
+      parentId: f.parentId,
+      orgId: f.orgId,
+      path: f.path,
+      role: access.role,
+      boardCount: f._count.boards,
+    });
   }
   return result;
 }
 
-export async function createFolder(user: SessionUser, input: Required<CreateFolderInput>): Promise<FolderDto> {
+export async function createFolder(
+  user: SessionUser,
+  input: Required<CreateFolderInput>,
+): Promise<FolderDto> {
   let orgId = input.orgId;
   let parentPath = '/';
   if (input.parentId) {
@@ -102,15 +114,37 @@ export async function createFolder(user: SessionUser, input: Required<CreateFold
       select: { id: true, name: true, parentId: true, orgId: true, path: true },
     });
   });
-  await audit({ action: 'folder.create', actorId: user.id, orgId, targetType: 'folder', targetId: folder.id, metadata: { name: input.name } });
+  await audit({
+    action: 'folder.create',
+    actorId: user.id,
+    orgId,
+    targetType: 'folder',
+    targetId: folder.id,
+    metadata: { name: input.name },
+  });
   return { ...folder, role: 'OWNER', boardCount: 0 };
 }
 
-export async function updateFolder(user: SessionUser, folderId: string, input: { name?: string; parentId?: string | null }): Promise<void> {
-  const folder = await requireFolder(folderId, user.id, input.parentId !== undefined ? 'OWNER' : 'EDITOR');
+export async function updateFolder(
+  user: SessionUser,
+  folderId: string,
+  input: { name?: string; parentId?: string | null },
+): Promise<void> {
+  const folder = await requireFolder(
+    folderId,
+    user.id,
+    input.parentId !== undefined ? 'OWNER' : 'EDITOR',
+  );
   if (input.name !== undefined) {
     await prisma.folder.update({ where: { id: folderId }, data: { name: input.name } });
-    await audit({ action: 'folder.update', actorId: user.id, orgId: folder.orgId, targetType: 'folder', targetId: folderId, metadata: { name: input.name } });
+    await audit({
+      action: 'folder.update',
+      actorId: user.id,
+      orgId: folder.orgId,
+      targetType: 'folder',
+      targetId: folderId,
+      metadata: { name: input.name },
+    });
   }
   if (input.parentId === undefined || input.parentId === folder.parentId) return;
 
@@ -118,8 +152,10 @@ export async function updateFolder(user: SessionUser, folderId: string, input: {
   if (input.parentId) {
     const target = await requireFolder(input.parentId, user.id, 'EDITOR');
     // Нельзя положить папку внутрь самой себя
-    if (target.path.startsWith(folder.path)) throw new ApiError(400, 'cycle', 'Нельзя переместить папку внутрь неё самой');
-    if (target.orgId !== folder.orgId) throw new ApiError(400, 'cross_org', 'Папки нельзя переносить между организациями');
+    if (target.path.startsWith(folder.path))
+      throw new ApiError(400, 'cycle', 'Нельзя переместить папку внутрь неё самой');
+    if (target.orgId !== folder.orgId)
+      throw new ApiError(400, 'cross_org', 'Папки нельзя переносить между организациями');
     newParentPath = target.path;
   }
   const oldPath = folder.path;
@@ -129,7 +165,14 @@ export async function updateFolder(user: SessionUser, folderId: string, input: {
     prisma.folder.update({ where: { id: folderId }, data: { parentId: input.parentId } }),
     prisma.$executeRaw`UPDATE "Folder" SET "path" = ${newPath} || substring("path" from ${oldPath.length + 1}) WHERE "path" LIKE ${`${oldPath}%`}`,
   ]);
-  await audit({ action: 'folder.move', actorId: user.id, orgId: folder.orgId, targetType: 'folder', targetId: folderId, metadata: { from: folder.parentId, to: input.parentId } });
+  await audit({
+    action: 'folder.move',
+    actorId: user.id,
+    orgId: folder.orgId,
+    targetType: 'folder',
+    targetId: folderId,
+    metadata: { from: folder.parentId, to: input.parentId },
+  });
   // Унаследованные права могли смениться у всех досок поддерева
   await notifySubtree(newPath);
 }
@@ -137,16 +180,29 @@ export async function updateFolder(user: SessionUser, folderId: string, input: {
 /** Удаление поддерева; доски не удаляются — переезжают в корень и остаются у владельцев */
 export async function deleteFolder(user: SessionUser, folderId: string): Promise<void> {
   const folder = await requireFolder(folderId, user.id, 'OWNER');
-  const subtree = await prisma.folder.findMany({ where: { path: { startsWith: folder.path } }, select: { id: true } });
+  const subtree = await prisma.folder.findMany({
+    where: { path: { startsWith: folder.path } },
+    select: { id: true },
+  });
   const ids = subtree.map((f) => f.id);
   await prisma.$transaction([
     prisma.board.updateMany({ where: { folderId: { in: ids } }, data: { folderId: null } }),
     prisma.folder.updateMany({ where: { id: { in: ids } }, data: { deletedAt: new Date() } }),
   ]);
-  await audit({ action: 'folder.delete', actorId: user.id, orgId: folder.orgId, targetType: 'folder', targetId: folderId, metadata: { name: folder.name, folders: ids.length } });
+  await audit({
+    action: 'folder.delete',
+    actorId: user.id,
+    orgId: folder.orgId,
+    targetType: 'folder',
+    targetId: folderId,
+    metadata: { name: folder.name, folders: ids.length },
+  });
 }
 
-export async function listFolderMembers(user: SessionUser, folderId: string): Promise<FolderMemberDto[]> {
+export async function listFolderMembers(
+  user: SessionUser,
+  folderId: string,
+): Promise<FolderMemberDto[]> {
   const folder = await requireFolder(folderId, user.id, 'VIEWER');
   const ancestorIds = folder.path.split('/').filter(Boolean);
   const rows = await prisma.folderMember.findMany({
@@ -167,23 +223,47 @@ export async function listFolderMembers(user: SessionUser, folderId: string): Pr
   }));
 }
 
-export async function addFolderMember(user: SessionUser, folderId: string, email: string, role: AssignableRole): Promise<void> {
+export async function addFolderMember(
+  user: SessionUser,
+  folderId: string,
+  email: string,
+  role: AssignableRole,
+): Promise<void> {
   const folder = await requireFolder(folderId, user.id, 'OWNER');
   const target = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-  if (!target) throw new ApiError(404, 'user_not_found', 'Пользователь с таким email не зарегистрирован');
+  if (!target)
+    throw new ApiError(404, 'user_not_found', 'Пользователь с таким email не зарегистрирован');
   await prisma.folderMember.upsert({
     where: { folderId_userId: { folderId, userId: target.id } },
     create: { folderId, userId: target.id, role },
     update: { role },
   });
-  await audit({ action: 'folder.member_add', actorId: user.id, orgId: folder.orgId, targetType: 'folder', targetId: folderId, metadata: { userId: target.id, role } });
+  await audit({
+    action: 'folder.member_add',
+    actorId: user.id,
+    orgId: folder.orgId,
+    targetType: 'folder',
+    targetId: folderId,
+    metadata: { userId: target.id, role },
+  });
   await notifySubtree(folder.path);
 }
 
-export async function removeFolderMember(user: SessionUser, folderId: string, userId: string): Promise<void> {
+export async function removeFolderMember(
+  user: SessionUser,
+  folderId: string,
+  userId: string,
+): Promise<void> {
   const folder = await requireFolder(folderId, user.id, userId === user.id ? 'GUEST' : 'OWNER');
   await prisma.folderMember.deleteMany({ where: { folderId, userId } });
-  await audit({ action: 'folder.member_remove', actorId: user.id, orgId: folder.orgId, targetType: 'folder', targetId: folderId, metadata: { userId } });
+  await audit({
+    action: 'folder.member_remove',
+    actorId: user.id,
+    orgId: folder.orgId,
+    targetType: 'folder',
+    targetId: folderId,
+    metadata: { userId },
+  });
   await notifySubtree(folder.path);
 }
 
@@ -192,15 +272,24 @@ export async function removeFolderMember(user: SessionUser, folderId: string, us
  * только владелец доски и только в папку, где он редактор. Папка организации
  * переводит доску в организацию.
  */
-export async function moveBoard(user: SessionUser, boardId: string, folderId: string | null): Promise<void> {
+export async function moveBoard(
+  user: SessionUser,
+  boardId: string,
+  folderId: string | null,
+): Promise<void> {
   const access = await resolveBoardAccess(prisma, boardId, user.id);
   if (!access) throw new ApiError(404, 'not_found', 'Доска не найдена');
-  if (access.role !== 'OWNER') throw new ApiError(403, 'forbidden', 'Перемещать доску может только владелец');
+  if (access.role !== 'OWNER')
+    throw new ApiError(403, 'forbidden', 'Перемещать доску может только владелец');
   let orgId = access.orgId;
   if (folderId) {
     const folder = await requireFolder(folderId, user.id, 'EDITOR');
     if (access.orgId && folder.orgId !== access.orgId) {
-      throw new ApiError(400, 'cross_org', 'Доску организации нельзя переместить в папку вне организации');
+      throw new ApiError(
+        400,
+        'cross_org',
+        'Доску организации нельзя переместить в папку вне организации',
+      );
     }
     orgId = folder.orgId;
   }

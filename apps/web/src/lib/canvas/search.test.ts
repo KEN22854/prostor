@@ -3,7 +3,17 @@ import type { BoardElement, CommentThreadDto } from '@prostor/shared';
 import { normalize, searchBoard, snippetAround } from './search';
 
 const el = (id: string, type: string, extra: Record<string, unknown>) =>
-  ({ id, type, x: 0, y: 0, width: 10, height: 10, rotation: 0, zIndex: 'a0', ...extra }) as unknown as BoardElement;
+  ({
+    id,
+    type,
+    x: 0,
+    y: 0,
+    width: 10,
+    height: 10,
+    rotation: 0,
+    zIndex: 'a0',
+    ...extra,
+  }) as unknown as BoardElement;
 
 const thread = (id: string, body: string, replies: string[] = []): CommentThreadDto =>
   ({
@@ -22,7 +32,12 @@ describe('searchBoard', () => {
     el('f1', 'frame', { title: 'Спринт 12' }),
     el('a1', 'arrow', { label: 'данные' }),
     el('h', 'sticky', { text: 'ёлка', hidden: true }),
-    el('t1', 'table', { cells: [['Имя', 'Роль'], ['Аня', 'дизайнер']] }),
+    el('t1', 'table', {
+      cells: [
+        ['Имя', 'Роль'],
+        ['Аня', 'дизайнер'],
+      ],
+    }),
   ];
 
   it('без учёта регистра и «ё», скрытые объекты не ищутся', () => {

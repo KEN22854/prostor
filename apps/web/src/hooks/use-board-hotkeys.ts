@@ -33,6 +33,7 @@ const TOOL_KEYS: Record<string, { tool: CanvasTool; shape?: ShapeElement['shape'
   f: { tool: 'frame' },
   c: { tool: 'comment' },
   k: { tool: 'laser' },
+  b: { tool: 'table' },
 };
 
 /** Раскладка: в русской раскладке e.key — кириллица, поэтому используем e.code */

@@ -25,7 +25,10 @@ export const richSchema = new Schema({
       attrs: { bullet: { default: false } },
       parseDOM: [
         { tag: 'li', attrs: { bullet: true } },
-        { tag: 'p', getAttrs: (dom) => ({ bullet: (dom as HTMLElement).dataset.bullet === 'true' }) },
+        {
+          tag: 'p',
+          getAttrs: (dom) => ({ bullet: (dom as HTMLElement).dataset.bullet === 'true' }),
+        },
       ],
       toDOM: (node) => ['p', node.attrs.bullet ? { 'data-bullet': 'true' } : {}, 0],
     },

@@ -2,6 +2,7 @@
 
 import {
   ArrowUpRight,
+  Table2,
   Circle,
   Diamond,
   Eraser,
@@ -241,6 +242,7 @@ export function ToolPalette({ onPickImage, onGenerateImage, onImportPdf }: ToolP
         </Section>
       </ToolWithOptions>
       <ToolButton tool="text" icon={Type} label="Текст" hotkey="T" />
+      <ToolButton tool="table" icon={Table2} label="Таблица" hotkey="B" />
 
       <ToolWithOptions tool="pen" icon={Pencil} label="Карандаш" hotkey="P">
         <Section title="Режим">

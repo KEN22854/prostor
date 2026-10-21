@@ -35,7 +35,10 @@ function ExportStage({ page, background, onReady }: ExportStageProps) {
   useEffect(() => {
     if (mounted < elements.length) {
       // setTimeout, а не rAF: во вкладке в фоне rAF замирает и экспорт бы «висел»
-      const timer = setTimeout(() => setMounted((n) => Math.min(n + MOUNT_CHUNK, elements.length)), 0);
+      const timer = setTimeout(
+        () => setMounted((n) => Math.min(n + MOUNT_CHUNK, elements.length)),
+        0,
+      );
       return () => clearTimeout(timer);
     }
     if (ref.current) onReady(ref.current);
@@ -48,9 +51,13 @@ function ExportStage({ page, background, onReady }: ExportStageProps) {
         x={-b.minX}
         y={-b.minY}
         listening={false}
-        {...(page.clip ? { clipX: b.minX, clipY: b.minY, clipWidth: width, clipHeight: height } : {})}
+        {...(page.clip
+          ? { clipX: b.minX, clipY: b.minY, clipWidth: width, clipHeight: height }
+          : {})}
       >
-        {background ? <Rect x={b.minX} y={b.minY} width={width} height={height} fill={background} /> : null}
+        {background ? (
+          <Rect x={b.minX} y={b.minY} width={width} height={height} fill={background} />
+        ) : null}
         {elements.slice(0, mounted).map((el) => (
           <ElementNode key={el.id} element={el} detail="full" />
         ))}
@@ -87,8 +94,16 @@ export async function renderPageToCanvas(
   }
 }
 
-export function canvasToBlob(canvas: HTMLCanvasElement, type = 'image/png', quality?: number): Promise<Blob> {
+export function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type = 'image/png',
+  quality?: number,
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Не удалось создать изображение'))), type, quality);
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Не удалось создать изображение'))),
+      type,
+      quality,
+    );
   });
 }

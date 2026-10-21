@@ -68,7 +68,8 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
       const sent = results.filter((r) => r.status === 'sent').length;
       const already = results.filter((r) => r.status === 'already_member').map((r) => r.email);
       const failed = results.filter((r) => r.status === 'failed').map((r) => r.email);
-      if (sent > 0) toast.success(sent === 1 ? 'Приглашение отправлено' : `Отправлено приглашений: ${sent}`);
+      if (sent > 0)
+        toast.success(sent === 1 ? 'Приглашение отправлено' : `Отправлено приглашений: ${sent}`);
       if (already.length > 0) toast.info(`Уже есть доступ: ${already.join(', ')}`);
       if (failed.length > 0) toast.error(`Не удалось отправить: ${failed.join(', ')}`);
       setEmails(failed);
@@ -87,9 +88,16 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
         <Label htmlFor="invite-emails">Email</Label>
         <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input px-2 py-1 focus-within:ring-2 focus-within:ring-ring">
           {emails.map((email) => (
-            <span key={email} className="flex items-center gap-1 rounded bg-accent px-2 py-0.5 text-xs text-accent-foreground">
+            <span
+              key={email}
+              className="flex items-center gap-1 rounded bg-accent px-2 py-0.5 text-xs text-accent-foreground"
+            >
               {email}
-              <button type="button" aria-label={`Убрать ${email}`} onClick={() => setEmails(emails.filter((e) => e !== email))}>
+              <button
+                type="button"
+                aria-label={`Убрать ${email}`}
+                onClick={() => setEmails(emails.filter((e) => e !== email))}
+              >
                 <X className="size-3" />
               </button>
             </span>
@@ -108,7 +116,11 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
       <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
         <div className="space-y-1.5">
           <Label htmlFor="invite-role">Роль</Label>
-          <NativeSelect id="invite-role" value={role} onChange={(e) => setRole(e.target.value as AssignableRole)}>
+          <NativeSelect
+            id="invite-role"
+            value={role}
+            onChange={(e) => setRole(e.target.value as AssignableRole)}
+          >
             {state.grantableRoles.map((r) => (
               <option key={r} value={r}>
                 {ROLE_LABELS[r]}
@@ -118,10 +130,19 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="invite-message">Сообщение (необязательно)</Label>
-          <Input id="invite-message" value={message} maxLength={500} onChange={(e) => setMessage(e.target.value)} placeholder="Посмотри, пожалуйста, до пятницы" />
+          <Input
+            id="invite-message"
+            value={message}
+            maxLength={500}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Посмотри, пожалуйста, до пятницы"
+          />
         </div>
       </div>
-      <Button onClick={() => void send()} disabled={sending || (emails.length === 0 && !draft.trim())}>
+      <Button
+        onClick={() => void send()}
+        disabled={sending || (emails.length === 0 && !draft.trim())}
+      >
         {sending ? <Loader2 className="animate-spin" /> : <Send />}
         Пригласить
       </Button>

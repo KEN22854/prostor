@@ -11,9 +11,11 @@ import {
   type PathElement,
   type ShapeElement,
   type StickyElement,
+  type TableElement,
   type TextElement,
 } from '@prostor/shared';
 import { richToFragment } from '@/lib/rich-text/yjs-convert';
+import { TABLE_DEFAULT, cellsToFields, tableFields } from '@/lib/canvas/table';
 
 /** Наибольший zIndex на доске (fractional index, сравнение строк) */
 export function maxZIndex(elements: Y.Map<unknown>): string | null {
@@ -46,6 +48,13 @@ export function toYMap(element: Record<string, unknown>): Y.Map<unknown> {
   for (const [key, value] of Object.entries(element)) {
     if (value === undefined) continue;
     // Абзацы форматированного текста хранятся как Y.XmlFragment (совместное редактирование)
+    // Ячейки таблицы — отдельными полями: правки разных ячеек не конфликтуют
+    if (key === 'cells') {
+      if (Array.isArray(value)) {
+        for (const [k, v] of Object.entries(cellsToFields(value as string[][]))) map.set(k, v);
+      }
+      continue;
+    }
     if (key === 'rich') {
       const parsed = richTextSchema.safeParse(value);
       if (parsed.success) map.set('content', richToFragment(parsed.data));
@@ -177,6 +186,28 @@ export function buildLine(
     routing: p.routing ?? 'straight',
     ...(p.startBinding ? { startBinding: p.startBinding } : {}),
     ...(p.endBinding ? { endBinding: p.endBinding } : {}),
+  };
+}
+
+/** Таблица rows×cols с пустыми ячейками; первая строка — заголовок */
+export function buildTable(
+  p: BaseParams & { rows?: number; cols?: number; width?: number; height?: number },
+): TableElement {
+  const rows = p.rows ?? TABLE_DEFAULT.rows;
+  const cols = p.cols ?? TABLE_DEFAULT.cols;
+  const width = p.width ?? cols * TABLE_DEFAULT.cellWidth;
+  const height = p.height ?? rows * TABLE_DEFAULT.cellHeight;
+  return {
+    ...baseFields(p, width, height),
+    type: 'table',
+    ...tableFields(rows, cols),
+    headerRow: true,
+    fill: '#ffffff',
+    headerFill: '#f1f5f9',
+    stroke: '#cbd5e1',
+    color: '#1f2937',
+    fontSize: 14,
+    cells: Array.from({ length: rows }, () => Array.from({ length: cols }, () => '')),
   };
 }
 

@@ -14,10 +14,11 @@ import {
 } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
-import type { BoardElement, LineElement } from '@prostor/shared';
+import type { BoardElement, LineElement, TableElement } from '@prostor/shared';
 import { ColorSwatches } from '@/components/canvas/color-swatches';
 import { FrameTitleInput } from '@/components/canvas/frame-title-input';
 import { LineControls } from '@/components/canvas/line-controls';
+import { TableControls } from '@/components/canvas/table-controls';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -94,7 +95,7 @@ function ColorButton({
 }
 
 const hasFill = (el: BoardElement) =>
-  el.type === 'sticky' || el.type === 'shape' || el.type === 'frame';
+  el.type === 'sticky' || el.type === 'shape' || el.type === 'frame' || el.type === 'table';
 const hasStroke = (el: BoardElement) =>
   el.type === 'shape' || el.type === 'line' || el.type === 'arrow' || el.type === 'path';
 
@@ -160,6 +161,12 @@ export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolba
                 label="Цвет обводки"
               />
             </ColorButton>
+          ) : null}
+          {elements.length === 1 && elements[0]?.type === 'table' && !elements[0].locked ? (
+            <>
+              <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+              <TableControls table={elements[0] as TableElement} actions={actions} />
+            </>
           ) : null}
           {lines.length > 0 && lines.length === elements.length ? (
             <>

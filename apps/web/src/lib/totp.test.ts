@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { base32Decode, base32Encode, generateBackupCodes, generateSecret, hotp, otpauthUrl, stepAt, verifyTotp } from './totp';
+import {
+  base32Decode,
+  base32Encode,
+  generateBackupCodes,
+  generateSecret,
+  hotp,
+  otpauthUrl,
+  stepAt,
+  verifyTotp,
+} from './totp';
 
 // RFC 6238, приложение B: секрет "12345678901234567890" (ASCII), SHA1, 8 цифр.
 // Наши коды — 6 последних цифр тех же значений.

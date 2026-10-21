@@ -107,5 +107,9 @@ export async function signOutEverywhere(user: SessionUser, meta: RequestMeta): P
 /** Письма об упоминаниях и ответах в комментариях */
 export async function setEmailNotifications(user: SessionUser, enabled: boolean): Promise<void> {
   await prisma.user.update({ where: { id: user.id }, data: { emailNotifications: enabled } });
-  await audit({ action: 'account.update', actorId: user.id, metadata: { fields: ['emailNotifications'], enabled } });
+  await audit({
+    action: 'account.update',
+    actorId: user.id,
+    metadata: { fields: ['emailNotifications'], enabled },
+  });
 }

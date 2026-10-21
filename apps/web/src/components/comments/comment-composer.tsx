@@ -19,7 +19,11 @@ function loadMembers(boardId: string): Promise<Member[]> {
   let pending = membersCache.get(boardId);
   if (!pending) {
     pending = apiRequest<SharingStateDto>(`/api/boards/${boardId}/sharing`)
-      .then((s) => s.members.filter((m) => !m.isYou).map((m) => ({ userId: m.userId, name: m.name ?? m.email })))
+      .then((s) =>
+        s.members
+          .filter((m) => !m.isYou)
+          .map((m) => ({ userId: m.userId, name: m.name ?? m.email })),
+      )
       .catch(() => []);
     membersCache.set(boardId, pending);
   }
@@ -41,7 +45,15 @@ interface CommentComposerProps {
  * выбранный участник вставляется токеном @[Имя](id) — в тексте он показывается
  * как «@Имя», а сервер по нему отправит уведомление.
  */
-export function CommentComposer({ boardId, placeholder, initial = '', autoFocus, submitLabel = 'Отправить', onSubmit, onCancel }: CommentComposerProps) {
+export function CommentComposer({
+  boardId,
+  placeholder,
+  initial = '',
+  autoFocus,
+  submitLabel = 'Отправить',
+  onSubmit,
+  onCancel,
+}: CommentComposerProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = useState(initial);
   const [members, setMembers] = useState<Member[]>([]);
@@ -58,7 +70,10 @@ export function CommentComposer({ boardId, placeholder, initial = '', autoFocus,
   }, [autoFocus]);
 
   const suggestions = useMemo(
-    () => (query === null ? [] : members.filter((m) => m.name.toLowerCase().includes(query.toLowerCase())).slice(0, 6)),
+    () =>
+      query === null
+        ? []
+        : members.filter((m) => m.name.toLowerCase().includes(query.toLowerCase())).slice(0, 6),
     [members, query],
   );
 
@@ -104,7 +119,9 @@ export function CommentComposer({ boardId, placeholder, initial = '', autoFocus,
     if (suggestions.length > 0) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        setHighlight((h) => (h + (e.key === 'ArrowDown' ? 1 : suggestions.length - 1)) % suggestions.length);
+        setHighlight(
+          (h) => (h + (e.key === 'ArrowDown' ? 1 : suggestions.length - 1)) % suggestions.length,
+        );
         return;
       }
       if (e.key === 'Enter' || e.key === 'Tab') {
@@ -144,16 +161,26 @@ export function CommentComposer({ boardId, placeholder, initial = '', autoFocus,
         onKeyDown={onKeyDown}
       />
       {suggestions.length > 0 ? (
-        <ul className="absolute left-0 right-0 top-full z-10 mt-1 rounded-md border bg-popover p-1 shadow-md" role="listbox" aria-label="Упомянуть участника">
+        <ul
+          className="absolute left-0 right-0 top-full z-10 mt-1 rounded-md border bg-popover p-1 shadow-md"
+          role="listbox"
+          aria-label="Упомянуть участника"
+        >
           {suggestions.map((m, i) => (
             <li key={m.userId} role="option" aria-selected={i === highlight}>
               <button
                 type="button"
-                className={cn('flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm', i === highlight ? 'bg-accent' : 'hover:bg-muted')}
+                className={cn(
+                  'flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm',
+                  i === highlight ? 'bg-accent' : 'hover:bg-muted',
+                )}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => insertMention(m)}
               >
-                <span className="flex size-5 items-center justify-center rounded-full text-[10px] font-semibold text-white" style={{ backgroundColor: colorForUser(m.userId) }}>
+                <span
+                  className="flex size-5 items-center justify-center rounded-full text-[10px] font-semibold text-white"
+                  style={{ backgroundColor: colorForUser(m.userId) }}
+                >
                   {initials(m.name)}
                 </span>
                 {m.name}
@@ -170,7 +197,12 @@ export function CommentComposer({ boardId, placeholder, initial = '', autoFocus,
               Отмена
             </Button>
           ) : null}
-          <Button type="button" size="sm" disabled={sending || !value.trim()} onClick={() => void submit()}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={sending || !value.trim()}
+            onClick={() => void submit()}
+          >
             {sending ? <Loader2 className="animate-spin" /> : <SendHorizonal />}
             {submitLabel}
           </Button>

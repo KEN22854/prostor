@@ -4,7 +4,13 @@ import { LogOut, UserMinus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ROLE_LABELS, colorForUser, initials, type AssignableRole, type SharingStateDto } from '@prostor/shared';
+import {
+  ROLE_LABELS,
+  colorForUser,
+  initials,
+  type AssignableRole,
+  type SharingStateDto,
+} from '@prostor/shared';
 import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/native-select';
 import { apiRequest } from '@/lib/fetcher';
@@ -23,7 +29,10 @@ export function MembersList({ state, onChanged }: MembersListProps) {
   async function changeRole(userId: string, role: AssignableRole) {
     setBusy(userId);
     try {
-      await apiRequest(`/api/boards/${state.boardId}/members/${userId}`, { method: 'PATCH', body: { role } });
+      await apiRequest(`/api/boards/${state.boardId}/members/${userId}`, {
+        method: 'PATCH',
+        body: { role },
+      });
       toast.success(`Роль изменена: ${ROLE_LABELS[role]}`);
       await onChanged();
     } catch (e: unknown) {
@@ -34,7 +43,11 @@ export function MembersList({ state, onChanged }: MembersListProps) {
   }
 
   async function remove(userId: string, self: boolean) {
-    if (self && !window.confirm('Покинуть доску? Вернуться можно будет только по новому приглашению.')) return;
+    if (
+      self &&
+      !window.confirm('Покинуть доску? Вернуться можно будет только по новому приглашению.')
+    )
+      return;
     setBusy(userId);
     try {
       await apiRequest(`/api/boards/${state.boardId}/members/${userId}`, { method: 'DELETE' });
@@ -53,7 +66,10 @@ export function MembersList({ state, onChanged }: MembersListProps) {
   }
 
   return (
-    <ul className="max-h-80 divide-y overflow-y-auto rounded-lg border" aria-label="Участники доски">
+    <ul
+      className="max-h-80 divide-y overflow-y-auto rounded-lg border"
+      aria-label="Участники доски"
+    >
       {state.members.map((m) => (
         <li key={m.userId} className="flex items-center gap-3 p-2.5" data-testid="member-row">
           <span

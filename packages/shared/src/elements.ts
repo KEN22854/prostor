@@ -208,13 +208,40 @@ export const frameSchema = baseElementSchema.extend({
   clipContent: z.boolean().default(true),
 });
 
+export const TABLE_LIMITS = { maxRows: 100, maxCols: 30, maxCellLength: 2000 } as const;
+
+/** Ключ ячейки таблицы в Y.Map элемента: каждая ячейка — отдельное поле (CRDT по ячейкам) */
+export function tableCellKey(row: number, col: number): string {
+  return `cell:${row}:${col}`;
+}
+
+/**
+ * Таблица. В Yjs ячейки — плоские поля "cell:r:c": два человека, правящие
+ * разные ячейки, не перетирают друг друга. При чтении (и в JSON экспорта,
+ * буфера обмена, импорта) они собираются в cells[строка][столбец].
+ */
+export const tableSchema = baseElementSchema.extend({
+  type: z.literal('table'),
+  rows: z.number().int().min(1).max(TABLE_LIMITS.maxRows),
+  cols: z.number().int().min(1).max(TABLE_LIMITS.maxCols),
+  /** Доли ширины/высоты по столбцам и строкам (сумма — 1): размер таблицы задают width/height */
+  colWidths: z.array(finite.positive()).max(TABLE_LIMITS.maxCols),
+  rowHeights: z.array(finite.positive()).max(TABLE_LIMITS.maxRows),
+  headerRow: z.boolean().default(true),
+  fill: color.default('#ffffff'),
+  headerFill: color.default('#f1f5f9'),
+  stroke: color.default('#cbd5e1'),
+  color: color.default('#1f2937'),
+  fontSize: finite.min(6).max(96).default(14),
+  cells: z.array(z.array(z.string().max(TABLE_LIMITS.maxCellLength))).optional(),
+});
+
 /**
  * Элементы, ещё не реализованные в итерациях 1–4, описаны «мягко»:
  * общие поля + произвольный payload. Схемы ужесточаются в своих итерациях.
  */
 export const genericElementSchema = baseElementSchema.extend({
   type: z.enum([
-    'table',
     'mindmapNode',
     'kanban',
     'document',
@@ -244,7 +271,7 @@ export const boardElementSchema = z.discriminatedUnion('type', [
   pathSchema,
   imageSchema,
   frameSchema,
-  generic('table'),
+  tableSchema,
   generic('mindmapNode'),
   generic('kanban'),
   generic('document'),
@@ -263,6 +290,7 @@ export type LineElement = z.infer<typeof lineSchema>;
 export type PathElement = z.infer<typeof pathSchema>;
 export type ImageElement = z.infer<typeof imageSchema>;
 export type FrameElement = z.infer<typeof frameSchema>;
+export type TableElement = z.infer<typeof tableSchema>;
 export type GenericElement = z.infer<typeof genericElementSchema>;
 export type BoardElement =
   | StickyElement
@@ -272,6 +300,7 @@ export type BoardElement =
   | PathElement
   | ImageElement
   | FrameElement
+  | TableElement
   | GenericElement;
 
 /** Axis-aligned bounding box в мировых координатах */

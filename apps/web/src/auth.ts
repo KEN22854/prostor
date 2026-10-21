@@ -67,7 +67,10 @@ function credentialsProvider() {
         },
       });
 
-      const passwordOk = await verifyPassword(password, user?.passwordHash ?? (await getDummyHash()));
+      const passwordOk = await verifyPassword(
+        password,
+        user?.passwordHash ?? (await getDummyHash()),
+      );
       if (!user || !user.passwordHash || !passwordOk) {
         await audit({
           action: 'auth.login_failed',
@@ -84,7 +87,13 @@ function credentialsProvider() {
       if (user.twoFactorEnabled) {
         if (!parsed.data.totp) throw new TwoFactorRequiredError();
         if (!(await verifySecondFactor(user.id, parsed.data.totp))) {
-          await audit({ action: 'auth.login_failed', actorId: user.id, metadata: { email, method: 'credentials', reason: '2fa' }, ip, userAgent });
+          await audit({
+            action: 'auth.login_failed',
+            actorId: user.id,
+            metadata: { email, method: 'credentials', reason: '2fa' },
+            ip,
+            userAgent,
+          });
           throw new InvalidTwoFactorError();
         }
       }
@@ -177,7 +186,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
     events: {
       // Первый вход через OAuth/SSO создаёт пользователя — автоприсоединение по домену почты
       async createUser({ user }) {
-        if (user.id && user.email) await autoJoinByDomain(user.id, user.email).catch(() => undefined);
+        if (user.id && user.email)
+          await autoJoinByDomain(user.id, user.email).catch(() => undefined);
       },
       async signIn({ user, account }) {
         if (!user.id) return;

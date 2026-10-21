@@ -20,7 +20,11 @@ interface SharingPanelProps {
  * Управление доступом: приглашения, участники, ссылки, видимость.
  * Используется в ShareDialog и на странице настроек доски.
  */
-export function SharingPanel({ boardId, enabled = true, defaultTab = 'invite' }: SharingPanelProps) {
+export function SharingPanel({
+  boardId,
+  enabled = true,
+  defaultTab = 'invite',
+}: SharingPanelProps) {
   const { state, error, refresh } = useSharingState(boardId, enabled);
 
   if (error) {
@@ -42,7 +46,8 @@ export function SharingPanel({ boardId, enabled = true, defaultTab = 'invite' }:
   }
 
   const canShare = state.grantableRoles.length > 0;
-  const tab = !canShare && (defaultTab === 'invite' || defaultTab === 'links') ? 'members' : defaultTab;
+  const tab =
+    !canShare && (defaultTab === 'invite' || defaultTab === 'links') ? 'members' : defaultTab;
 
   return (
     <Tabs defaultValue={tab}>

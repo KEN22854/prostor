@@ -41,7 +41,12 @@ function boundsOfAll(elements: readonly BoardElement[]): Bounds | null {
 }
 
 function padded(b: Bounds): Bounds {
-  return { minX: b.minX - PADDING, minY: b.minY - PADDING, maxX: b.maxX + PADDING, maxY: b.maxY + PADDING };
+  return {
+    minX: b.minX - PADDING,
+    minY: b.minY - PADDING,
+    maxX: b.maxX + PADDING,
+    maxY: b.maxY + PADDING,
+  };
 }
 
 function framePage(store: ElementStore, frame: FrameElement): ExportPage {
@@ -67,7 +72,9 @@ export function collectPages(
         .map((id) => store.get(id))
         .filter((el): el is BoardElement => el !== undefined && !el.hidden);
       const b = boundsOfAll(elements);
-      return b ? [{ name: `${boardTitle} — выделение`, elements, bounds: padded(b), clip: false }] : [];
+      return b
+        ? [{ name: `${boardTitle} — выделение`, elements, bounds: padded(b), clip: false }]
+        : [];
     }
     case 'frame': {
       const frame = store.get(scope.id);
@@ -87,11 +94,17 @@ export function safeScale(bounds: Bounds, requested: number): number {
   const h = Math.max(1, bounds.maxY - bounds.minY);
   const MAX_SIDE = 16_000;
   const MAX_AREA = 120_000_000;
-  return Math.max(0.05, Math.min(requested, MAX_SIDE / w, MAX_SIDE / h, Math.sqrt(MAX_AREA / (w * h))));
+  return Math.max(
+    0.05,
+    Math.min(requested, MAX_SIDE / w, MAX_SIDE / h, Math.sqrt(MAX_AREA / (w * h))),
+  );
 }
 
 /** Имя файла без запрещённых в Windows/macOS символов */
 export function safeFileName(name: string): string {
-  const cleaned = name.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const cleaned = name
+    .replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
   return (cleaned || 'Доска').slice(0, 120);
 }

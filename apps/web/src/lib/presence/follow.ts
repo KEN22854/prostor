@@ -26,7 +26,9 @@ export function cameraForViewport(v: RemoteViewport, size: Size): Camera {
   const worldH = v.height / v.zoom;
   const cx = v.x + worldW / 2;
   const cy = v.y + worldH / 2;
-  const zoom = clampZoom(Math.min(size.width / Math.max(1, worldW), size.height / Math.max(1, worldH)));
+  const zoom = clampZoom(
+    Math.min(size.width / Math.max(1, worldW), size.height / Math.max(1, worldH)),
+  );
   return { x: cx - size.width / 2 / zoom, y: cy - size.height / 2 / zoom, zoom };
 }
 
@@ -38,12 +40,22 @@ export function lerpCamera(from: Camera, to: Camera, t: number): Camera {
 }
 
 export function closeEnough(a: Camera, b: Camera): boolean {
-  return Math.abs(a.x - b.x) * a.zoom < 0.5 && Math.abs(a.y - b.y) * a.zoom < 0.5 && Math.abs(a.zoom / b.zoom - 1) < 0.001;
+  return (
+    Math.abs(a.x - b.x) * a.zoom < 0.5 &&
+    Math.abs(a.y - b.y) * a.zoom < 0.5 &&
+    Math.abs(a.zoom / b.zoom - 1) < 0.001
+  );
 }
 
 function readUser(state: Record<string, unknown>): Omit<RemoteUser, 'clientId'> | null {
   const user = state.user as Record<string, unknown> | undefined;
-  if (!user || typeof user.id !== 'string' || typeof user.name !== 'string' || typeof user.color !== 'string') return null;
+  if (
+    !user ||
+    typeof user.id !== 'string' ||
+    typeof user.name !== 'string' ||
+    typeof user.color !== 'string'
+  )
+    return null;
   return { id: user.id, name: user.name, color: user.color };
 }
 
@@ -51,7 +63,10 @@ function readViewport(state: Record<string, unknown>): RemoteViewport | null {
   const v = state.viewport as Record<string, unknown> | null | undefined;
   if (!v) return null;
   const { x, y, zoom, width, height } = v;
-  if ([x, y, zoom, width, height].every((n) => typeof n === 'number' && Number.isFinite(n)) && (zoom as number) > 0) {
+  if (
+    [x, y, zoom, width, height].every((n) => typeof n === 'number' && Number.isFinite(n)) &&
+    (zoom as number) > 0
+  ) {
     return v as unknown as RemoteViewport;
   }
   return null;
@@ -61,7 +76,10 @@ function readViewport(state: Record<string, unknown>): RemoteViewport | null {
  * Состояние пользователя для следования. У него может быть несколько вкладок —
  * берём ту, что объявила себя ведущей, иначе любую с viewport.
  */
-export function findFollowTarget(awareness: Awareness, userId: string): { user: RemoteUser; viewport: RemoteViewport } | null {
+export function findFollowTarget(
+  awareness: Awareness,
+  userId: string,
+): { user: RemoteUser; viewport: RemoteViewport } | null {
   let fallback: { user: RemoteUser; viewport: RemoteViewport } | null = null;
   for (const [clientId, raw] of awareness.getStates()) {
     if (clientId === awareness.clientID) continue;
@@ -77,14 +95,19 @@ export function findFollowTarget(awareness: Awareness, userId: string): { user: 
 }
 
 /** Кто сейчас «позвал всех за собой» (самый поздний ведущий, не я) */
-export function findPresenter(awareness: Awareness, selfId: string | undefined): { user: RemoteUser; since: number } | null {
+export function findPresenter(
+  awareness: Awareness,
+  selfId: string | undefined,
+): { user: RemoteUser; since: number } | null {
   let best: { user: RemoteUser; since: number } | null = null;
   for (const [clientId, raw] of awareness.getStates()) {
     const state = raw as Record<string, unknown>;
     const presenting = state.presenting as { since?: unknown } | null | undefined;
     const user = readUser(state);
-    if (!presenting || typeof presenting.since !== 'number' || !user || user.id === selfId) continue;
-    if (!best || presenting.since > best.since) best = { user: { ...user, clientId }, since: presenting.since };
+    if (!presenting || typeof presenting.since !== 'number' || !user || user.id === selfId)
+      continue;
+    if (!best || presenting.since > best.since)
+      best = { user: { ...user, clientId }, since: presenting.since };
   }
   return best;
 }

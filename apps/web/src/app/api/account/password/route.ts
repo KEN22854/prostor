@@ -9,6 +9,9 @@ import { changePassword } from '@/services/profile';
 export const POST = withErrorHandling(async (req: Request) => {
   const user = await requireUser();
   const input = await parseJson(req, changePasswordSchema);
-  await changePassword(user, input, { ip: clientIp(req.headers), userAgent: req.headers.get('user-agent') });
+  await changePassword(user, input, {
+    ip: clientIp(req.headers),
+    userAgent: req.headers.get('user-agent'),
+  });
   return NextResponse.json({ ok: true });
 });

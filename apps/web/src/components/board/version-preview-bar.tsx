@@ -15,7 +15,12 @@ interface VersionPreviewBarProps {
 }
 
 /** Полоса над холстом в режиме просмотра версии */
-export function VersionPreviewBar({ version, canRestore, onRestore, onClose }: VersionPreviewBarProps) {
+export function VersionPreviewBar({
+  version,
+  canRestore,
+  onRestore,
+  onClose,
+}: VersionPreviewBarProps) {
   const [pending, setPending] = useState(false);
   return (
     <div
@@ -31,7 +36,9 @@ export function VersionPreviewBar({ version, canRestore, onRestore, onClose }: V
           Версия от {format(new Date(version.createdAt), 'd MMMM, HH:mm', { locale: ru })}
           {version.label ? ` — ${version.label}` : ` · ${SNAPSHOT_REASON_LABELS[version.reason]}`}
         </p>
-        <p className="text-xs text-muted-foreground">Только просмотр. Выделите объекты и нажмите Ctrl+C, чтобы перенести их в текущую доску.</p>
+        <p className="text-xs text-muted-foreground">
+          Только просмотр. Выделите объекты и нажмите Ctrl+C, чтобы перенести их в текущую доску.
+        </p>
       </div>
       {canRestore ? (
         <Button

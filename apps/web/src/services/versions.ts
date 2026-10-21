@@ -35,7 +35,10 @@ export async function listVersions(user: SessionUser, boardId: string): Promise<
   });
   const authorIds = Array.from(new Set(rows.flatMap((r) => r.authorIds)));
   const authors = authorIds.length
-    ? await prisma.user.findMany({ where: { id: { in: authorIds } }, select: { id: true, name: true, email: true } })
+    ? await prisma.user.findMany({
+        where: { id: { in: authorIds } },
+        select: { id: true, name: true, email: true },
+      })
     : [];
   const nameOf = new Map(authors.map((a) => [a.id, a.name ?? a.email]));
   return rows.map((r) => ({
@@ -50,7 +53,11 @@ export async function listVersions(user: SessionUser, boardId: string): Promise<
   }));
 }
 
-export async function getVersionState(user: SessionUser, boardId: string, versionId: string): Promise<Uint8Array> {
+export async function getVersionState(
+  user: SessionUser,
+  boardId: string,
+  versionId: string,
+): Promise<Uint8Array> {
   await requireBoardAccess(boardId, user.id, 'edit');
   const row = await prisma.boardSnapshot.findFirst({
     where: { id: versionId, boardId },
@@ -71,17 +78,25 @@ export async function getVersionState(user: SessionUser, boardId: string, versio
 export async function createVersion(
   user: SessionUser,
   boardId: string,
-  input: { update: Uint8Array; label?: string; reason: Extract<SnapshotReasonValue, 'MANUAL' | 'PRE_RESTORE'> },
+  input: {
+    update: Uint8Array;
+    label?: string;
+    reason: Extract<SnapshotReasonValue, 'MANUAL' | 'PRE_RESTORE'>;
+  },
   meta: RequestMeta,
 ): Promise<{ id: string }> {
   await requireBoardAccess(boardId, user.id, 'edit');
   const limit = await rateLimit(`versions:user:${user.id}`, 60, 60 * 60);
-  if (!limit.ok) throw new ApiError(429, 'rate_limited', 'Слишком много версий подряд. Попробуйте позже');
+  if (!limit.ok)
+    throw new ApiError(429, 'rate_limited', 'Слишком много версий подряд. Попробуйте позже');
   if (input.update.byteLength === 0 || input.update.byteLength > LIMITS.maxYjsUpdateBytes) {
     throw new ApiError(400, 'invalid_state', 'Некорректное состояние доски');
   }
 
-  const stored = await prisma.boardDocument.findUnique({ where: { boardId }, select: { state: true } });
+  const stored = await prisma.boardDocument.findUnique({
+    where: { boardId },
+    select: { state: true },
+  });
   const doc = new Y.Doc();
   try {
     if (stored) Y.applyUpdate(doc, stored.state);
@@ -108,15 +123,33 @@ export async function createVersion(
     select: { id: true },
   });
   if (input.reason === 'MANUAL') {
-    await audit({ action: 'board.version_create', actorId: user.id, boardId, targetId: snapshot.id, ...meta });
+    await audit({
+      action: 'board.version_create',
+      actorId: user.id,
+      boardId,
+      targetId: snapshot.id,
+      ...meta,
+    });
   }
   return snapshot;
 }
 
 /** Откат применяет клиент (как обычную правку — с undo); здесь проверка прав и аудит */
-export async function recordRestore(user: SessionUser, boardId: string, versionId: string, meta: RequestMeta): Promise<void> {
+export async function recordRestore(
+  user: SessionUser,
+  boardId: string,
+  versionId: string,
+  meta: RequestMeta,
+): Promise<void> {
   await requireBoardAccess(boardId, user.id, 'edit');
   const exists = await prisma.boardSnapshot.count({ where: { id: versionId, boardId } });
   if (!exists) throw new ApiError(404, 'not_found', 'Версия не найдена');
-  await audit({ action: 'board.version_restore', actorId: user.id, boardId, targetType: 'snapshot', targetId: versionId, ...meta });
+  await audit({
+    action: 'board.version_restore',
+    actorId: user.id,
+    boardId,
+    targetType: 'snapshot',
+    targetId: versionId,
+    ...meta,
+  });
 }

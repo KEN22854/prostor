@@ -9,6 +9,7 @@ import {
   type ElementType,
 } from '@prostor/shared';
 import { fragmentToRich } from '@/lib/rich-text/yjs-convert';
+import { fieldsToCells, isCellKey } from '@/lib/canvas/table';
 
 const TYPES = new Set<string>(ELEMENT_TYPES);
 const POINT_TYPES = new Set<ElementType>(['line', 'arrow', 'path']);
@@ -53,6 +54,16 @@ export function readElement(id: string, map: Y.Map<unknown>): BoardElement | nul
     const rich = fragmentToRich(content);
     element.rich = rich;
     element.text = richToPlain(rich);
+  }
+
+  // Таблица: ячейки — поля "cell:r:c" → cells[строка][столбец]
+  if (type === 'table') {
+    const rows = Math.max(1, Math.round(num(raw.rows, 1)));
+    const cols = Math.max(1, Math.round(num(raw.cols, 1)));
+    element.rows = rows;
+    element.cols = cols;
+    element.cells = fieldsToCells(raw, rows, cols);
+    for (const key of Object.keys(element)) if (isCellKey(key)) delete element[key];
   }
 
   if (POINT_TYPES.has(type as ElementType)) {

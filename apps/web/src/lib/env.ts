@@ -71,7 +71,12 @@ const serverEnvSchema = z.object({
    */
   RATE_LIMIT_MULTIPLIER: z.coerce.number().min(1).max(1000).default(1),
   /** Через сколько слать письмо о непрочитанном упоминании/ответе (мс) */
-  NOTIFICATION_EMAIL_DELAY_MS: z.coerce.number().int().min(0).max(24 * 3600_000).default(NOTIFICATION_EMAIL_DELAY_MS),
+  NOTIFICATION_EMAIL_DELAY_MS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(24 * 3600_000)
+    .default(NOTIFICATION_EMAIL_DELAY_MS),
 
   /** local — контейнер rembg; replicate — облако; disabled — функция скрыта */
   AI_PROVIDER_REMOVE_BG: z.enum(['local', 'replicate', 'disabled']).default('local'),

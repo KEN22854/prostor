@@ -69,7 +69,10 @@ export function VotingBar({ store }: { store: ElementStore | null }) {
                 <li key={r.elementId}>
                   <button
                     type="button"
-                    className={cn('flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-muted', i < 3 && 'font-medium')}
+                    className={cn(
+                      'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-muted',
+                      i < 3 && 'font-medium',
+                    )}
                     onClick={() => {
                       const el = store.get(r.elementId);
                       if (!el) return;
@@ -79,7 +82,9 @@ export function VotingBar({ store }: { store: ElementStore | null }) {
                     }}
                   >
                     <span className="w-5 shrink-0 text-muted-foreground">{i + 1}</span>
-                    <span className="min-w-0 flex-1 truncate">{elementLabel(store, r.elementId)}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {elementLabel(store, r.elementId)}
+                    </span>
                     <span className="shrink-0 rounded-full bg-muted px-2 text-xs">{r.count}</span>
                   </button>
                 </li>
@@ -90,11 +95,22 @@ export function VotingBar({ store }: { store: ElementStore | null }) {
       ) : null}
       {voting.canManage ? (
         active ? (
-          <Button size="sm" className="h-7" onClick={() => void endVoting(boardId, voting.id).catch(fail('Не удалось завершить'))}>
+          <Button
+            size="sm"
+            className="h-7"
+            onClick={() => void endVoting(boardId, voting.id).catch(fail('Не удалось завершить'))}
+          >
             Завершить
           </Button>
         ) : (
-          <Button size="sm" variant="outline" className="h-7" onClick={() => void closeVoting(boardId, voting.id).catch(fail('Не удалось скрыть итоги'))}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7"
+            onClick={() =>
+              void closeVoting(boardId, voting.id).catch(fail('Не удалось скрыть итоги'))
+            }
+          >
             Скрыть итоги
           </Button>
         )

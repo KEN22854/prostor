@@ -78,7 +78,9 @@ export default async function BoardSettingsPage({ params }: BoardSettingsPagePro
           <Card>
             <CardHeader>
               <CardTitle>Журнал действий</CardTitle>
-              <CardDescription>Кто менял доступ, экспортировал, восстанавливал версии</CardDescription>
+              <CardDescription>
+                Кто менял доступ, экспортировал, восстанавливал версии
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <AuditLogView endpoint={`/api/boards/${id}/audit`} />
@@ -88,7 +90,9 @@ export default async function BoardSettingsPage({ params }: BoardSettingsPagePro
 
         <Card className="border-destructive/40">
           <CardHeader>
-            <CardTitle className="text-destructive">{isOwner ? 'Удаление доски' : 'Покинуть доску'}</CardTitle>
+            <CardTitle className="text-destructive">
+              {isOwner ? 'Удаление доски' : 'Покинуть доску'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <BoardDangerZone

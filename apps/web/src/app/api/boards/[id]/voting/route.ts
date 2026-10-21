@@ -12,7 +12,10 @@ interface Ctx {
 export const GET = withErrorHandling(async (_req: Request, { params }: Ctx) => {
   const { id } = await params;
   const user = await getSessionUser();
-  return NextResponse.json({ voting: await getVoting(id, user?.id ?? null) }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json(
+    { voting: await getVoting(id, user?.id ?? null) },
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
 });
 
 /** POST /api/boards/:id/voting — начать голосование (редактор) */

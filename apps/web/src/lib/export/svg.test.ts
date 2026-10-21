@@ -19,7 +19,15 @@ describe('wrapText / layoutText', () => {
 
   it('вертикальное и горизонтальное выравнивание как у Konva (lineHeight = 1)', () => {
     const { lines, anchor } = layoutText(
-      { text: 'ab cd', width: 20, height: 100, fontSize: 20, align: 'center', verticalAlign: 'middle', ellipsis: false },
+      {
+        text: 'ab cd',
+        width: 20,
+        height: 100,
+        fontSize: 20,
+        align: 'center',
+        verticalAlign: 'middle',
+        ellipsis: false,
+      },
       mono,
     );
     expect(anchor).toBe('middle');
@@ -38,9 +46,34 @@ describe('elementsToSvg', () => {
   };
 
   it('фрейм — отдельный слой со своим содержимым, остальное — слой «Доска»', () => {
-    const frame = { ...buildFrame({ x: 0, y: 0, width: 600, height: 400, title: 'Идеи <&>', userId: 'u', zIndex: 'a0' }), id: 'f1' };
-    const inFrame = { ...buildSticky({ x: 10, y: 10, fill: '#fde68a', text: 'Внутри', userId: 'u', zIndex: 'a1' }), id: 's1', frameId: 'f1' };
-    const loose = { ...buildSticky({ x: 700, y: 10, fill: '#bbf7d0', text: 'Снаружи', userId: 'u', zIndex: 'a2' }), id: 's2' };
+    const frame = {
+      ...buildFrame({
+        x: 0,
+        y: 0,
+        width: 600,
+        height: 400,
+        title: 'Идеи <&>',
+        userId: 'u',
+        zIndex: 'a0',
+      }),
+      id: 'f1',
+    };
+    const inFrame = {
+      ...buildSticky({ x: 10, y: 10, fill: '#fde68a', text: 'Внутри', userId: 'u', zIndex: 'a1' }),
+      id: 's1',
+      frameId: 'f1',
+    };
+    const loose = {
+      ...buildSticky({
+        x: 700,
+        y: 10,
+        fill: '#bbf7d0',
+        text: 'Снаружи',
+        userId: 'u',
+        zIndex: 'a2',
+      }),
+      id: 's2',
+    };
     const svg = elementsToSvg([loose, inFrame, frame], opts);
     expect(svg).toContain('inkscape:groupmode="layer" inkscape:label="Идеи &lt;&amp;&gt;"');
     expect(svg).toContain('inkscape:label="Доска"');
@@ -51,7 +84,20 @@ describe('elementsToSvg', () => {
   });
 
   it('стрелка получает наконечник', () => {
-    const arrow = { ...buildLine({ type: 'arrow', x: 0, y: 0, dx: 100, dy: 0, stroke: '#111', strokeWidth: 2, userId: 'u', zIndex: 'a0' }), id: 'a' };
+    const arrow = {
+      ...buildLine({
+        type: 'arrow',
+        x: 0,
+        y: 0,
+        dx: 100,
+        dy: 0,
+        stroke: '#111',
+        strokeWidth: 2,
+        userId: 'u',
+        zIndex: 'a0',
+      }),
+      id: 'a',
+    };
     const svg = elementsToSvg([arrow], opts);
     expect(svg).toContain('<polyline points="0,0 100,0"');
     expect(svg).toMatch(/<polygon points="100,0 92,/);
@@ -66,7 +112,9 @@ describe('elementsToSvg', () => {
   });
 
   it('экранирование XML', () => {
-    expect(escapeXml(`<a href="x">'&'</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;&apos;&amp;&apos;&lt;/a&gt;');
+    expect(escapeXml(`<a href="x">'&'</a>`)).toBe(
+      '&lt;a href=&quot;x&quot;&gt;&apos;&amp;&apos;&lt;/a&gt;',
+    );
   });
 });
 
@@ -75,7 +123,15 @@ describe('elementsToSvg: форматированный текст', () => {
     const el = {
       ...buildSticky({ x: 0, y: 0, fill: '#fde68a', text: 'x', userId: 'u', zIndex: 'a0' }),
       id: 'r',
-      rich: [{ bullet: true, runs: [{ text: 'важно', bold: true }, { text: ' ссылка', underline: true }] }],
+      rich: [
+        {
+          bullet: true,
+          runs: [
+            { text: 'важно', bold: true },
+            { text: ' ссылка', underline: true },
+          ],
+        },
+      ],
     };
     const svg = elementsToSvg([el], {
       bounds: { minX: 0, minY: 0, maxX: 300, maxY: 300 },

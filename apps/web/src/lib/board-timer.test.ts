@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import * as Y from 'yjs';
-import { addTime, formatClock, pauseTimer, readTimer, remainingMs, resumeTimer, startTimer, stopTimer } from './board-timer';
+import {
+  addTime,
+  formatClock,
+  pauseTimer,
+  readTimer,
+  remainingMs,
+  resumeTimer,
+  startTimer,
+  stopTimer,
+} from './board-timer';
 
 describe('таймер доски', () => {
   it('запуск, пауза, продолжение, +время, стоп — и синхронизация между участниками', () => {

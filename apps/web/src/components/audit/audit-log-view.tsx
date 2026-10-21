@@ -51,7 +51,9 @@ export function AuditLogView({ endpoint }: { endpoint: string }) {
     if (!next) return;
     setLoadingMore(true);
     try {
-      const data = await apiRequest<{ entries: AuditEntryDto[]; next: string | null }>(query({ before: next }));
+      const data = await apiRequest<{ entries: AuditEntryDto[]; next: string | null }>(
+        query({ before: next }),
+      );
       setEntries((prev) => [...(prev ?? []), ...data.entries]);
       setNext(data.next);
     } finally {
@@ -63,7 +65,11 @@ export function AuditLogView({ endpoint }: { endpoint: string }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="w-64">
-          <NativeSelect aria-label="Действие" value={action} onChange={(e) => setAction(e.target.value)}>
+          <NativeSelect
+            aria-label="Действие"
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+          >
             <option value="">Все действия</option>
             {AUDIT_ACTIONS.map((a) => (
               <option key={a} value={a}>
@@ -111,7 +117,10 @@ export function AuditLogView({ endpoint }: { endpoint: string }) {
                   <td className="px-3 py-2">{e.actionLabel}</td>
                   <td className="px-3 py-2">{e.actorName ?? e.actorEmail ?? '—'}</td>
                   <td className="max-w-40 truncate px-3 py-2">{e.boardTitle ?? '—'}</td>
-                  <td className="max-w-xs truncate px-3 py-2 text-xs text-muted-foreground" title={details(e)}>
+                  <td
+                    className="max-w-xs truncate px-3 py-2 text-xs text-muted-foreground"
+                    title={details(e)}
+                  >
                     {details(e) || '—'}
                     {e.ip ? ` · ${e.ip}` : ''}
                   </td>

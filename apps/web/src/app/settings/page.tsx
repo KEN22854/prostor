@@ -25,7 +25,10 @@ const PROVIDER_LABELS: Record<string, string> = {
 export default async function AccountSettingsPage() {
   const user = await getSessionUser();
   if (!user) redirect('/login?callbackUrl=/settings');
-  const [account, twoFactor] = await Promise.all([getAccountOverview(user.id), twoFactorStatus(user.id)]);
+  const [account, twoFactor] = await Promise.all([
+    getAccountOverview(user.id),
+    twoFactorStatus(user.id),
+  ]);
   const dateFmt = new Intl.DateTimeFormat('ru', { dateStyle: 'long', timeStyle: 'short' });
 
   return (
@@ -69,10 +72,15 @@ export default async function AccountSettingsPage() {
         <Card id="security">
           <CardHeader>
             <CardTitle>Двухфакторная аутентификация</CardTitle>
-            <CardDescription>Второй шаг при входе по паролю. Организация может сделать её обязательной</CardDescription>
+            <CardDescription>
+              Второй шаг при входе по паролю. Организация может сделать её обязательной
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <TwoFactorCard enabled={twoFactor.enabled} backupCodesLeft={twoFactor.backupCodesLeft} />
+            <TwoFactorCard
+              enabled={twoFactor.enabled}
+              backupCodesLeft={twoFactor.backupCodesLeft}
+            />
           </CardContent>
         </Card>
 
@@ -98,7 +106,9 @@ export default async function AccountSettingsPage() {
           <CardContent className="space-y-3 text-sm">
             <p className="text-muted-foreground">
               Аккаунт создан {dateFmt.format(account.createdAt)}
-              {account.lastLoginAt ? ` · последний вход ${dateFmt.format(account.lastLoginAt)}` : ''}
+              {account.lastLoginAt
+                ? ` · последний вход ${dateFmt.format(account.lastLoginAt)}`
+                : ''}
             </p>
             <SignOutEverywhere />
           </CardContent>

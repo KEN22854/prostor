@@ -9,12 +9,14 @@ import type {
   PathElement,
   ShapeElement,
   StickyElement,
+  TableElement,
   TextElement,
 } from '@prostor/shared';
 import { BasicShape } from '@/components/canvas/shapes/basic-shape';
 import { FrameShape } from '@/components/canvas/shapes/frame-shape';
 import { ImageShape } from '@/components/canvas/shapes/image-shape';
 import { LineShape } from '@/components/canvas/shapes/line-shape';
+import { TableShape } from '@/components/canvas/shapes/table-shape';
 import { PathShape } from '@/components/canvas/shapes/path-shape';
 import { PlaceholderShape } from '@/components/canvas/shapes/placeholder-shape';
 import { StickyShape } from '@/components/canvas/shapes/sticky-shape';
@@ -26,6 +28,8 @@ interface ElementNodeProps {
   detail: DetailLevel;
   /** Текст элемента сейчас в inline-редакторе */
   editing?: boolean;
+  /** Ячейка таблицы в редакторе (только у редактируемой таблицы) */
+  editingCell?: { row: number; col: number } | null;
 }
 
 /**
@@ -39,6 +43,7 @@ export const ElementNode = memo(function ElementNode({
   element,
   detail,
   editing = false,
+  editingCell = null,
 }: ElementNodeProps) {
   switch (element.type) {
     case 'sticky':
@@ -56,6 +61,10 @@ export const ElementNode = memo(function ElementNode({
       return <ImageShape element={element as ImageElement} detail={detail} />;
     case 'frame':
       return <FrameShape element={element as FrameElement} />;
+    case 'table':
+      return (
+        <TableShape element={element as TableElement} detail={detail} editingCell={editingCell} />
+      );
     default:
       return <PlaceholderShape element={element} detail={detail} />;
   }

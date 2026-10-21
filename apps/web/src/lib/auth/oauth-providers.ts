@@ -17,7 +17,8 @@ export interface OAuthProviderInfo {
 export function enabledOAuthProviders(e: ServerEnv): OAuthProviderInfo[] {
   const list: OAuthProviderInfo[] = [];
   // Корпоративный SSO — первым: в on-prem это обычно основной способ входа
-  if (e.AUTH_OIDC_ISSUER && e.AUTH_OIDC_ID && e.AUTH_OIDC_SECRET) list.push({ id: 'oidc', name: e.AUTH_OIDC_NAME });
+  if (e.AUTH_OIDC_ISSUER && e.AUTH_OIDC_ID && e.AUTH_OIDC_SECRET)
+    list.push({ id: 'oidc', name: e.AUTH_OIDC_NAME });
   if (e.AUTH_YANDEX_ID && e.AUTH_YANDEX_SECRET) list.push({ id: 'yandex', name: 'Яндекс ID' });
   if (e.AUTH_VK_ID && e.AUTH_VK_SECRET) list.push({ id: 'vk', name: 'VK ID' });
   if (e.AUTH_GOOGLE_ID && e.AUTH_GOOGLE_SECRET) list.push({ id: 'google', name: 'Google' });

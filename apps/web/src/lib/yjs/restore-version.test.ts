@@ -52,7 +52,9 @@ describe('restoreVersion', () => {
 describe('restoreVersion: форматированный текст', () => {
   it('восстанавливает Y.XmlFragment, а не XML-строку', () => {
     const live = new Y.Doc();
-    insertElements(live, [{ ...sticky('r', 'x'), rich: [{ runs: [{ text: 'жирно', bold: true }] }] } as never]);
+    insertElements(live, [
+      { ...sticky('r', 'x'), rich: [{ runs: [{ text: 'жирно', bold: true }] }] } as never,
+    ]);
     const version = Y.encodeStateAsUpdate(live);
     const map = live.getMap<Y.Map<unknown>>(Y_KEYS.elements).get('r');
     map?.set('content', new Y.XmlFragment());

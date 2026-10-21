@@ -100,7 +100,9 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
           </span>
 
           <div className="ml-auto flex items-center gap-2">
-            {canEdit && isAuthenticated && !preview ? <StartVotingButton boardId={boardId} /> : null}
+            {canEdit && isAuthenticated && !preview ? (
+              <StartVotingButton boardId={boardId} />
+            ) : null}
             <BoardTimerControl
               doc={connection?.doc ?? null}
               canControl={canEdit && !preview}

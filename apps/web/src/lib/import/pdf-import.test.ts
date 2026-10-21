@@ -4,8 +4,17 @@ import { layoutPdfPages } from './pdf-import';
 describe('раскладка импортированного PDF', () => {
   it('страница — фрейм с картинкой внутри, по 4 в ряд', () => {
     let z = 0;
-    const pages = Array.from({ length: 5 }, (_, i) => ({ assetId: `a${i}`, width: 1000, height: 1414 }));
-    const els = layoutPdfPages(pages, { at: { x: 0, y: 0 }, name: 'Отчёт.pdf', userId: 'u', nextZ: () => `a${z++}` });
+    const pages = Array.from({ length: 5 }, (_, i) => ({
+      assetId: `a${i}`,
+      width: 1000,
+      height: 1414,
+    }));
+    const els = layoutPdfPages(pages, {
+      at: { x: 0, y: 0 },
+      name: 'Отчёт.pdf',
+      userId: 'u',
+      nextZ: () => `a${z++}`,
+    });
     expect(els).toHaveLength(10);
     const frames = els.filter((e) => e.type === 'frame');
     const images = els.filter((e) => e.type === 'image');

@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { grantableRoles, inviteProblem, ttlToExpiry, type InviteLike } from './sharing';
 
-const base: InviteLike = { boardId: 'b1', email: null, expiresAt: null, maxUses: null, uses: 0, revokedAt: null };
+const base: InviteLike = {
+  boardId: 'b1',
+  email: null,
+  expiresAt: null,
+  maxUses: null,
+  uses: 0,
+  revokedAt: null,
+};
 const now = new Date('2026-10-21T12:00:00Z');
 
 describe('inviteProblem', () => {
@@ -11,16 +18,29 @@ describe('inviteProblem', () => {
 
   it('другая доска, отзыв, истечение, лимит', () => {
     expect(inviteProblem(base, { boardId: 'b2', userEmail: null, now })).toBe('wrong_board');
-    expect(inviteProblem({ ...base, revokedAt: now }, { boardId: 'b1', userEmail: null, now })).toBe('revoked');
-    expect(inviteProblem({ ...base, expiresAt: new Date('2026-10-21T11:59:59Z') }, { boardId: 'b1', userEmail: null, now })).toBe('expired');
-    expect(inviteProblem({ ...base, maxUses: 3, uses: 3 }, { boardId: 'b1', userEmail: null, now })).toBe('exhausted');
-    expect(inviteProblem({ ...base, maxUses: 3, uses: 2 }, { boardId: 'b1', userEmail: null, now })).toBeNull();
+    expect(
+      inviteProblem({ ...base, revokedAt: now }, { boardId: 'b1', userEmail: null, now }),
+    ).toBe('revoked');
+    expect(
+      inviteProblem(
+        { ...base, expiresAt: new Date('2026-10-21T11:59:59Z') },
+        { boardId: 'b1', userEmail: null, now },
+      ),
+    ).toBe('expired');
+    expect(
+      inviteProblem({ ...base, maxUses: 3, uses: 3 }, { boardId: 'b1', userEmail: null, now }),
+    ).toBe('exhausted');
+    expect(
+      inviteProblem({ ...base, maxUses: 3, uses: 2 }, { boardId: 'b1', userEmail: null, now }),
+    ).toBeNull();
   });
 
   it('адресное приглашение принимает только владелец email (без учёта регистра)', () => {
     const invite = { ...base, email: 'anna@company.ru' };
     expect(inviteProblem(invite, { boardId: 'b1', userEmail: 'Anna@Company.ru', now })).toBeNull();
-    expect(inviteProblem(invite, { boardId: 'b1', userEmail: 'other@company.ru', now })).toBe('wrong_email');
+    expect(inviteProblem(invite, { boardId: 'b1', userEmail: 'other@company.ru', now })).toBe(
+      'wrong_email',
+    );
     // Не вошёл — адрес проверим после входа
     expect(inviteProblem(invite, { boardId: 'b1', userEmail: null, now })).toBeNull();
   });

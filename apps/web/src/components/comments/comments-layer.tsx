@@ -39,7 +39,8 @@ const zero = () => 0;
 export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps) {
   const camera = useCanvasStore((s) => s.camera);
   const size = useCanvasStore((s) => s.size);
-  const { threads, visible, showResolved, openThreadId, draft, openThread, startDraft } = useCommentsStore();
+  const { threads, visible, showResolved, openThreadId, draft, openThread, startDraft } =
+    useCommentsStore();
   // Объекты двигаются — пины едут за ними
   useSyncExternalStore(store?.subscribe ?? noop, store?.getVersion ?? zero, zero);
 
@@ -77,7 +78,10 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
   };
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-[15] overflow-hidden" data-testid="comments-layer">
+    <div
+      className="pointer-events-none absolute inset-0 z-[15] overflow-hidden"
+      data-testid="comments-layer"
+    >
       {visible
         ? threads
             .filter((t) => showResolved || !t.resolvedAt || t.id === openThreadId)
@@ -85,7 +89,8 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
               const anchor = anchorOf(t, store);
               if (!anchor) return null;
               const p = worldToScreen(camera, anchor);
-              if (p.x < -40 || p.y < -40 || p.x > size.width + 40 || p.y > size.height + 40) return null;
+              if (p.x < -40 || p.y < -40 || p.x > size.width + 40 || p.y > size.height + 40)
+                return null;
               const count = t.replies.length + 1;
               return (
                 <button
@@ -103,7 +108,9 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
                   onClick={() => openThread(t.id === openThreadId ? null : t.id)}
                 >
                   {initials(t.authorName)}
-                  {count > 1 ? <span className="rounded-full bg-black/20 px-1">{count}</span> : null}
+                  {count > 1 ? (
+                    <span className="rounded-full bg-black/20 px-1">{count}</span>
+                  ) : null}
                 </button>
               );
             })
@@ -111,7 +118,12 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
 
       {open ? (
         <div className="pointer-events-auto absolute" style={placeCard(anchorOf(open, store))}>
-          <ThreadCard boardId={boardId} thread={open} canComment={canComment} onClose={() => openThread(null)} />
+          <ThreadCard
+            boardId={boardId}
+            thread={open}
+            canComment={canComment}
+            onClose={() => openThread(null)}
+          />
         </div>
       ) : null}
 

@@ -19,7 +19,10 @@ export const NativeSelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<H
       >
         {children}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 opacity-60" aria-hidden />
+      <ChevronDown
+        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 opacity-60"
+        aria-hidden
+      />
     </div>
   ),
 );

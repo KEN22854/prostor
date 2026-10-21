@@ -52,7 +52,8 @@ export function restoreVersion(live: Y.Doc, snapshotState: Uint8Array): RestoreS
       // Форматированный текст — Y.XmlFragment: toJSON дал бы XML-строку, переносим абзацами
       delete fields.content;
       const snapContent = source.get('content');
-      const snapRich = snapContent instanceof Y.XmlFragment ? fragmentToRich(snapContent) : undefined;
+      const snapRich =
+        snapContent instanceof Y.XmlFragment ? fragmentToRich(snapContent) : undefined;
       const existing = current.get(id);
       if (!(existing instanceof Y.Map)) {
         current.set(id, toYMap(snapRich ? { ...fields, rich: snapRich } : fields));
@@ -74,7 +75,8 @@ export function restoreVersion(live: Y.Doc, snapshotState: Uint8Array): RestoreS
         }
       }
       const liveContent = map.get('content');
-      const liveRich = liveContent instanceof Y.XmlFragment ? fragmentToRich(liveContent) : undefined;
+      const liveRich =
+        liveContent instanceof Y.XmlFragment ? fragmentToRich(liveContent) : undefined;
       if (!sameValue(liveRich, snapRich)) {
         if (snapRich) map.set('content', richToFragment(snapRich));
         else map.delete('content');

@@ -8,12 +8,19 @@ import { redis } from '@/lib/redis';
 import { rateLimit } from '@/lib/rate-limit';
 import { open, seal } from '@/lib/secret-box';
 import type { SessionUser } from '@/lib/session';
-import { generateBackupCodes, generateSecret, normalizeBackupCode, otpauthUrl, verifyTotp } from '@/lib/totp';
+import {
+  generateBackupCodes,
+  generateSecret,
+  normalizeBackupCode,
+  otpauthUrl,
+  verifyTotp,
+} from '@/lib/totp';
 import { audit } from '@/services/audit';
 
 const PENDING_TTL_SEC = 10 * 60;
 const pendingKey = (userId: string) => `2fa:pending:${userId}`;
-const hashCode = (code: string) => createHash('sha256').update(normalizeBackupCode(code)).digest('hex');
+const hashCode = (code: string) =>
+  createHash('sha256').update(normalizeBackupCode(code)).digest('hex');
 
 export interface TwoFactorSetup {
   secret: string;
@@ -23,12 +30,21 @@ export interface TwoFactorSetup {
 
 /** Шаг 1: новый секрет (ещё не включён — ждёт подтверждения кодом), QR для приложения */
 export async function beginSetup(user: SessionUser): Promise<TwoFactorSetup> {
-  const record = await prisma.user.findUniqueOrThrow({ where: { id: user.id }, select: { email: true, twoFactorEnabled: true } });
-  if (record.twoFactorEnabled) throw new ApiError(409, 'already_enabled', 'Двухфакторная аутентификация уже включена');
+  const record = await prisma.user.findUniqueOrThrow({
+    where: { id: user.id },
+    select: { email: true, twoFactorEnabled: true },
+  });
+  if (record.twoFactorEnabled)
+    throw new ApiError(409, 'already_enabled', 'Двухфакторная аутентификация уже включена');
   const secret = generateSecret();
   await redis().set(pendingKey(user.id), seal(secret), 'EX', PENDING_TTL_SEC);
   const url = otpauthUrl(secret, record.email);
-  const qrSvg = await QRCode.toString(url, { type: 'svg', margin: 1, width: 192, errorCorrectionLevel: 'M' });
+  const qrSvg = await QRCode.toString(url, {
+    type: 'svg',
+    margin: 1,
+    width: 192,
+    errorCorrectionLevel: 'M',
+  });
   return { secret, otpauthUrl: url, qrSvg };
 }
 
@@ -44,18 +60,27 @@ async function consumeStep(userId: string, step: number): Promise<boolean> {
 }
 
 /** Шаг 2: подтверждение кодом из приложения — включаем, выдаём резервные коды (один раз) */
-export async function confirmSetup(user: SessionUser, code: string): Promise<{ backupCodes: string[] }> {
+export async function confirmSetup(
+  user: SessionUser,
+  code: string,
+): Promise<{ backupCodes: string[] }> {
   const sealed = await redis().get(pendingKey(user.id));
   if (!sealed) throw new ApiError(410, 'setup_expired', 'Время настройки истекло — начните заново');
   const secret = open(sealed);
   const step = verifyTotp(secret, code);
   if (step === null || !(await consumeStep(user.id, step))) {
-    throw new ApiError(400, 'invalid_code', 'Неверный код. Проверьте время на телефоне', { code: 'Неверный код' });
+    throw new ApiError(400, 'invalid_code', 'Неверный код. Проверьте время на телефоне', {
+      code: 'Неверный код',
+    });
   }
   const backupCodes = generateBackupCodes();
   await prisma.user.update({
     where: { id: user.id },
-    data: { twoFactorEnabled: true, twoFactorSecret: seal(secret), twoFactorBackupKeys: backupCodes.map(hashCode) },
+    data: {
+      twoFactorEnabled: true,
+      twoFactorSecret: seal(secret),
+      twoFactorBackupKeys: backupCodes.map(hashCode),
+    },
   });
   await redis().del(pendingKey(user.id));
   invalidateSessionCache(user.id);
@@ -101,7 +126,12 @@ export async function disable(user: SessionUser, code: string): Promise<void> {
   await audit({ action: 'auth.2fa_disabled', actorId: user.id });
 }
 
-export async function twoFactorStatus(userId: string): Promise<{ enabled: boolean; backupCodesLeft: number }> {
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { twoFactorEnabled: true, twoFactorBackupKeys: true } });
+export async function twoFactorStatus(
+  userId: string,
+): Promise<{ enabled: boolean; backupCodesLeft: number }> {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { twoFactorEnabled: true, twoFactorBackupKeys: true },
+  });
   return { enabled: user.twoFactorEnabled, backupCodesLeft: user.twoFactorBackupKeys.length };
 }

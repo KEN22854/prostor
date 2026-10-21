@@ -19,6 +19,7 @@ import { FollowBanner } from '@/components/canvas/follow-banner';
 import { FramesPanel } from '@/components/canvas/frames-panel';
 import { LodShape } from '@/components/canvas/lod-shape';
 import { BoardSearch } from '@/components/canvas/board-search';
+import { TableCellEditor } from '@/components/canvas/table-cell-editor';
 import { Minimap } from '@/components/canvas/minimap';
 import { PresentationMode } from '@/components/canvas/presentation-mode';
 import { SelectionLayer } from '@/components/canvas/selection-layer';
@@ -114,6 +115,7 @@ export function BoardCanvas({
 }: BoardCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const presenting = useCanvasStore((s) => s.presentation !== null);
+  const editingCell = useCanvasStore((s) => s.editingCell);
   const stageRef = useRef<Konva.Stage>(null);
   const elementsLayerRef = useRef<Konva.Layer>(null);
   const remoteLayerRef = useRef<Konva.Layer>(null);
@@ -398,6 +400,7 @@ export function BoardCanvas({
                   element={el}
                   detail={detail}
                   editing={el.id === editingId}
+                  editingCell={editingCell?.id === el.id ? editingCell : null}
                 />
               ))
             )}
@@ -424,6 +427,9 @@ export function BoardCanvas({
           awareness={awareness}
           undoManager={undoManager}
         />
+      ) : null}
+      {store && actions?.canEdit && !presenting ? (
+        <TableCellEditor store={store} actions={actions} />
       ) : null}
       {actions?.canEdit && !presenting ? (
         <ToolPalette

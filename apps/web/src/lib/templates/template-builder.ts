@@ -40,7 +40,8 @@ export class TemplateBuilder {
 
   sticky(x: number, y: number, text: string, fill: string, frameId?: string, size = 200): string {
     const el = buildSticky({ x, y, text, fill, userId: this.userId, zIndex: this.nextZ() });
-    return this.push({ ...el, width: size, height: size, fontSize: size < 180 ? 16 : 18 }, frameId).id;
+    return this.push({ ...el, width: size, height: size, fontSize: size < 180 ? 16 : 18 }, frameId)
+      .id;
   }
 
   shape(
@@ -64,9 +65,23 @@ export class TemplateBuilder {
     x: number,
     y: number,
     text: string,
-    opts: { fontSize?: number; width?: number; bold?: boolean; color?: string; frameId?: string } = {},
+    opts: {
+      fontSize?: number;
+      width?: number;
+      bold?: boolean;
+      color?: string;
+      frameId?: string;
+    } = {},
   ): string {
-    const el = buildText({ x, y, text, fontSize: opts.fontSize ?? 20, color: opts.color, userId: this.userId, zIndex: this.nextZ() });
+    const el = buildText({
+      x,
+      y,
+      text,
+      fontSize: opts.fontSize ?? 20,
+      color: opts.color,
+      userId: this.userId,
+      zIndex: this.nextZ(),
+    });
     const lines = text.split('\n').length;
     return this.push(
       {
@@ -104,17 +119,32 @@ export class TemplateBuilder {
     const xs = route.map((pt) => pt.x);
     const ys = route.map((pt) => pt.y);
     this.push(
-      { ...el, points, width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) },
+      {
+        ...el,
+        points,
+        width: Math.max(...xs) - Math.min(...xs),
+        height: Math.max(...ys) - Math.min(...ys),
+      },
       opts.frameId,
     );
     if (opts.label) {
       const next = route[1] ?? to;
       const at = opts.labelAt ?? { x: (from.x + next.x) / 2 + 8, y: (from.y + next.y) / 2 - 22 };
-      this.text(at.x, at.y, opts.label, { fontSize: 14, width: 60, color: '#475569', frameId: opts.frameId });
+      this.text(at.x, at.y, opts.label, {
+        fontSize: 14,
+        width: 60,
+        color: '#475569',
+        frameId: opts.frameId,
+      });
     }
   }
 
-  line(from: { x: number; y: number }, to: { x: number; y: number }, frameId?: string, dashed = false): void {
+  line(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    frameId?: string,
+    dashed = false,
+  ): void {
     const el = buildLine({
       type: 'line',
       x: from.x,

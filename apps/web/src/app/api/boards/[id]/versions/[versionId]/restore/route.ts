@@ -9,7 +9,10 @@ export const POST = withErrorHandling(
   async (req: Request, { params }: { params: Promise<{ id: string; versionId: string }> }) => {
     const { id, versionId } = await params;
     const user = await requireUser();
-    await recordRestore(user, id, versionId, { ip: clientIp(req.headers), userAgent: req.headers.get('user-agent') });
+    await recordRestore(user, id, versionId, {
+      ip: clientIp(req.headers),
+      userAgent: req.headers.get('user-agent'),
+    });
     return new NextResponse(null, { status: 204 });
   },
 );

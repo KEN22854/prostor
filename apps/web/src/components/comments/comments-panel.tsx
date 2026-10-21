@@ -13,7 +13,16 @@ import { useCommentsStore } from '@/stores/comments-store';
 export function CommentsPanel() {
   const open = useCanvasStore((s) => s.panel === 'comments');
   const setPanel = useCanvasStore((s) => s.setPanel);
-  const { threads, loaded, showResolved, visible, openThreadId, setShowResolved, setVisible, openThread } = useCommentsStore();
+  const {
+    threads,
+    loaded,
+    showResolved,
+    visible,
+    openThreadId,
+    setShowResolved,
+    setVisible,
+    openThread,
+  } = useCommentsStore();
   if (!open) return null;
 
   const list = threads.filter((t) => (showResolved ? t.resolvedAt : !t.resolvedAt)).reverse();
@@ -40,7 +49,13 @@ export function CommentsPanel() {
           >
             {visible ? <Eye /> : <EyeOff />}
           </Button>
-          <Button variant="ghost" size="icon" className="size-8" aria-label="Закрыть обсуждения" onClick={() => setPanel(null)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            aria-label="Закрыть обсуждения"
+            onClick={() => setPanel(null)}
+          >
             <X />
           </Button>
         </div>
@@ -55,7 +70,10 @@ export function CommentsPanel() {
             type="button"
             role="tab"
             aria-selected={showResolved === tab.resolved}
-            className={cn('flex-1 rounded-md px-2 py-1 text-sm', showResolved === tab.resolved ? 'bg-accent font-medium' : 'hover:bg-muted')}
+            className={cn(
+              'flex-1 rounded-md px-2 py-1 text-sm',
+              showResolved === tab.resolved ? 'bg-accent font-medium' : 'hover:bg-muted',
+            )}
             onClick={() => setShowResolved(tab.resolved)}
           >
             {tab.label}
@@ -65,14 +83,19 @@ export function CommentsPanel() {
       <ul className="min-h-0 flex-1 overflow-y-auto p-2" data-testid="comments-list">
         {!loaded ? null : list.length === 0 ? (
           <li className="p-4 text-center text-sm text-muted-foreground">
-            {showResolved ? 'Решённых обсуждений нет' : 'Обсуждений пока нет. Инструмент «Комментарий» (C) — кликните по объекту или месту на доске.'}
+            {showResolved
+              ? 'Решённых обсуждений нет'
+              : 'Обсуждений пока нет. Инструмент «Комментарий» (C) — кликните по объекту или месту на доске.'}
           </li>
         ) : (
           list.map((t) => (
             <li key={t.id}>
               <button
                 type="button"
-                className={cn('w-full rounded-md p-2 text-left hover:bg-muted', openThreadId === t.id && 'bg-accent')}
+                className={cn(
+                  'w-full rounded-md p-2 text-left hover:bg-muted',
+                  openThreadId === t.id && 'bg-accent',
+                )}
                 onClick={() => {
                   setVisible(true);
                   openThread(t.id);
@@ -91,7 +114,9 @@ export function CommentsPanel() {
                     {formatDistanceToNow(new Date(t.createdAt), { addSuffix: true, locale: ru })}
                   </span>
                 </span>
-                <span className="mt-1 line-clamp-2 block pl-8 text-sm text-muted-foreground">{commentPlainText(t.body)}</span>
+                <span className="mt-1 line-clamp-2 block pl-8 text-sm text-muted-foreground">
+                  {commentPlainText(t.body)}
+                </span>
                 {t.replies.length > 0 ? (
                   <span className="block pl-8 text-xs text-primary">
                     {t.replies.length} {plural(t.replies.length, ['ответ', 'ответа', 'ответов'])}

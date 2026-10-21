@@ -67,7 +67,10 @@ function assemblePdf(pages: PdfPageInput[]): Promise<ArrayBuffer> {
       worker.terminate();
       reject(new Error(event.message || 'Не удалось собрать PDF'));
     };
-    worker.postMessage({ pages } satisfies PdfWorkerRequest, pages.map((p) => p.jpeg));
+    worker.postMessage(
+      { pages } satisfies PdfWorkerRequest,
+      pages.map((p) => p.jpeg),
+    );
   });
 }
 
@@ -76,7 +79,10 @@ async function exportPdf(opts: ExportOptions): Promise<void> {
   for (const page of opts.pages) {
     const w = page.bounds.maxX - page.bounds.minX;
     const h = page.bounds.maxY - page.bounds.minY;
-    const canvas = await renderPageToCanvas(page, { scale: safeScale(page.bounds, 2), background: '#ffffff' });
+    const canvas = await renderPageToCanvas(page, {
+      scale: safeScale(page.bounds, 2),
+      background: '#ffffff',
+    });
     // JPEG заметно компактнее PNG для страниц с фотографиями; фон всё равно белый.
     // toBlob кодирует асинхронно (toDataURL блокировал бы главный поток на секунды)
     const jpeg = await (await canvasToBlob(canvas, 'image/jpeg', 0.92)).arrayBuffer();

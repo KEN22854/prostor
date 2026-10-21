@@ -41,7 +41,9 @@ export function NotificationsBell() {
 
   const load = useCallback(async () => {
     try {
-      const data = await apiRequest<{ items: NotificationDto[]; unread: number }>('/api/notifications');
+      const data = await apiRequest<{ items: NotificationDto[]; unread: number }>(
+        '/api/notifications',
+      );
       setItems(data.items);
       setUnread(data.unread);
     } catch {
@@ -65,7 +67,9 @@ export function NotificationsBell() {
   }, [open, load]);
 
   const markRead = async (ids: string[] | null) => {
-    await apiRequest('/api/notifications/read', { method: 'POST', body: ids ? { ids } : {} }).catch(() => undefined);
+    await apiRequest('/api/notifications/read', { method: 'POST', body: ids ? { ids } : {} }).catch(
+      () => undefined,
+    );
     await load();
   };
 
@@ -86,10 +90,18 @@ export function NotificationsBell() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" aria-label={unread > 0 ? `Уведомления: ${unread} новых` : 'Уведомления'}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          aria-label={unread > 0 ? `Уведомления: ${unread} новых` : 'Уведомления'}
+        >
           <Bell />
           {unread > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-destructive px-1 text-[10px] font-semibold leading-4 text-white" data-testid="unread-count">
+            <span
+              className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-destructive px-1 text-[10px] font-semibold leading-4 text-white"
+              data-testid="unread-count"
+            >
               {unread > 99 ? '99+' : unread}
             </span>
           ) : null}
@@ -99,7 +111,12 @@ export function NotificationsBell() {
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-sm font-medium">Уведомления</span>
           {unread > 0 ? (
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => void markRead(null)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => void markRead(null)}
+            >
               <CheckCheck className="size-3.5" /> Прочитать все
             </Button>
           ) : null}
@@ -113,12 +130,25 @@ export function NotificationsBell() {
                 <button
                   type="button"
                   onClick={() => go(n)}
-                  className={cn('flex w-full gap-2 border-b px-3 py-2.5 text-left last:border-0 hover:bg-muted', !n.readAt && 'bg-primary/5')}
+                  className={cn(
+                    'flex w-full gap-2 border-b px-3 py-2.5 text-left last:border-0 hover:bg-muted',
+                    !n.readAt && 'bg-primary/5',
+                  )}
                 >
-                  <span className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.readAt ? 'bg-transparent' : 'bg-primary')} aria-hidden />
+                  <span
+                    className={cn(
+                      'mt-1.5 size-2 shrink-0 rounded-full',
+                      n.readAt ? 'bg-transparent' : 'bg-primary',
+                    )}
+                    aria-hidden
+                  />
                   <span className="min-w-0">
                     <span className="block text-sm">{describe(n)}</span>
-                    {n.excerpt ? <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">«{n.excerpt}»</span> : null}
+                    {n.excerpt ? (
+                      <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground">
+                        «{n.excerpt}»
+                      </span>
+                    ) : null}
                     <span className="mt-0.5 block text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: ru })}
                     </span>

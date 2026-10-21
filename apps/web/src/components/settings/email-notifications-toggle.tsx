@@ -14,7 +14,10 @@ export function EmailNotificationsToggle({ initial }: { initial: boolean }) {
     setEnabled(next);
     setSaving(true);
     try {
-      await apiRequest('/api/account/notifications', { method: 'PATCH', body: { emailNotifications: next } });
+      await apiRequest('/api/account/notifications', {
+        method: 'PATCH',
+        body: { emailNotifications: next },
+      });
       toast.success(next ? 'Письма об упоминаниях включены' : 'Письма об упоминаниях выключены');
     } catch (e: unknown) {
       setEnabled(!next);

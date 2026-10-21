@@ -95,7 +95,14 @@ export const exportRequestSchema = z.object({
 });
 export type ExportRequest = z.infer<typeof exportRequestSchema>;
 
-export const SNAPSHOT_REASONS = ['AUTO', 'LAST_CLIENT', 'MANUAL', 'PRE_RESTORE', 'RESTORE', 'IMPORT'] as const;
+export const SNAPSHOT_REASONS = [
+  'AUTO',
+  'LAST_CLIENT',
+  'MANUAL',
+  'PRE_RESTORE',
+  'RESTORE',
+  'IMPORT',
+] as const;
 export type SnapshotReasonValue = (typeof SNAPSHOT_REASONS)[number];
 
 export const SNAPSHOT_REASON_LABELS: Record<SnapshotReasonValue, string> = {

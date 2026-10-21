@@ -26,7 +26,12 @@ export function readTimer(doc: Y.Doc): BoardTimer | null {
   const raw = doc.getMap<unknown>(Y_KEYS.meta).get(KEY);
   if (typeof raw !== 'object' || raw === null) return null;
   const t = raw as Partial<BoardTimer>;
-  if ((t.status !== 'running' && t.status !== 'paused') || typeof t.durationMs !== 'number' || typeof t.runId !== 'string') return null;
+  if (
+    (t.status !== 'running' && t.status !== 'paused') ||
+    typeof t.durationMs !== 'number' ||
+    typeof t.runId !== 'string'
+  )
+    return null;
   return {
     status: t.status,
     durationMs: t.durationMs,
@@ -50,7 +55,12 @@ function write(doc: Y.Doc, timer: BoardTimer | null): void {
   }, TIMER_ORIGIN);
 }
 
-export function startTimer(doc: Y.Doc, durationMs: number, startedByName: string, now = Date.now()): void {
+export function startTimer(
+  doc: Y.Doc,
+  durationMs: number,
+  startedByName: string,
+  now = Date.now(),
+): void {
   write(doc, {
     status: 'running',
     durationMs,
@@ -63,12 +73,14 @@ export function startTimer(doc: Y.Doc, durationMs: number, startedByName: string
 
 export function pauseTimer(doc: Y.Doc, now = Date.now()): void {
   const t = readTimer(doc);
-  if (t?.status === 'running') write(doc, { ...t, status: 'paused', remainingMs: remainingMs(t, now), endsAt: null });
+  if (t?.status === 'running')
+    write(doc, { ...t, status: 'paused', remainingMs: remainingMs(t, now), endsAt: null });
 }
 
 export function resumeTimer(doc: Y.Doc, now = Date.now()): void {
   const t = readTimer(doc);
-  if (t?.status === 'paused') write(doc, { ...t, status: 'running', endsAt: now + (t.remainingMs ?? 0), remainingMs: null });
+  if (t?.status === 'paused')
+    write(doc, { ...t, status: 'running', endsAt: now + (t.remainingMs ?? 0), remainingMs: null });
 }
 
 export function addTime(doc: Y.Doc, deltaMs: number, now = Date.now()): void {

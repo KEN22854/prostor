@@ -63,7 +63,12 @@ export function stepAt(timeMs: number): number {
  * Возвращает шаг, на котором код совпал, — по нему блокируется повторное
  * использование того же кода (защита от перехвата и повтора).
  */
-export function verifyTotp(secret: string, code: string, timeMs = Date.now(), window = 1): number | null {
+export function verifyTotp(
+  secret: string,
+  code: string,
+  timeMs = Date.now(),
+  window = 1,
+): number | null {
   const normalized = code.replace(/\s/g, '');
   if (!/^\d{6}$/.test(normalized)) return null;
   const current = stepAt(timeMs);
@@ -77,7 +82,13 @@ export function verifyTotp(secret: string, code: string, timeMs = Date.now(), wi
 /** URL для QR-кода приложения-аутентификатора */
 export function otpauthUrl(secret: string, account: string, issuer = 'Простор'): string {
   const label = encodeURIComponent(`${issuer}:${account}`);
-  const params = new URLSearchParams({ secret, issuer, algorithm: 'SHA1', digits: String(DIGITS), period: String(STEP_SEC) });
+  const params = new URLSearchParams({
+    secret,
+    issuer,
+    algorithm: 'SHA1',
+    digits: String(DIGITS),
+    period: String(STEP_SEC),
+  });
   return `otpauth://totp/${label}?${params.toString()}`;
 }
 

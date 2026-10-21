@@ -81,7 +81,9 @@ export function BoardCardMenu({ board }: { board: BoardListItem }) {
 
       <RenameBoardDialog board={board} open={renameOpen} onOpenChange={setRenameOpen} />
       <DeleteBoardDialog board={board} open={deleteOpen} onOpenChange={setDeleteOpen} />
-      {board.isOwner ? <MoveBoardDialog board={board} open={moveOpen} onOpenChange={setMoveOpen} /> : null}
+      {board.isOwner ? (
+        <MoveBoardDialog board={board} open={moveOpen} onOpenChange={setMoveOpen} />
+      ) : null}
     </>
   );
 }

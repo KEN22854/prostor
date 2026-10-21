@@ -45,7 +45,9 @@ export function commentNotificationEmail(params: {
   settingsUrl: string;
 }): EmailMessage {
   const action =
-    params.kind === 'MENTION' ? 'упомянул(а) вас в комментарии' : 'ответил(а) в обсуждении, где вы участвуете';
+    params.kind === 'MENTION'
+      ? 'упомянул(а) вас в комментарии'
+      : 'ответил(а) в обсуждении, где вы участвуете';
   return {
     to: params.to,
     subject:

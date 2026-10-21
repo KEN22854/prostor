@@ -8,7 +8,14 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { changePasswordSchema, type ChangePasswordInput } from '@prostor/shared';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ApiClientError, apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
@@ -42,14 +49,20 @@ export function ChangePasswordForm({ email, hasPassword }: ChangePasswordFormPro
       else toast.error(errorMessage(e, 'Не удалось сменить пароль'));
       return;
     }
-    const result = await signIn('credentials', { email, password: values.password, redirect: false });
+    const result = await signIn('credentials', {
+      email,
+      password: values.password,
+      redirect: false,
+    });
     if (!result || result.error) {
       toast.success('Пароль изменён. Войдите с новым паролем');
       router.push('/login');
       return;
     }
     form.reset();
-    toast.success(hasPassword ? 'Пароль изменён, другие устройства отключены' : 'Пароль установлен');
+    toast.success(
+      hasPassword ? 'Пароль изменён, другие устройства отключены' : 'Пароль установлен',
+    );
     router.refresh();
   }
 

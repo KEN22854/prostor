@@ -11,18 +11,20 @@ import { audit } from '@/services/audit';
  * Сам файл собирается в браузере (данные у клиента уже есть), но запрет
  * организации на экспорт и аудит должны быть на сервере, а не только в UI.
  */
-export const POST = withErrorHandling(async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
-  const { id } = await params;
-  const user = await getSessionUser();
-  const input = await parseJson(req, exportRequestSchema);
-  await requireBoardAccess(id, user?.id ?? null, 'export');
-  await audit({
-    action: 'board.export',
-    actorId: user?.id ?? null,
-    boardId: id,
-    metadata: input,
-    ip: clientIp(req.headers),
-    userAgent: req.headers.get('user-agent'),
-  });
-  return new NextResponse(null, { status: 204 });
-});
+export const POST = withErrorHandling(
+  async (req: Request, { params }: { params: Promise<{ id: string }> }) => {
+    const { id } = await params;
+    const user = await getSessionUser();
+    const input = await parseJson(req, exportRequestSchema);
+    await requireBoardAccess(id, user?.id ?? null, 'export');
+    await audit({
+      action: 'board.export',
+      actorId: user?.id ?? null,
+      boardId: id,
+      metadata: input,
+      ip: clientIp(req.headers),
+      userAgent: req.headers.get('user-agent'),
+    });
+    return new NextResponse(null, { status: 204 });
+  },
+);

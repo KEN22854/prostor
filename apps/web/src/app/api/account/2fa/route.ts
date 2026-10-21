@@ -13,7 +13,9 @@ const actionSchema = z.discriminatedUnion('action', [
 /** GET /api/account/2fa — включена ли 2FA и сколько резервных кодов осталось */
 export const GET = withErrorHandling(async () => {
   const user = await requireUser();
-  return NextResponse.json(await twoFactorStatus(user.id), { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json(await twoFactorStatus(user.id), {
+    headers: { 'Cache-Control': 'no-store' },
+  });
 });
 
 /**

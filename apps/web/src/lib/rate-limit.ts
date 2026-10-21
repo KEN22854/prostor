@@ -25,7 +25,9 @@ export async function rateLimit(
   const redisKey = `rl:${key}`;
   limit = Math.ceil(limit * env().RATE_LIMIT_MULTIPLIER);
   try {
-    const result = await (await readyRedis())
+    const result = await (
+      await readyRedis()
+    )
       .multi()
       .incr(redisKey)
       .pexpire(redisKey, windowSec * 1000, 'NX')

@@ -38,8 +38,13 @@ export default async function BoardPage({ params }: BoardPageProps) {
     return (
       <main className="flex h-dvh flex-col items-center justify-center gap-4 p-6 text-center">
         <p className="text-lg font-medium">Организация требует двухфакторную аутентификацию</p>
-        <p className="max-w-md text-sm text-muted-foreground">Включите 2FA в настройках аккаунта — после этого доска откроется.</p>
-        <Link href="/settings#security" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+        <p className="max-w-md text-sm text-muted-foreground">
+          Включите 2FA в настройках аккаунта — после этого доска откроется.
+        </p>
+        <Link
+          href="/settings#security"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
           Включить 2FA
         </Link>
       </main>

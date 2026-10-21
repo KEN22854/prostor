@@ -1,7 +1,13 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import * as Y from 'yjs';
-import { prisma, resolveBoardAccess, resolveFolderAccess, type BoardAccess, type Prisma } from '@prostor/db';
+import {
+  prisma,
+  resolveBoardAccess,
+  resolveFolderAccess,
+  type BoardAccess,
+  type Prisma,
+} from '@prostor/db';
 import {
   can,
   colorForUser,
@@ -45,7 +51,11 @@ export async function requireBoardAccess(
   }
   // Организация требует 2FA: без неё участник не работает с её досками (публичное чтение анонимом — можно)
   if (await orgRequires2faFor(access.orgId, userId)) {
-    throw new ApiError(403, 'two_factor_required', 'Организация требует двухфакторную аутентификацию. Включите её в настройках аккаунта');
+    throw new ApiError(
+      403,
+      'two_factor_required',
+      'Организация требует двухфакторную аутентификацию. Включите её в настройках аккаунта',
+    );
   }
   return access;
 }
@@ -57,8 +67,14 @@ export async function requireBoardAccess(
  */
 async function accessibleBoardsWhere(userId: string): Promise<Prisma.BoardWhereInput> {
   const [sharedFolders, adminOrgs] = await Promise.all([
-    prisma.folderMember.findMany({ where: { userId, folder: { deletedAt: null } }, select: { folder: { select: { path: true } } } }),
-    prisma.orgMember.findMany({ where: { userId, role: { in: ['OWNER', 'ADMIN'] } }, select: { orgId: true } }),
+    prisma.folderMember.findMany({
+      where: { userId, folder: { deletedAt: null } },
+      select: { folder: { select: { path: true } } },
+    }),
+    prisma.orgMember.findMany({
+      where: { userId, role: { in: ['OWNER', 'ADMIN'] } },
+      select: { orgId: true },
+    }),
   ]);
   return {
     deletedAt: null,
@@ -153,7 +169,8 @@ export async function createBoard(
     // Создавать в папке может редактор папки (с учётом наследования); доска попадает в её организацию
     const folder = await resolveFolderAccess(prisma, data.folderId, user.id);
     if (!folder) throw new ApiError(404, 'folder_not_found', 'Папка не найдена');
-    if (!hasRole(folder.role, 'EDITOR')) throw new ApiError(403, 'forbidden', 'Нет прав создавать доски в этой папке');
+    if (!hasRole(folder.role, 'EDITOR'))
+      throw new ApiError(403, 'forbidden', 'Нет прав создавать доски в этой папке');
     orgId = folder.orgId;
   } else if (data.orgId) {
     await requireOrgRole(data.orgId, user.id);
@@ -210,7 +227,11 @@ export async function updateBoard(
  * WS-сервер загрузит его как обычное состояние. Шаблон — обычные элементы,
  * участники сразу могут их править, а Ctrl+Z не «отменяет» шаблон.
  */
-async function seedTemplate(boardId: string, templateKey: BoardTemplateKey, userId: string): Promise<void> {
+async function seedTemplate(
+  boardId: string,
+  templateKey: BoardTemplateKey,
+  userId: string,
+): Promise<void> {
   const elements = buildTemplate(templateKey, userId);
   if (elements.length === 0) return;
   const doc = new Y.Doc();
@@ -218,7 +239,9 @@ async function seedTemplate(boardId: string, templateKey: BoardTemplateKey, user
   const state = new Uint8Array(Y.encodeStateAsUpdate(doc));
   doc.destroy();
   await prisma.$transaction([
-    prisma.boardDocument.create({ data: { boardId, state, sizeBytes: state.byteLength, version: 1 } }),
+    prisma.boardDocument.create({
+      data: { boardId, state, sizeBytes: state.byteLength, version: 1 },
+    }),
     prisma.board.update({ where: { id: boardId }, data: { objectCount: elements.length } }),
   ]);
 }

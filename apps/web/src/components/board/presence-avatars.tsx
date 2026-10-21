@@ -39,7 +39,9 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
     if (!awareness) return;
     const update = () => {
       setFollowers(countFollowers(awareness, self?.id));
-      setPresenting(Boolean((awareness.getLocalState() as { presenting?: unknown } | null)?.presenting));
+      setPresenting(
+        Boolean((awareness.getLocalState() as { presenting?: unknown } | null)?.presenting),
+      );
     };
     update();
     awareness.on('change', update);
@@ -67,13 +69,19 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
                 'relative flex size-8 items-center justify-center rounded-full border-2 border-background text-xs font-semibold text-white outline-none ring-offset-2 focus-visible:ring-2',
                 follow?.userId === u.id && 'ring-2 ring-offset-1',
               )}
-              style={{ backgroundColor: u.color, ...(follow?.userId === u.id ? { ['--tw-ring-color' as string]: u.color } : {}) }}
+              style={{
+                backgroundColor: u.color,
+                ...(follow?.userId === u.id ? { ['--tw-ring-color' as string]: u.color } : {}),
+              }}
               aria-label={`${u.name}${u.isSelf ? ' (вы)' : ''}`}
               data-testid="presence-avatar"
             >
               {initials(u.name)}
               {u.isSelf && presenting ? (
-                <span className="absolute -bottom-1 -right-1 rounded-full bg-primary p-0.5" aria-hidden>
+                <span
+                  className="absolute -bottom-1 -right-1 rounded-full bg-primary p-0.5"
+                  aria-hidden
+                >
                   <Megaphone className="size-2.5" />
                 </span>
               ) : null}
@@ -83,7 +91,11 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
             <DropdownMenuLabel>
               {u.name}
               {u.isSelf ? ' (вы)' : ''}
-              {u.connections > 1 ? <span className="block text-xs font-normal text-muted-foreground">{u.connections} вкладки</span> : null}
+              {u.connections > 1 ? (
+                <span className="block text-xs font-normal text-muted-foreground">
+                  {u.connections} вкладки
+                </span>
+              ) : null}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {u.isSelf ? (
@@ -94,7 +106,8 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
                 </DropdownMenuItem>
                 {followers > 0 ? (
                   <p className="px-2 py-1 text-xs text-muted-foreground">
-                    За вами следят: {followers} {plural(followers, ['человек', 'человека', 'человек'])}
+                    За вами следят: {followers}{' '}
+                    {plural(followers, ['человек', 'человека', 'человек'])}
                   </p>
                 ) : null}
               </>
@@ -103,7 +116,11 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
                 <Eye /> Перестать следовать
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onSelect={() => setFollow({ userId: u.id, name: u.name, color: u.color, auto: false })}>
+              <DropdownMenuItem
+                onSelect={() =>
+                  setFollow({ userId: u.id, name: u.name, color: u.color, auto: false })
+                }
+              >
                 <Eye /> Следовать за {u.name}
               </DropdownMenuItem>
             )}

@@ -13,7 +13,10 @@ interface Ctx {
 export const GET = withErrorHandling(async (_req: Request, { params }: Ctx) => {
   const { id } = await params;
   const user = await requireUser();
-  return NextResponse.json({ versions: await listVersions(user, id) }, { headers: { 'Cache-Control': 'no-store' } });
+  return NextResponse.json(
+    { versions: await listVersions(user, id) },
+    { headers: { 'Cache-Control': 'no-store' } },
+  );
 });
 
 /**
@@ -30,7 +33,8 @@ export const POST = withErrorHandling(async (req: Request, { params }: Ctx) => {
   });
   if (!query.success) throw new ApiError(400, 'validation_error', 'Некорректные параметры');
   const length = Number(req.headers.get('content-length') ?? 0);
-  if (length > LIMITS.maxYjsUpdateBytes) throw new ApiError(413, 'too_large', 'Доска слишком большая');
+  if (length > LIMITS.maxYjsUpdateBytes)
+    throw new ApiError(413, 'too_large', 'Доска слишком большая');
   const update = new Uint8Array(await req.arrayBuffer());
   const version = await createVersion(
     user,

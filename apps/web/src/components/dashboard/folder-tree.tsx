@@ -1,6 +1,14 @@
 'use client';
 
-import { ChevronRight, Folder, FolderOpen, MoreHorizontal, Pencil, Trash2, Users } from 'lucide-react';
+import {
+  ChevronRight,
+  Folder,
+  FolderOpen,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -47,11 +55,19 @@ export function FolderTree({ folders, activeId, baseQuery }: FolderTreeProps) {
   const tree = useMemo(() => buildTree(folders), [folders]);
   // Раскрыты предки активной папки
   const activePath = folders.find((f) => f.id === activeId)?.path ?? '';
-  if (tree.length === 0) return <p className="px-2 py-1 text-xs text-muted-foreground">Папок пока нет</p>;
+  if (tree.length === 0)
+    return <p className="px-2 py-1 text-xs text-muted-foreground">Папок пока нет</p>;
   return (
     <ul className="space-y-0.5" role="tree" aria-label="Папки">
       {tree.map((node) => (
-        <FolderItem key={node.id} node={node} depth={0} activeId={activeId} activePath={activePath} baseQuery={baseQuery} />
+        <FolderItem
+          key={node.id}
+          node={node}
+          depth={0}
+          activeId={activeId}
+          activePath={activePath}
+          baseQuery={baseQuery}
+        />
       ))}
     </ul>
   );
@@ -76,7 +92,11 @@ function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItem
   const isOwner = node.role === 'OWNER';
 
   async function rename() {
-    const name = await ask({ title: 'Переименовать папку', label: 'Название папки', initial: node.name });
+    const name = await ask({
+      title: 'Переименовать папку',
+      label: 'Название папки',
+      initial: node.name,
+    });
     if (!name || name === node.name) return;
     try {
       await apiRequest(`/api/folders/${node.id}`, { method: 'PATCH', body: { name } });
@@ -87,7 +107,12 @@ function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItem
   }
 
   async function remove() {
-    if (!window.confirm(`Удалить папку «${node.name}» и вложенные папки? Доски не удалятся — переедут в корень.`)) return;
+    if (
+      !window.confirm(
+        `Удалить папку «${node.name}» и вложенные папки? Доски не удалятся — переедут в корень.`,
+      )
+    )
+      return;
     try {
       await apiRequest(`/api/folders/${node.id}`, { method: 'DELETE' });
       toast.success('Папка удалена');
@@ -99,28 +124,49 @@ function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItem
   }
 
   return (
-    <li role="treeitem" aria-expanded={node.children.length > 0 ? open : undefined} aria-selected={active}>
+    <li
+      role="treeitem"
+      aria-expanded={node.children.length > 0 ? open : undefined}
+      aria-selected={active}
+    >
       <div
-        className={cn('group flex items-center gap-1 rounded-md pr-1 text-sm hover:bg-muted', active && 'bg-accent font-medium text-accent-foreground')}
+        className={cn(
+          'group flex items-center gap-1 rounded-md pr-1 text-sm hover:bg-muted',
+          active && 'bg-accent font-medium text-accent-foreground',
+        )}
         style={{ paddingLeft: depth * 12 + 4 }}
       >
         <button
           type="button"
-          className={cn('rounded p-0.5 text-muted-foreground', node.children.length === 0 && 'invisible')}
+          className={cn(
+            'rounded p-0.5 text-muted-foreground',
+            node.children.length === 0 && 'invisible',
+          )}
           aria-label={open ? 'Свернуть' : 'Развернуть'}
           onClick={() => setOpen(!open)}
         >
           <ChevronRight className={cn('size-3.5 transition-transform', open && 'rotate-90')} />
         </button>
         <Link href={href} className="flex min-w-0 flex-1 items-center gap-1.5 py-1">
-          {active || open ? <FolderOpen className="size-4 shrink-0" /> : <Folder className="size-4 shrink-0" />}
+          {active || open ? (
+            <FolderOpen className="size-4 shrink-0" />
+          ) : (
+            <Folder className="size-4 shrink-0" />
+          )}
           <span className="truncate">{node.name}</span>
-          {node.boardCount > 0 ? <span className="ml-auto text-xs text-muted-foreground">{node.boardCount}</span> : null}
+          {node.boardCount > 0 ? (
+            <span className="ml-auto text-xs text-muted-foreground">{node.boardCount}</span>
+          ) : null}
         </Link>
         {canEdit ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-6 opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label={`Действия с папкой «${node.name}»`}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-6 opacity-0 focus:opacity-100 group-hover:opacity-100"
+                aria-label={`Действия с папкой «${node.name}»`}
+              >
                 <MoreHorizontal className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -146,12 +192,25 @@ function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItem
       {open && node.children.length > 0 ? (
         <ul role="group">
           {node.children.map((child) => (
-            <FolderItem key={child.id} node={child} depth={depth + 1} activeId={activeId} activePath={activePath} baseQuery={baseQuery} />
+            <FolderItem
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              activeId={activeId}
+              activePath={activePath}
+              baseQuery={baseQuery}
+            />
           ))}
         </ul>
       ) : null}
       {dialog}
-      <FolderShareDialog folderId={node.id} folderName={node.name} canManage={isOwner} open={shareOpen} onOpenChange={setShareOpen} />
+      <FolderShareDialog
+        folderId={node.id}
+        folderName={node.name}
+        canManage={isOwner}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
     </li>
   );
 }

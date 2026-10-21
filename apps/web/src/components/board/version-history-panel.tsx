@@ -30,7 +30,13 @@ function dayLabel(date: Date): string {
 }
 
 /** Боковая панель истории версий: группы по дням, ручное сохранение */
-export function VersionHistoryPanel({ boardId, activeId, onPreview, onSave, refreshKey }: VersionHistoryPanelProps) {
+export function VersionHistoryPanel({
+  boardId,
+  activeId,
+  onPreview,
+  onSave,
+  refreshKey,
+}: VersionHistoryPanelProps) {
   const open = useCanvasStore((s) => s.panel === 'history');
   const setPanel = useCanvasStore((s) => s.setPanel);
   const [versions, setVersions] = useState<BoardVersionDto[] | null>(null);
@@ -39,7 +45,9 @@ export function VersionHistoryPanel({ boardId, activeId, onPreview, onSave, refr
 
   const load = useCallback(async () => {
     try {
-      const data = await apiRequest<{ versions: BoardVersionDto[] }>(`/api/boards/${boardId}/versions`);
+      const data = await apiRequest<{ versions: BoardVersionDto[] }>(
+        `/api/boards/${boardId}/versions`,
+      );
       setVersions(data.versions);
     } catch (e: unknown) {
       toast.error(errorMessage(e, 'Не удалось загрузить историю'));
@@ -79,7 +87,13 @@ export function VersionHistoryPanel({ boardId, activeId, onPreview, onSave, refr
         <h2 className="flex items-center gap-2 font-medium">
           <History className="size-4" /> История версий
         </h2>
-        <Button variant="ghost" size="icon" className="size-8" aria-label="Закрыть историю" onClick={() => setPanel(null)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          aria-label="Закрыть историю"
+          onClick={() => setPanel(null)}
+        >
           <X />
         </Button>
       </div>
@@ -111,7 +125,8 @@ export function VersionHistoryPanel({ boardId, activeId, onPreview, onSave, refr
           </div>
         ) : versions.length === 0 ? (
           <p className="p-4 text-center text-sm text-muted-foreground">
-            Версий пока нет. Они создаются автоматически во время работы, или сохраните текущую вручную.
+            Версий пока нет. Они создаются автоматически во время работы, или сохраните текущую
+            вручную.
           </p>
         ) : (
           Array.from(groups.entries()).map(([day, items]) => (
@@ -130,7 +145,9 @@ export function VersionHistoryPanel({ boardId, activeId, onPreview, onSave, refr
                       data-testid="version-item"
                     >
                       <span className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-medium">{v.label ?? SNAPSHOT_REASON_LABELS[v.reason]}</span>
+                        <span className="truncate font-medium">
+                          {v.label ?? SNAPSHOT_REASON_LABELS[v.reason]}
+                        </span>
                         <span className="shrink-0 text-xs text-muted-foreground">
                           {format(new Date(v.createdAt), 'HH:mm', { locale: ru })}
                         </span>
@@ -138,7 +155,11 @@ export function VersionHistoryPanel({ boardId, activeId, onPreview, onSave, refr
                       <span className="block truncate text-xs text-muted-foreground">
                         {v.label ? `${SNAPSHOT_REASON_LABELS[v.reason]} · ` : ''}
                         {v.objectCount} {plural(v.objectCount, ['объект', 'объекта', 'объектов'])}
-                        {v.createdByName ? ` · ${v.createdByName}` : v.authorNames.length ? ` · ${v.authorNames.join(', ')}` : ''}
+                        {v.createdByName
+                          ? ` · ${v.createdByName}`
+                          : v.authorNames.length
+                            ? ` · ${v.authorNames.join(', ')}`
+                            : ''}
                       </span>
                     </button>
                   </li>

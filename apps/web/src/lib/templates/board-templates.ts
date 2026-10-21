@@ -39,7 +39,11 @@ function columns(
 ): void {
   titles.forEach((col, i) => {
     const x = i * (opts.width + opts.gap);
-    const frameId = b.frame({ x, y: 0, width: opts.width, height: opts.height }, col.title, col.fill);
+    const frameId = b.frame(
+      { x, y: 0, width: opts.width, height: opts.height },
+      col.title,
+      col.fill,
+    );
     col.stickies.forEach((text, j) => {
       const sx = x + 40 + (j % 2) * 200;
       const sy = 40 + Math.floor(j / 2) * 200;
@@ -52,7 +56,11 @@ function kanban(b: TemplateBuilder): void {
   columns(
     b,
     [
-      { title: 'Бэклог', fill: '#f8fafc', stickies: ['Описать требования', 'Собрать обратную связь'] },
+      {
+        title: 'Бэклог',
+        fill: '#f8fafc',
+        stickies: ['Описать требования', 'Собрать обратную связь'],
+      },
       { title: 'К работе', fill: '#f8fafc', stickies: ['Макет главной страницы'] },
       { title: 'В работе', fill: '#eff6ff', stickies: ['API авторизации', 'Тесты оплаты'] },
       { title: 'Готово', fill: '#f0fdf4', stickies: ['Настроить CI'] },
@@ -66,7 +74,12 @@ function retro(b: TemplateBuilder): void {
   const cols = [
     { title: 'Что было хорошо', fill: '#f0fdf4', sticky: GREEN, hint: 'Релиз прошёл без откатов' },
     { title: 'Что улучшить', fill: '#fff7ed', sticky: ORANGE, hint: 'Долгие код-ревью' },
-    { title: 'Действия', fill: '#eff6ff', sticky: BLUE, hint: 'Ревью в течение дня — ответственный: …' },
+    {
+      title: 'Действия',
+      fill: '#eff6ff',
+      sticky: BLUE,
+      hint: 'Ревью в течение дня — ответственный: …',
+    },
   ];
   cols.forEach((col, i) => {
     const x = i * 520;
@@ -91,19 +104,36 @@ function flowchart(b: TemplateBuilder): void {
   b.arrow(side.bottom(start), side.top(step));
   b.arrow(side.bottom(step), side.top(decision));
   // Ортогональные связи: из ромба вбок, затем вниз
-  b.arrow(side.left(decision), side.top(yes), { label: 'Да', via: [{ x: side.top(yes).x, y: side.left(decision).y }] });
-  b.arrow(side.right(decision), side.top(no), { label: 'Нет', via: [{ x: side.top(no).x, y: side.right(decision).y }] });
-  b.arrow(side.bottom(yes), side.left(end), { via: [{ x: side.bottom(yes).x, y: side.left(end).y }] });
+  b.arrow(side.left(decision), side.top(yes), {
+    label: 'Да',
+    via: [{ x: side.top(yes).x, y: side.left(decision).y }],
+  });
+  b.arrow(side.right(decision), side.top(no), {
+    label: 'Нет',
+    via: [{ x: side.top(no).x, y: side.right(decision).y }],
+  });
+  b.arrow(side.bottom(yes), side.left(end), {
+    via: [{ x: side.bottom(yes).x, y: side.left(end).y }],
+  });
   // Возврат на уточнение — в обход справа
   const back = side.right(no).x + 60;
-  b.arrow(side.right(no), side.right(step), { via: [{ x: back, y: side.right(no).y }, { x: back, y: side.right(step).y }] });
+  b.arrow(side.right(no), side.right(step), {
+    via: [
+      { x: back, y: side.right(no).y },
+      { x: back, y: side.right(step).y },
+    ],
+  });
 }
 
 function bpmn(b: TemplateBuilder): void {
   const lanes = ['Клиент', 'Менеджер', 'Склад'];
   const laneH = 260;
   lanes.forEach((lane, i) => {
-    b.frame({ x: 0, y: i * (laneH + 10), width: 1500, height: laneH }, lane, i % 2 ? '#f8fafc' : '#ffffff');
+    b.frame(
+      { x: 0, y: i * (laneH + 10), width: 1500, height: laneH },
+      lane,
+      i % 2 ? '#f8fafc' : '#ffffff',
+    );
   });
   const mid = (lane: number) => lane * (laneH + 10) + laneH / 2;
   const startEv: Rect = { x: 60, y: mid(0) - 30, width: 60, height: 60 };
@@ -122,7 +152,9 @@ function bpmn(b: TemplateBuilder): void {
   b.shape(endEv, 'ellipse', '', { fill: PINK, stroke: '#e5484d' });
   // BPMN-связи — ортогональные ломаные
   b.arrow(side.right(startEv), side.left(order));
-  b.arrow(side.bottom(order), side.left(check), { via: [{ x: side.bottom(order).x, y: side.left(check).y }] });
+  b.arrow(side.bottom(order), side.left(check), {
+    via: [{ x: side.bottom(order).x, y: side.left(check).y }],
+  });
   b.arrow(side.right(check), side.left(gateway));
   b.arrow(side.bottom(gateway), side.left(reserve), {
     label: 'да',
@@ -131,7 +163,9 @@ function bpmn(b: TemplateBuilder): void {
   });
   b.arrow(side.right(gateway), side.left(reject), { label: 'нет' });
   const endX = side.bottom(endEv).x;
-  b.arrow(side.right(reserve), side.bottom(endEv), { via: [{ x: endX, y: side.right(reserve).y }] });
+  b.arrow(side.right(reserve), side.bottom(endEv), {
+    via: [{ x: endX, y: side.right(reserve).y }],
+  });
   // Обе ветки сходятся в завершающем событии по общей вертикали
   b.arrow(side.right(reject), side.bottom(endEv), { via: [{ x: endX, y: side.right(reject).y }] });
 }
@@ -158,7 +192,10 @@ function storyMap(b: TemplateBuilder): void {
     ['Доставка', 'Отзыв'],
   ];
   const colW = 240;
-  const frameId = b.frame({ x: 0, y: 0, width: activities.length * colW + 200, height: 760 }, 'Карта пользовательских историй');
+  const frameId = b.frame(
+    { x: 0, y: 0, width: activities.length * colW + 200, height: 760 },
+    'Карта пользовательских историй',
+  );
   b.text(20, 60, 'Активности', { fontSize: 16, color: '#64748b', width: 160, frameId });
   b.text(20, 300, 'Релиз 1', { fontSize: 16, bold: true, width: 160, frameId });
   b.text(20, 560, 'Релиз 2', { fontSize: 16, bold: true, width: 160, frameId });

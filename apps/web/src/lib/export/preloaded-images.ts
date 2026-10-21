@@ -8,7 +8,9 @@ import { assetUrl, type BoardElement } from '@prostor/shared';
  * и сразу снимается в canvas — ждать, пока каждая ImageShape догрузит файл
  * через use-image, нельзя, поэтому ImageShape берёт готовый HTMLImageElement отсюда.
  */
-export const PreloadedImagesContext = createContext<ReadonlyMap<string, HTMLImageElement>>(new Map());
+export const PreloadedImagesContext = createContext<ReadonlyMap<string, HTMLImageElement>>(
+  new Map(),
+);
 
 function loadImage(url: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -19,7 +21,9 @@ function loadImage(url: string): Promise<HTMLImageElement | null> {
   });
 }
 
-export async function preloadImages(elements: readonly BoardElement[]): Promise<Map<string, HTMLImageElement>> {
+export async function preloadImages(
+  elements: readonly BoardElement[],
+): Promise<Map<string, HTMLImageElement>> {
   const ids = new Set<string>();
   for (const el of elements) if (el.type === 'image' && 'assetId' in el) ids.add(el.assetId);
   const entries = await Promise.all(
@@ -31,7 +35,9 @@ export async function preloadImages(elements: readonly BoardElement[]): Promise<
 }
 
 /** data: URL для SVG (внешние ссылки в SVG-файле не откроются без входа в Простор) */
-export async function imagesAsDataUrls(elements: readonly BoardElement[]): Promise<Map<string, string>> {
+export async function imagesAsDataUrls(
+  elements: readonly BoardElement[],
+): Promise<Map<string, string>> {
   const ids = new Set<string>();
   for (const el of elements) if (el.type === 'image' && 'assetId' in el) ids.add(el.assetId);
   const map = new Map<string, string>();

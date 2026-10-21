@@ -36,7 +36,8 @@ export async function notifyAboutComment(event: CommentEvent): Promise<void> {
       select: { authorId: true },
       distinct: ['authorId'],
     });
-    for (const p of participants) if (!recipients.has(p.authorId)) recipients.set(p.authorId, 'COMMENT_REPLY');
+    for (const p of participants)
+      if (!recipients.has(p.authorId)) recipients.set(p.authorId, 'COMMENT_REPLY');
   }
   recipients.delete(event.actor.id);
   if (recipients.size === 0) return;
@@ -58,13 +59,19 @@ export async function notifyAboutComment(event: CommentEvent): Promise<void> {
   await Promise.all(
     created.map((n) =>
       emailQueue()
-        .add('notification', { kind: 'notification', notificationId: n.id }, { delay: env().NOTIFICATION_EMAIL_DELAY_MS, jobId: `notification-${n.id}` })
+        .add(
+          'notification',
+          { kind: 'notification', notificationId: n.id },
+          { delay: env().NOTIFICATION_EMAIL_DELAY_MS, jobId: `notification-${n.id}` },
+        )
         .catch((error: unknown) => console.error('[notifications] enqueue failed', error)),
     ),
   );
 }
 
-export async function listNotifications(userId: string): Promise<{ items: NotificationDto[]; unread: number }> {
+export async function listNotifications(
+  userId: string,
+): Promise<{ items: NotificationDto[]; unread: number }> {
   const [rows, unread] = await Promise.all([
     prisma.notification.findMany({
       where: { userId },
@@ -78,7 +85,11 @@ export async function listNotifications(userId: string): Promise<{ items: Notifi
   const parsed = rows.map((r) => {
     const raw = r.payload as Record<string, unknown> | null;
     const comment = commentNotificationPayloadSchema.safeParse(raw);
-    const boardId = comment.success ? comment.data.boardId : typeof raw?.boardId === 'string' ? raw.boardId : null;
+    const boardId = comment.success
+      ? comment.data.boardId
+      : typeof raw?.boardId === 'string'
+        ? raw.boardId
+        : null;
     if (boardId) boardIds.add(boardId);
     return { row: r, comment: comment.success ? comment.data : null, boardId, raw };
   });

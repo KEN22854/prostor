@@ -28,8 +28,13 @@ self.onmessage = (event: MessageEvent<PdfWorkerRequest>) => {
     }
     if (!pdf) throw new Error('Нет страниц');
     const out = pdf.output('arraybuffer');
-    (self as unknown as Worker).postMessage({ ok: true, pdf: out } satisfies PdfWorkerResponse, [out]);
+    (self as unknown as Worker).postMessage({ ok: true, pdf: out } satisfies PdfWorkerResponse, [
+      out,
+    ]);
   } catch (error: unknown) {
-    (self as unknown as Worker).postMessage({ ok: false, error: error instanceof Error ? error.message : String(error) } satisfies PdfWorkerResponse);
+    (self as unknown as Worker).postMessage({
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    } satisfies PdfWorkerResponse);
   }
 };

@@ -64,7 +64,9 @@ export async function registerUser(
       ...meta,
     });
     // Почта корпоративного домена — сразу в организацию (Organization.allowedEmailDomains)
-    await autoJoinByDomain(user.id, input.email).catch((e: unknown) => console.error('[account] auto-join failed', e));
+    await autoJoinByDomain(user.id, input.email).catch((e: unknown) =>
+      console.error('[account] auto-join failed', e),
+    );
     return user;
   } catch (error: unknown) {
     // Гонка двух одновременных регистраций с одним email → уникальный индекс

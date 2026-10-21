@@ -8,7 +8,14 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { LIMITS } from '@prostor/shared';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { apiRequest } from '@/lib/fetcher';
@@ -85,7 +92,9 @@ export function BoardDetailsForm({ boardId, title, description, canEdit }: Board
             Сохранить
           </Button>
         ) : (
-          <p className="text-xs text-muted-foreground">Изменять название могут редакторы и владелец.</p>
+          <p className="text-xs text-muted-foreground">
+            Изменять название могут редакторы и владелец.
+          </p>
         )}
       </form>
     </Form>

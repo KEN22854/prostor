@@ -8,8 +8,10 @@ import {
   buildPath,
   buildShape,
   buildSticky,
+  buildTable,
   buildText,
 } from '@/lib/canvas/element-factory';
+import { cellAt } from '@/lib/canvas/table';
 import { anchorAt, isBindable, lineEnds, routeLine } from '@/lib/canvas/connectors';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import type { LaserRenderer } from '@/lib/canvas/laser-renderer';
@@ -127,6 +129,10 @@ export class InteractionController {
 
   pointerDown(e: PointerEvent, world: Point, screen: Point): boolean {
     if (e.button !== 0) return false;
+    // Клик по холсту завершает правку ячейки таблицы (холст не забирает фокус сам)
+    if (state().editingCell && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     const { tool, toolOptions } = state();
     const actions = this.deps.actions();
     const user = this.deps.user();
@@ -162,6 +168,17 @@ export class InteractionController {
         finishTool();
         state().select([el.id]);
         state().setEditing(el.id);
+        return true;
+      }
+      case 'table': {
+        if (!actions?.canEdit || !user) return false;
+        const p = snapPointToGrid(world.x, world.y, state().snapToGrid ? CANVAS.gridSize : null);
+        const draft = buildTable({ x: 0, y: 0, userId: user.id, zIndex: this.deps.nextZIndex() });
+        const table = { ...draft, x: p.x - draft.width / 2, y: p.y - draft.height / 2 };
+        actions.create([table]);
+        finishTool();
+        state().select([table.id]);
+        state().setEditingCell({ id: table.id, row: 0, col: 0 });
         return true;
       }
       case 'shape':
@@ -285,6 +302,11 @@ export class InteractionController {
     const selection = state().selection;
     if (hit.groupId && selection.length > 1) {
       state().select([hit.id]);
+    } else if (hit.type === 'table' && actions?.canEdit && !hit.locked) {
+      // Двойной клик по таблице — редактирование ячейки под курсором
+      const cell = cellAt(hit, world);
+      state().select([hit.id]);
+      if (cell) state().setEditingCell({ id: hit.id, ...cell });
     } else if (EDITABLE.has(hit.type) && actions?.canEdit && !hit.locked) {
       state().select([hit.id]);
       state().setEditing(hit.id);

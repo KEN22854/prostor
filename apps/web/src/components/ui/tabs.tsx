@@ -12,7 +12,10 @@ export const TabsList = forwardRef<
 >(({ className, ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
-    className={cn('inline-flex h-9 items-center gap-1 rounded-lg bg-muted p-1 text-muted-foreground', className)}
+    className={cn(
+      'inline-flex h-9 items-center gap-1 rounded-lg bg-muted p-1 text-muted-foreground',
+      className,
+    )}
     {...props}
   />
 ));
@@ -37,6 +40,10 @@ export const TabsContent = forwardRef<
   ElementRef<typeof TabsPrimitive.Content>,
   ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
 >(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content ref={ref} className={cn('mt-4 focus-visible:outline-none', className)} {...props} />
+  <TabsPrimitive.Content
+    ref={ref}
+    className={cn('mt-4 focus-visible:outline-none', className)}
+    {...props}
+  />
 ));
 TabsContent.displayName = 'TabsContent';

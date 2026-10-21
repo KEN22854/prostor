@@ -69,7 +69,10 @@ function toDto(row: CommentRow, viewer: Viewer): CommentDto {
 }
 
 /** Треды доски с ответами; удалённые комментарии не отдаём */
-export async function listThreads(boardId: string, userId: string | null): Promise<CommentThreadDto[]> {
+export async function listThreads(
+  boardId: string,
+  userId: string | null,
+): Promise<CommentThreadDto[]> {
   const access = await requireBoardAccess(boardId, userId, 'view');
   const rows = await prisma.comment.findMany({
     where: { boardId, deletedAt: null },
@@ -99,15 +102,22 @@ export async function listThreads(boardId: string, userId: string | null): Promi
 }
 
 async function loadComment(commentId: string): Promise<CommentRow> {
-  const row = await prisma.comment.findFirst({ where: { id: commentId, deletedAt: null }, select: commentSelect });
+  const row = await prisma.comment.findFirst({
+    where: { id: commentId, deletedAt: null },
+    select: commentSelect,
+  });
   if (!row) throw new ApiError(404, 'not_found', 'Комментарий не найден');
   return row;
 }
 
 /** Упомянуть можно только тех, у кого есть доступ к доске (иначе — утечка содержимого) */
 async function validMentions(boardId: string, body: string, actorId: string): Promise<string[]> {
-  const ids = parseMentions(body).filter((id) => id !== actorId).slice(0, MAX_MENTIONS);
-  const checks = await Promise.all(ids.map(async (id) => ((await resolveBoardAccess(prisma, boardId, id)) ? id : null)));
+  const ids = parseMentions(body)
+    .filter((id) => id !== actorId)
+    .slice(0, MAX_MENTIONS);
+  const checks = await Promise.all(
+    ids.map(async (id) => ((await resolveBoardAccess(prisma, boardId, id)) ? id : null)),
+  );
   return checks.filter((id): id is string => id !== null);
 }
 
@@ -115,7 +125,11 @@ function changed(boardId: string, threadId: string): Promise<void> {
   return publishControl({ type: 'comments-changed', boardId, threadId });
 }
 
-export async function createComment(user: SessionUser, boardId: string, input: CreateCommentInput): Promise<{ id: string; threadId: string }> {
+export async function createComment(
+  user: SessionUser,
+  boardId: string,
+  input: CreateCommentInput,
+): Promise<{ id: string; threadId: string }> {
   await requireBoardAccess(boardId, user.id, 'comment');
   let threadId: string | null = null;
   if (input.parentId) {
@@ -135,7 +149,9 @@ export async function createComment(user: SessionUser, boardId: string, input: C
       body: input.body,
       mentions,
       parentId: threadId,
-      ...(threadId ? {} : { elementId: input.elementId ?? null, x: input.x ?? null, y: input.y ?? null }),
+      ...(threadId
+        ? {}
+        : { elementId: input.elementId ?? null, x: input.x ?? null, y: input.y ?? null }),
     },
     select: { id: true },
   });
@@ -154,12 +170,20 @@ export async function createComment(user: SessionUser, boardId: string, input: C
   return { id: comment.id, threadId: root };
 }
 
-export async function updateComment(user: SessionUser, commentId: string, body: string): Promise<void> {
+export async function updateComment(
+  user: SessionUser,
+  commentId: string,
+  body: string,
+): Promise<void> {
   const row = await loadComment(commentId);
   await requireBoardAccess(row.boardId, user.id, 'comment');
-  if (row.authorId !== user.id) throw new ApiError(403, 'forbidden', 'Можно править только свои комментарии');
+  if (row.authorId !== user.id)
+    throw new ApiError(403, 'forbidden', 'Можно править только свои комментарии');
   const mentions = await validMentions(row.boardId, body, user.id);
-  await prisma.comment.update({ where: { id: commentId }, data: { body, mentions, editedAt: new Date() } });
+  await prisma.comment.update({
+    where: { id: commentId },
+    data: { body, mentions, editedAt: new Date() },
+  });
   await changed(row.boardId, row.parentId ?? row.id);
 }
 
@@ -178,18 +202,29 @@ export async function deleteComment(user: SessionUser, commentId: string): Promi
   await changed(row.boardId, row.parentId ?? row.id);
 }
 
-export async function resolveThread(user: SessionUser, commentId: string, resolved: boolean): Promise<void> {
+export async function resolveThread(
+  user: SessionUser,
+  commentId: string,
+  resolved: boolean,
+): Promise<void> {
   const row = await loadComment(commentId);
   if (row.parentId) throw new ApiError(400, 'not_thread', 'Решённым отмечается тред целиком');
   const access = await requireBoardAccess(row.boardId, user.id, 'comment');
   if (row.authorId !== user.id && !can(access.role, 'edit', access.policy)) {
     throw new ApiError(403, 'forbidden', 'Закрыть тред может автор или редактор');
   }
-  await prisma.comment.update({ where: { id: row.id }, data: { resolvedAt: resolved ? new Date() : null } });
+  await prisma.comment.update({
+    where: { id: row.id },
+    data: { resolvedAt: resolved ? new Date() : null },
+  });
   await changed(row.boardId, row.id);
 }
 
-export async function toggleReaction(user: SessionUser, commentId: string, emoji: string): Promise<void> {
+export async function toggleReaction(
+  user: SessionUser,
+  commentId: string,
+  emoji: string,
+): Promise<void> {
   const row = await loadComment(commentId);
   await requireBoardAccess(row.boardId, user.id, 'comment');
   const existing = await prisma.reaction.findUnique({
@@ -197,6 +232,9 @@ export async function toggleReaction(user: SessionUser, commentId: string, emoji
     select: { id: true },
   });
   if (existing) await prisma.reaction.delete({ where: { id: existing.id } });
-  else await prisma.reaction.create({ data: { commentId, userId: user.id, emoji } }).catch(() => undefined);
+  else
+    await prisma.reaction
+      .create({ data: { commentId, userId: user.id, emoji } })
+      .catch(() => undefined);
   await changed(row.boardId, row.parentId ?? row.id);
 }

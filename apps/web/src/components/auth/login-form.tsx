@@ -123,7 +123,9 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">Нет доступа к телефону — введите один из резервных кодов.</p>
+            <p className="text-xs text-muted-foreground">
+              Нет доступа к телефону — введите один из резервных кодов.
+            </p>
           </div>
         ) : null}
 

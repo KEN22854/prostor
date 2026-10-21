@@ -22,8 +22,15 @@ const base: RichLayoutOptions = {
 
 describe('layoutRich', () => {
   it('переносит по словам через границы фрагментов и сохраняет стили', () => {
-    const lines = layoutRich([{ runs: [{ text: 'один ' }, { text: 'два', bold: true }, { text: ' три четыре' }] }], base, measure);
-    expect(lines.map((l) => l.segments.map((s) => s.text).join(''))).toEqual(['один два', 'три четыре']);
+    const lines = layoutRich(
+      [{ runs: [{ text: 'один ' }, { text: 'два', bold: true }, { text: ' три четыре' }] }],
+      base,
+      measure,
+    );
+    expect(lines.map((l) => l.segments.map((s) => s.text).join(''))).toEqual([
+      'один два',
+      'три четыре',
+    ]);
     expect(lines[0]?.segments.map((s) => [s.text, s.bold, s.x])).toEqual([
       ['один ', false, 0],
       ['два', true, 50],

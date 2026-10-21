@@ -17,7 +17,8 @@ export function parseMentions(body: string): string[] {
   return Array.from(ids);
 }
 
-export type CommentToken = { kind: 'text'; text: string } | { kind: 'mention'; name: string; userId: string };
+export type CommentToken =
+  { kind: 'text'; text: string } | { kind: 'mention'; name: string; userId: string };
 
 /** Разбор тела для отображения: текст и упоминания (без HTML — безопасно для React) */
 export function tokenizeComment(body: string): CommentToken[] {
@@ -50,9 +51,12 @@ export const createCommentSchema = z
     x: coord.optional(),
     y: coord.optional(),
   })
-  .refine((v) => Boolean(v.parentId) || Boolean(v.elementId) || (v.x !== undefined && v.y !== undefined), {
-    message: 'Укажите объект или точку на холсте',
-  });
+  .refine(
+    (v) => Boolean(v.parentId) || Boolean(v.elementId) || (v.x !== undefined && v.y !== undefined),
+    {
+      message: 'Укажите объект или точку на холсте',
+    },
+  );
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 
 export const updateCommentSchema = z.object({ body: bodySchema });
@@ -88,7 +92,13 @@ export interface CommentThreadDto extends CommentDto {
   replies: CommentDto[];
 }
 
-export const NOTIFICATION_TYPES = ['MENTION', 'COMMENT_REPLY', 'INVITE', 'BOARD_SHARED', 'AI_JOB_DONE'] as const;
+export const NOTIFICATION_TYPES = [
+  'MENTION',
+  'COMMENT_REPLY',
+  'INVITE',
+  'BOARD_SHARED',
+  'AI_JOB_DONE',
+] as const;
 export type NotificationTypeValue = (typeof NOTIFICATION_TYPES)[number];
 
 export interface NotificationDto {

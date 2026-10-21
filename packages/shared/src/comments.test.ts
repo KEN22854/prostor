@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { commentPlainText, createCommentSchema, parseMentions, tokenizeComment } from './comments';
 
 describe('комментарии', () => {
-  const body = 'Привет, @[Анна Смирнова](ckuser00001) и @[Иван](ckuser00002)! @[Анна Смирнова](ckuser00001)';
+  const body =
+    'Привет, @[Анна Смирнова](ckuser00001) и @[Иван](ckuser00002)! @[Анна Смирнова](ckuser00001)';
 
   it('упоминания: уникальные id', () => {
     expect(parseMentions(body)).toEqual(['ckuser00001', 'ckuser00002']);

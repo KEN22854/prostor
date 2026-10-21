@@ -43,7 +43,12 @@ export function wrapText(text: string, maxWidth: number, measure: Measure): stri
 }
 
 /** Обрезка по высоте с многоточием на последней видимой строке */
-export function clampLines(lines: string[], maxLines: number, maxWidth: number, measure: Measure): string[] {
+export function clampLines(
+  lines: string[],
+  maxLines: number,
+  maxWidth: number,
+  measure: Measure,
+): string[] {
   if (lines.length <= maxLines) return lines;
   if (maxLines <= 0) return [];
   const visible = lines.slice(0, maxLines);
@@ -71,7 +76,10 @@ export interface LaidOutLine {
 }
 
 /** Строки с координатами внутри блока (lineHeight = 1, как у Konva по умолчанию) */
-export function layoutText(box: TextBox, measure: Measure): { lines: LaidOutLine[]; anchor: 'start' | 'middle' | 'end' } {
+export function layoutText(
+  box: TextBox,
+  measure: Measure,
+): { lines: LaidOutLine[]; anchor: 'start' | 'middle' | 'end' } {
   const lh = box.fontSize;
   let lines = wrapText(box.text, box.width, measure);
   if (box.ellipsis) lines = clampLines(lines, Math.floor(box.height / lh), box.width, measure);

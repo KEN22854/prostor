@@ -25,10 +25,15 @@ async function membership(orgId: string, userId: string): Promise<OrgRole | null
 }
 
 /** Участник организации; manage — только OWNER/ADMIN. Чужой организации «не существует» (404) */
-export async function requireOrgRole(orgId: string, userId: string, manage = false): Promise<OrgRole> {
+export async function requireOrgRole(
+  orgId: string,
+  userId: string,
+  manage = false,
+): Promise<OrgRole> {
   const role = await membership(orgId, userId);
   if (!role) throw new ApiError(404, 'not_found', 'Организация не найдена');
-  if (manage && !MANAGERS.includes(role)) throw new ApiError(403, 'forbidden', 'Нужны права администратора организации');
+  if (manage && !MANAGERS.includes(role))
+    throw new ApiError(403, 'forbidden', 'Нужны права администратора организации');
   return role;
 }
 
@@ -58,9 +63,13 @@ export async function listMyOrgs(userId: string): Promise<OrgSummaryDto[]> {
   }));
 }
 
-export async function createOrg(user: SessionUser, name: string): Promise<{ id: string; slug: string }> {
+export async function createOrg(
+  user: SessionUser,
+  name: string,
+): Promise<{ id: string; slug: string }> {
   const count = await prisma.orgMember.count({ where: { userId: user.id, role: 'OWNER' } });
-  if (count >= 20) throw new ApiError(429, 'too_many', 'Можно владеть не более чем 20 организациями');
+  if (count >= 20)
+    throw new ApiError(429, 'too_many', 'Можно владеть не более чем 20 организациями');
   // Уникальный slug: из названия + короткий случайный хвост
   const slug = `${slugify(name)}-${randomBytes(3).toString('hex')}`;
   const org = await prisma.organization.create({
@@ -132,7 +141,11 @@ export async function getOrg(orgId: string, user: SessionUser): Promise<OrgDetai
  * должны пересчитать роль и политику сразу, а не при следующем входе.
  */
 async function notifyOrgBoards(orgId: string): Promise<void> {
-  const boards = await prisma.board.findMany({ where: { orgId, deletedAt: null }, select: { id: true }, take: 5_000 });
+  const boards = await prisma.board.findMany({
+    where: { orgId, deletedAt: null },
+    select: { id: true },
+    take: 5_000,
+  });
   await Promise.all(boards.map((b) => publishControl({ type: 'access-changed', boardId: b.id })));
 }
 
@@ -147,10 +160,16 @@ const POLICY_KEYS = [
   'allowedEmailDomains',
 ] as const;
 
-export async function updateOrg(orgId: string, user: SessionUser, input: UpdateOrgInput): Promise<void> {
+export async function updateOrg(
+  orgId: string,
+  user: SessionUser,
+  input: UpdateOrgInput,
+): Promise<void> {
   await requireOrgRole(orgId, user.id, true);
   const before = await prisma.organization.findUniqueOrThrow({ where: { id: orgId } });
-  const domains = input.allowedEmailDomains ? Array.from(new Set(input.allowedEmailDomains)) : undefined;
+  const domains = input.allowedEmailDomains
+    ? Array.from(new Set(input.allowedEmailDomains))
+    : undefined;
   await prisma.organization.update({
     where: { id: orgId },
     data: { ...input, ...(domains ? { allowedEmailDomains: domains } : {}) },
@@ -172,17 +191,34 @@ export async function updateOrg(orgId: string, user: SessionUser, input: UpdateO
   }
 }
 
-export async function addOrgMember(orgId: string, user: SessionUser, email: string, role: OrgRole): Promise<void> {
+export async function addOrgMember(
+  orgId: string,
+  user: SessionUser,
+  email: string,
+  role: OrgRole,
+): Promise<void> {
   const myRole = await requireOrgRole(orgId, user.id, true);
-  if (role === 'OWNER' && myRole !== 'OWNER') throw new ApiError(403, 'forbidden', 'Назначать владельцев может только владелец');
+  if (role === 'OWNER' && myRole !== 'OWNER')
+    throw new ApiError(403, 'forbidden', 'Назначать владельцев может только владелец');
   const target = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (!target) {
-    throw new ApiError(404, 'user_not_found', 'Пользователь с таким email не зарегистрирован. Пригласите его на доску или настройте автоприсоединение по домену');
+    throw new ApiError(
+      404,
+      'user_not_found',
+      'Пользователь с таким email не зарегистрирован. Пригласите его на доску или настройте автоприсоединение по домену',
+    );
   }
   const existing = await membership(orgId, target.id);
   if (existing) throw new ApiError(409, 'already_member', 'Уже участник организации');
   await prisma.orgMember.create({ data: { orgId, userId: target.id, role } });
-  await audit({ action: 'org.member_add', actorId: user.id, orgId, targetType: 'user', targetId: target.id, metadata: { role } });
+  await audit({
+    action: 'org.member_add',
+    actorId: user.id,
+    orgId,
+    targetType: 'user',
+    targetId: target.id,
+    metadata: { role },
+  });
   await notifyOrgBoards(orgId);
 }
 
@@ -190,7 +226,12 @@ async function ownersCount(orgId: string): Promise<number> {
   return prisma.orgMember.count({ where: { orgId, role: 'OWNER' } });
 }
 
-export async function updateOrgMember(orgId: string, user: SessionUser, userId: string, role: OrgRole): Promise<void> {
+export async function updateOrgMember(
+  orgId: string,
+  user: SessionUser,
+  userId: string,
+  role: OrgRole,
+): Promise<void> {
   const myRole = await requireOrgRole(orgId, user.id, true);
   const current = await membership(orgId, userId);
   if (!current) throw new ApiError(404, 'not_found', 'Участник не найден');
@@ -201,22 +242,44 @@ export async function updateOrgMember(orgId: string, user: SessionUser, userId: 
     throw new ApiError(409, 'last_owner', 'Нельзя понизить единственного владельца');
   }
   await prisma.orgMember.update({ where: { orgId_userId: { orgId, userId } }, data: { role } });
-  await audit({ action: 'org.member_role_change', actorId: user.id, orgId, targetType: 'user', targetId: userId, metadata: { from: current, to: role } });
+  await audit({
+    action: 'org.member_role_change',
+    actorId: user.id,
+    orgId,
+    targetType: 'user',
+    targetId: userId,
+    metadata: { from: current, to: role },
+  });
   await notifyOrgBoards(orgId);
 }
 
 /** Удалить участника (администратор) или выйти самому */
-export async function removeOrgMember(orgId: string, user: SessionUser, userId: string): Promise<void> {
+export async function removeOrgMember(
+  orgId: string,
+  user: SessionUser,
+  userId: string,
+): Promise<void> {
   const self = userId === user.id;
   const myRole = await requireOrgRole(orgId, user.id, !self);
   const current = await membership(orgId, userId);
   if (!current) throw new ApiError(404, 'not_found', 'Участник не найден');
-  if (current === 'OWNER' && !self && myRole !== 'OWNER') throw new ApiError(403, 'forbidden', 'Удалить владельца может только владелец');
+  if (current === 'OWNER' && !self && myRole !== 'OWNER')
+    throw new ApiError(403, 'forbidden', 'Удалить владельца может только владелец');
   if (current === 'OWNER' && (await ownersCount(orgId)) <= 1) {
-    throw new ApiError(409, 'last_owner', 'Единственный владелец не может покинуть организацию — передайте владение');
+    throw new ApiError(
+      409,
+      'last_owner',
+      'Единственный владелец не может покинуть организацию — передайте владение',
+    );
   }
   await prisma.orgMember.delete({ where: { orgId_userId: { orgId, userId } } });
-  await audit({ action: 'org.member_remove', actorId: user.id, orgId, targetType: 'user', targetId: userId });
+  await audit({
+    action: 'org.member_remove',
+    actorId: user.id,
+    orgId,
+    targetType: 'user',
+    targetId: userId,
+  });
   await notifyOrgBoards(orgId);
 }
 
@@ -233,13 +296,25 @@ export async function autoJoinByDomain(userId: string, email: string): Promise<v
   for (const org of orgs) {
     await prisma.orgMember
       .create({ data: { orgId: org.id, userId, role: 'MEMBER' } })
-      .then(() => audit({ action: 'org.member_add', actorId: userId, orgId: org.id, targetType: 'user', targetId: userId, metadata: { via: 'email_domain', domain } }))
+      .then(() =>
+        audit({
+          action: 'org.member_add',
+          actorId: userId,
+          orgId: org.id,
+          targetType: 'user',
+          targetId: userId,
+          metadata: { via: 'email_domain', domain },
+        }),
+      )
       .catch(() => undefined);
   }
 }
 
 /** Организация требует 2FA, а у пользователя её нет — доступ к доскам организации закрыт */
-export async function orgRequires2faFor(orgId: string | null, userId: string | null): Promise<boolean> {
+export async function orgRequires2faFor(
+  orgId: string | null,
+  userId: string | null,
+): Promise<boolean> {
   if (!orgId || !userId) return false;
   const [org, user] = await Promise.all([
     prisma.organization.findUnique({ where: { id: orgId }, select: { require2fa: true } }),

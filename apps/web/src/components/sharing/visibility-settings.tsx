@@ -10,10 +10,25 @@ import { copyText } from '@/lib/copy-text';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
 
-const OPTIONS: Array<{ value: BoardVisibilityValue; icon: LucideIcon; title: string; text: string }> = [
+const OPTIONS: Array<{
+  value: BoardVisibilityValue;
+  icon: LucideIcon;
+  title: string;
+  text: string;
+}> = [
   { value: 'PRIVATE', icon: Lock, title: 'Приватная', text: 'Только приглашённые участники' },
-  { value: 'ORGANIZATION', icon: Building2, title: 'Организация', text: 'Все участники организации могут смотреть' },
-  { value: 'PUBLIC_READ', icon: Globe, title: 'Публичная', text: 'Любой со ссылкой может смотреть без входа' },
+  {
+    value: 'ORGANIZATION',
+    icon: Building2,
+    title: 'Организация',
+    text: 'Все участники организации могут смотреть',
+  },
+  {
+    value: 'PUBLIC_READ',
+    icon: Globe,
+    title: 'Публичная',
+    text: 'Любой со ссылкой может смотреть без входа',
+  },
 ];
 
 interface VisibilitySettingsProps {
@@ -25,14 +40,20 @@ interface VisibilitySettingsProps {
 export function VisibilitySettings({ state, onChanged }: VisibilitySettingsProps) {
   const [saving, setSaving] = useState<BoardVisibilityValue | null>(null);
   const [copied, setCopied] = useState(false);
-  const publicUrl = typeof window === 'undefined' ? '' : `${window.location.origin}/board/${state.boardId}`;
+  const publicUrl =
+    typeof window === 'undefined' ? '' : `${window.location.origin}/board/${state.boardId}`;
 
   async function choose(value: BoardVisibilityValue) {
     if (value === state.visibility || !state.canManage) return;
     setSaving(value);
     try {
-      await apiRequest(`/api/boards/${state.boardId}/visibility`, { method: 'PATCH', body: { visibility: value } });
-      toast.success(value === 'PUBLIC_READ' ? 'Доска доступна по ссылке для чтения' : 'Доступ обновлён');
+      await apiRequest(`/api/boards/${state.boardId}/visibility`, {
+        method: 'PATCH',
+        body: { visibility: value },
+      });
+      toast.success(
+        value === 'PUBLIC_READ' ? 'Доска доступна по ссылке для чтения' : 'Доступ обновлён',
+      );
       await onChanged();
     } catch (e: unknown) {
       toast.error(errorMessage(e, 'Не удалось изменить доступ'));
@@ -79,11 +100,25 @@ export function VisibilitySettings({ state, onChanged }: VisibilitySettingsProps
           );
         })}
       </div>
-      {!state.canManage ? <p className="text-xs text-muted-foreground">Изменить доступ может только владелец доски.</p> : null}
+      {!state.canManage ? (
+        <p className="text-xs text-muted-foreground">
+          Изменить доступ может только владелец доски.
+        </p>
+      ) : null}
       {state.visibility === 'PUBLIC_READ' ? (
         <div className="flex gap-2">
-          <Input readOnly value={publicUrl} aria-label="Публичная ссылка" onFocus={(e) => e.currentTarget.select()} />
-          <Button variant="outline" size="icon" aria-label="Скопировать публичную ссылку" onClick={async () => setCopied(await copyText(publicUrl))}>
+          <Input
+            readOnly
+            value={publicUrl}
+            aria-label="Публичная ссылка"
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Скопировать публичную ссылку"
+            onClick={async () => setCopied(await copyText(publicUrl))}
+          >
             {copied ? <Check /> : <Copy />}
           </Button>
         </div>

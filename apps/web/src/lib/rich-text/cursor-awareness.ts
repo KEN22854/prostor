@@ -29,8 +29,10 @@ export function textCursorAwareness(awareness: Awareness, field: string): Awaren
       return mapped;
     },
     setLocalStateField: (key: string, value: unknown) => awareness.setLocalStateField(key, value),
-    on: (event: string, cb: (...args: unknown[]) => void) => awareness.on(event as 'change', cb as never),
-    off: (event: string, cb: (...args: unknown[]) => void) => awareness.off(event as 'change', cb as never),
+    on: (event: string, cb: (...args: unknown[]) => void) =>
+      awareness.on(event as 'change', cb as never),
+    off: (event: string, cb: (...args: unknown[]) => void) =>
+      awareness.off(event as 'change', cb as never),
   };
   return adapter as unknown as Awareness;
 }

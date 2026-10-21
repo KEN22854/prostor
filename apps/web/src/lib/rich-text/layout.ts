@@ -45,7 +45,10 @@ interface Token {
   run: RichRun;
 }
 
-export function fontOf(opts: Pick<RichLayoutOptions, 'fontSize' | 'family' | 'bold' | 'italic'>, run: RichRun): string {
+export function fontOf(
+  opts: Pick<RichLayoutOptions, 'fontSize' | 'family' | 'bold' | 'italic'>,
+  run: RichRun,
+): string {
   const italic = opts.italic || run.italic;
   const bold = opts.bold || run.bold;
   return `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${opts.fontSize}px ${opts.family}`;
@@ -77,13 +80,25 @@ export function layoutRich(
   const lh = opts.fontSize;
   const indent = Math.round(opts.fontSize * 1.1);
   /** wrapped — строка-продолжение абзаца после переноса */
-  type Draft = { tokens: Token[]; width: number; bullet: boolean; indent: number; wrapped: boolean };
+  type Draft = {
+    tokens: Token[];
+    width: number;
+    bullet: boolean;
+    indent: number;
+    wrapped: boolean;
+  };
   const drafts: Draft[] = [];
 
   for (const p of paragraphs) {
     const offset = p.bullet ? indent : 0;
     const max = Math.max(1, opts.width - offset);
-    let line: Draft = { tokens: [], width: 0, bullet: Boolean(p.bullet), indent: offset, wrapped: false };
+    let line: Draft = {
+      tokens: [],
+      width: 0,
+      bullet: Boolean(p.bullet),
+      indent: offset,
+      wrapped: false,
+    };
     const push = () => {
       drafts.push(line);
       line = { tokens: [], width: 0, bullet: false, indent: offset, wrapped: true };
@@ -122,7 +137,11 @@ export function layoutRich(
 
   const total = visibleDrafts.length * lh;
   const top =
-    opts.verticalAlign === 'middle' ? (opts.height - total) / 2 : opts.verticalAlign === 'bottom' ? opts.height - total : 0;
+    opts.verticalAlign === 'middle'
+      ? (opts.height - total) / 2
+      : opts.verticalAlign === 'bottom'
+        ? opts.height - total
+        : 0;
 
   return visibleDrafts.map((d, i) => {
     // Склеиваем соседние токены одного стиля; хвостовой пробел строки не учитываем
@@ -130,7 +149,19 @@ export function layoutRich(
     for (const t of d.tokens) {
       const last = segments[segments.length - 1];
       const run = t.run;
-      if (last && sameStyle({ bold: last.bold, italic: last.italic, underline: last.underline, strike: last.strike, text: '' }, run)) {
+      if (
+        last &&
+        sameStyle(
+          {
+            bold: last.bold,
+            italic: last.italic,
+            underline: last.underline,
+            strike: last.strike,
+            text: '',
+          },
+          run,
+        )
+      ) {
         last.text += t.text;
       } else {
         segments.push({
@@ -156,7 +187,12 @@ export function layoutRich(
     if (truncated && i === visibleDrafts.length - 1 && lastSeg) lastSeg.text = `${lastSeg.text}…`;
     for (const s of segments) s.width = measure(s.text, s.font);
     const lineWidth = d.indent + segments.reduce((sum, s) => sum + s.width, 0);
-    const start = opts.align === 'center' ? (opts.width - lineWidth) / 2 : opts.align === 'right' ? opts.width - lineWidth : 0;
+    const start =
+      opts.align === 'center'
+        ? (opts.width - lineWidth) / 2
+        : opts.align === 'right'
+          ? opts.width - lineWidth
+          : 0;
     let x = start + d.indent;
     for (const s of segments) {
       s.x = x;

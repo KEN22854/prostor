@@ -36,7 +36,9 @@ export function joinUrl(boardId: string, token: string): string {
   return url.toString();
 }
 
-export function toInviteDto(invite: Invite & { createdBy?: { name: string | null } | null }): InviteDto {
+export function toInviteDto(
+  invite: Invite & { createdBy?: { name: string | null } | null },
+): InviteDto {
   return {
     id: invite.id,
     role: invite.role,
@@ -103,12 +105,17 @@ export async function inviteByEmail(
   assertCanGrant(access.role, input.role);
 
   const limit = await rateLimit(`invite-email:${user.id}`, 50, 60 * 60);
-  if (!limit.ok) throw new ApiError(429, 'rate_limited', 'Слишком много приглашений. Попробуйте через час');
+  if (!limit.ok)
+    throw new ApiError(429, 'rate_limited', 'Слишком много приглашений. Попробуйте через час');
 
   const emails = Array.from(new Set(input.emails));
   const existingUsers = await prisma.user.findMany({
     where: { email: { in: emails } },
-    select: { id: true, email: true, boardMemberships: { where: { boardId }, select: { role: true } } },
+    select: {
+      id: true,
+      email: true,
+      boardMemberships: { where: { boardId }, select: { role: true } },
+    },
   });
   const byEmail = new Map(existingUsers.map((u) => [u.email, u]));
   const inviterName = user.name ?? user.email ?? 'Коллега';
@@ -182,14 +189,24 @@ export async function inviteByEmail(
   return results;
 }
 
-export async function revokeInvite(user: SessionUser, boardId: string, inviteId: string): Promise<void> {
+export async function revokeInvite(
+  user: SessionUser,
+  boardId: string,
+  inviteId: string,
+): Promise<void> {
   await requireBoardAccess(boardId, user.id, 'share');
   const { count } = await prisma.invite.updateMany({
     where: { id: inviteId, boardId, revokedAt: null },
     data: { revokedAt: new Date() },
   });
   if (count === 0) throw new ApiError(404, 'not_found', 'Приглашение не найдено');
-  await audit({ action: 'invite.revoke', actorId: user.id, boardId, targetType: 'Invite', targetId: inviteId });
+  await audit({
+    action: 'invite.revoke',
+    actorId: user.id,
+    boardId,
+    targetType: 'Invite',
+    targetId: inviteId,
+  });
 }
 
 /** Активные приглашения доски (истёкшие, отозванные и исчерпанные — скрыты) */
@@ -216,10 +233,17 @@ export interface InvitePreview {
 }
 
 /** Для страницы /board/:id/join: что за приглашение и можно ли его принять */
-export async function previewInvite(boardId: string, token: string, userEmail: string | null): Promise<InvitePreview | null> {
+export async function previewInvite(
+  boardId: string,
+  token: string,
+  userEmail: string | null,
+): Promise<InvitePreview | null> {
   const invite = await prisma.invite.findUnique({
     where: { tokenHash: hashToken(token) },
-    include: { board: { select: { title: true, deletedAt: true } }, createdBy: { select: { name: true } } },
+    include: {
+      board: { select: { title: true, deletedAt: true } },
+      createdBy: { select: { name: true } },
+    },
   });
   if (!invite || !invite.board || invite.board.deletedAt) return null;
   return {
@@ -246,16 +270,24 @@ const PROBLEM_STATUS: Record<InviteProblem, number> = {
  *  - роль не понижается: редактор, открывший ссылку «для читателей», остаётся редактором;
  *  - если доступ уже не ниже, использование не списывается.
  */
-export async function acceptInvite(user: SessionUser, boardId: string, token: string): Promise<{ role: BoardRole }> {
+export async function acceptInvite(
+  user: SessionUser,
+  boardId: string,
+  token: string,
+): Promise<{ role: BoardRole }> {
   const result = await prisma.$transaction(async (tx) => {
     const invite = await tx.invite.findUnique({ where: { tokenHash: hashToken(token) } });
     if (!invite) throw new ApiError(404, 'invite_not_found', 'Приглашение не найдено');
     const problem = inviteProblem(invite, { boardId, userEmail: user.email });
     if (problem) throw new ApiError(PROBLEM_STATUS[problem], problem, INVITE_PROBLEM_TEXT[problem]);
 
-    const board = await tx.board.findUnique({ where: { id: boardId }, select: { ownerId: true, deletedAt: true } });
+    const board = await tx.board.findUnique({
+      where: { id: boardId },
+      select: { ownerId: true, deletedAt: true },
+    });
     if (!board || board.deletedAt) throw new ApiError(404, 'not_found', 'Доска удалена');
-    if (board.ownerId === user.id) return { role: 'OWNER' as BoardRole, changed: false, inviteId: invite.id };
+    if (board.ownerId === user.id)
+      return { role: 'OWNER' as BoardRole, changed: false, inviteId: invite.id };
 
     const member = await tx.boardMember.findUnique({
       where: { boardId_userId: { boardId, userId: user.id } },
@@ -277,15 +309,34 @@ export async function acceptInvite(user: SessionUser, boardId: string, token: st
 
     await tx.boardMember.upsert({
       where: { boardId_userId: { boardId, userId: user.id } },
-      create: { boardId, userId: user.id, role: invite.role, inviteId: invite.id, lastVisitedAt: new Date() },
+      create: {
+        boardId,
+        userId: user.id,
+        role: invite.role,
+        inviteId: invite.id,
+        lastVisitedAt: new Date(),
+      },
       update: { role: invite.role, inviteId: invite.id },
     });
     return { role: invite.role, changed: true, inviteId: invite.id };
   });
 
   if (result.changed) {
-    await audit({ action: 'invite.accept', actorId: user.id, boardId, targetType: 'Invite', targetId: result.inviteId });
-    await audit({ action: 'member.add', actorId: user.id, boardId, targetType: 'User', targetId: user.id, metadata: { role: result.role } });
+    await audit({
+      action: 'invite.accept',
+      actorId: user.id,
+      boardId,
+      targetType: 'Invite',
+      targetId: result.inviteId,
+    });
+    await audit({
+      action: 'member.add',
+      actorId: user.id,
+      boardId,
+      targetType: 'User',
+      targetId: user.id,
+      metadata: { role: result.role },
+    });
   }
   return { role: result.role };
 }

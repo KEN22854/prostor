@@ -36,7 +36,11 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
     try {
       return await apiRequest<T>('/api/account/2fa', { method: 'POST', body });
     } catch (e: unknown) {
-      toast.error(e instanceof ApiClientError && e.fields.code ? e.fields.code : errorMessage(e, 'Не удалось выполнить действие'));
+      toast.error(
+        e instanceof ApiClientError && e.fields.code
+          ? e.fields.code
+          : errorMessage(e, 'Не удалось выполнить действие'),
+      );
       return null;
     } finally {
       setPending(false);
@@ -50,7 +54,8 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
           <ShieldCheck className="size-4" /> Двухфакторная аутентификация включена
         </p>
         <p className="text-sm text-muted-foreground">
-          Сохраните резервные коды — они понадобятся, если телефон потеряется. Каждый код одноразовый, больше они не будут показаны.
+          Сохраните резервные коды — они понадобятся, если телефон потеряется. Каждый код
+          одноразовый, больше они не будут показаны.
         </p>
         <ul className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/40 p-3 font-mono text-sm">
           {codes.map((c) => (
@@ -58,7 +63,12 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
           ))}
         </ul>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => void copyText(codes.join('\n')).then((ok) => ok && toast.success('Скопировано'))}>
+          <Button
+            variant="outline"
+            onClick={() =>
+              void copyText(codes.join('\n')).then((ok) => ok && toast.success('Скопировано'))
+            }
+          >
             <Copy /> Скопировать
           </Button>
           <Button
@@ -94,8 +104,18 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
               });
             }}
           >
-            <Input aria-label="Код для отключения" placeholder="Код или резервный код" value={code} onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" />
-            <Button type="submit" variant="destructive" disabled={pending || code.trim().length < 6}>
+            <Input
+              aria-label="Код для отключения"
+              placeholder="Код или резервный код"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              autoComplete="one-time-code"
+            />
+            <Button
+              type="submit"
+              variant="destructive"
+              disabled={pending || code.trim().length < 6}
+            >
               Отключить
             </Button>
           </form>
@@ -112,7 +132,8 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
     return (
       <div className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          При входе по паролю понадобится ещё код из приложения-аутентификатора (Яндекс Ключ, Google Authenticator, 1Password…).
+          При входе по паролю понадобится ещё код из приложения-аутентификатора (Яндекс Ключ, Google
+          Authenticator, 1Password…).
         </p>
         <Button
           disabled={pending}
@@ -130,10 +151,17 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
       <p className="text-sm">1. Отсканируйте QR-код в приложении-аутентификаторе:</p>
       <div className="flex flex-wrap items-center gap-4">
         {/* SVG сгенерирован на нашем сервере из otpauth-URL — не пользовательский ввод */}
-        <div className="rounded-lg border bg-white p-2" aria-label="QR-код для приложения" dangerouslySetInnerHTML={{ __html: setup.qrSvg }} />
+        <div
+          className="rounded-lg border bg-white p-2"
+          aria-label="QR-код для приложения"
+          dangerouslySetInnerHTML={{ __html: setup.qrSvg }}
+        />
         <div className="space-y-1 text-sm">
           <p className="text-muted-foreground">или введите ключ вручную:</p>
-          <code className="block break-all rounded bg-muted px-2 py-1 font-mono text-xs" data-testid="totp-secret">
+          <code
+            className="block break-all rounded bg-muted px-2 py-1 font-mono text-xs"
+            data-testid="totp-secret"
+          >
             {setup.secret}
           </code>
         </div>
@@ -152,7 +180,14 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
       >
         <Label htmlFor="totp-confirm">2. Введите код из приложения</Label>
         <div className="flex max-w-xs gap-2">
-          <Input id="totp-confirm" inputMode="numeric" autoComplete="one-time-code" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} />
+          <Input
+            id="totp-confirm"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="123456"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+          />
           <Button type="submit" disabled={pending || code.trim().length !== 6}>
             {pending ? <Loader2 className="animate-spin" /> : null}
             Подтвердить

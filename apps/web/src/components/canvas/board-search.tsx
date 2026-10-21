@@ -1,7 +1,14 @@
 'use client';
 
 import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
-import { useDeferredValue, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ElementStore } from '@/lib/canvas/element-store';
@@ -23,7 +30,11 @@ function reveal(store: ElementStore, hit: SearchHit): void {
     setCamera(fitBounds(bounds, size, 160, 1.5));
   } else if (hit.point) {
     const zoom = 1;
-    setCamera({ x: hit.point.x - size.width / 2 / zoom, y: hit.point.y - size.height / 2 / zoom, zoom });
+    setCamera({
+      x: hit.point.x - size.width / 2 / zoom,
+      y: hit.point.y - size.height / 2 / zoom,
+      zoom,
+    });
   }
   if (hit.kind === 'comment') {
     select(hit.elementId ? [hit.elementId] : []);
@@ -115,16 +126,37 @@ export function BoardSearch({ store }: { store: ElementStore | null }) {
             if (e.key === 'Escape') close();
           }}
         />
-        <span className="shrink-0 px-1 text-xs tabular-nums text-muted-foreground" aria-live="polite">
+        <span
+          className="shrink-0 px-1 text-xs tabular-nums text-muted-foreground"
+          aria-live="polite"
+        >
           {deferred.trim() ? `${hits.length > 0 ? current + 1 : 0} из ${hits.length}` : ''}
         </span>
-        <Button variant="ghost" size="icon" className="size-7" aria-label="Предыдущее" onClick={() => go(-1)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          aria-label="Предыдущее"
+          onClick={() => go(-1)}
+        >
           <ChevronUp />
         </Button>
-        <Button variant="ghost" size="icon" className="size-7" aria-label="Следующее" onClick={() => go(1)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          aria-label="Следующее"
+          onClick={() => go(1)}
+        >
           <ChevronDown />
         </Button>
-        <Button variant="ghost" size="icon" className="size-7" aria-label="Закрыть поиск" onClick={close}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          aria-label="Закрыть поиск"
+          onClick={close}
+        >
           <X />
         </Button>
       </div>

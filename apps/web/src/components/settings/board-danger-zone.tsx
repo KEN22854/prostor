@@ -20,7 +20,13 @@ interface BoardDangerZoneProps {
 }
 
 /** Владелец удаляет доску (с подтверждением названием), участник — покидает её */
-export function BoardDangerZone({ boardId, title, userId, isOwner, isMember }: BoardDangerZoneProps) {
+export function BoardDangerZone({
+  boardId,
+  title,
+  userId,
+  isOwner,
+  isMember,
+}: BoardDangerZoneProps) {
   const router = useRouter();
   const [confirm, setConfirm] = useState('');
   const [pending, setPending] = useState(false);
@@ -42,11 +48,17 @@ export function BoardDangerZone({ boardId, title, userId, isOwner, isMember }: B
     return (
       <div className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Доска переместится в корзину и исчезнет у всех участников. Чтобы подтвердить, введите её название.
+          Доска переместится в корзину и исчезнет у всех участников. Чтобы подтвердить, введите её
+          название.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="confirm-delete">Название доски</Label>
-          <Input id="confirm-delete" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={title} />
+          <Input
+            id="confirm-delete"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder={title}
+          />
         </div>
         <Button
           variant="destructive"
@@ -61,17 +73,24 @@ export function BoardDangerZone({ boardId, title, userId, isOwner, isMember }: B
   }
 
   if (!isMember) {
-    return <p className="text-sm text-muted-foreground">Доступ выдан через папку или организацию — покинуть доску отдельно нельзя.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">
+        Доступ выдан через папку или организацию — покинуть доску отдельно нельзя.
+      </p>
+    );
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">Вы потеряете доступ. Вернуться можно будет только по новому приглашению.</p>
+      <p className="text-sm text-muted-foreground">
+        Вы потеряете доступ. Вернуться можно будет только по новому приглашению.
+      </p>
       <Button
         variant="outline"
         disabled={pending}
         onClick={() => {
-          if (window.confirm('Покинуть доску?')) void run(`/api/boards/${boardId}/members/${userId}`, 'Вы покинули доску');
+          if (window.confirm('Покинуть доску?'))
+            void run(`/api/boards/${boardId}/members/${userId}`, 'Вы покинули доску');
         }}
       >
         {pending ? <Loader2 className="animate-spin" /> : <LogOut />}

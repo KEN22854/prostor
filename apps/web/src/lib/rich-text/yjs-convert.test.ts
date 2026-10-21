@@ -5,7 +5,14 @@ import { fragmentToRich, plainToRich, richToFragment } from './yjs-convert';
 
 describe('rich text ⇄ Y.XmlFragment', () => {
   const sample: RichParagraph[] = [
-    { runs: [{ text: 'Обычный ' }, { text: 'жирный', bold: true }, { text: ' и ' }, { text: 'курсив', italic: true, underline: true }] },
+    {
+      runs: [
+        { text: 'Обычный ' },
+        { text: 'жирный', bold: true },
+        { text: ' и ' },
+        { text: 'курсив', italic: true, underline: true },
+      ],
+    },
     { bullet: true, runs: [{ text: 'пункт', strike: true }] },
     { runs: [] },
   ];
@@ -38,6 +45,10 @@ describe('rich text ⇄ Y.XmlFragment', () => {
   });
 
   it('обычный текст — по абзацу на строку', () => {
-    expect(plainToRich('a\n\nb')).toEqual([{ runs: [{ text: 'a' }] }, { runs: [] }, { runs: [{ text: 'b' }] }]);
+    expect(plainToRich('a\n\nb')).toEqual([
+      { runs: [{ text: 'a' }] },
+      { runs: [] },
+      { runs: [{ text: 'b' }] },
+    ]);
   });
 });

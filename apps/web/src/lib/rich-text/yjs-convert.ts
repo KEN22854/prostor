@@ -17,16 +17,22 @@ export function fragmentToRich(fragment: Y.XmlFragment): RichParagraph[] {
     const runs: RichRun[] = [];
     for (const child of node.toArray()) {
       if (!(child instanceof Y.XmlText)) continue;
-      for (const op of child.toDelta() as Array<{ insert?: unknown; attributes?: Record<string, unknown> }>) {
+      for (const op of child.toDelta() as Array<{
+        insert?: unknown;
+        attributes?: Record<string, unknown>;
+      }>) {
         if (typeof op.insert !== 'string' || op.insert.length === 0) continue;
         const run: RichRun = { text: op.insert };
         for (const mark of RICH_MARKS) {
           // y-prosemirror может добавлять к имени метки хеш (mark--abc) для пересекающихся меток
-          const has = Object.keys(op.attributes ?? {}).some((k) => k === mark || k.startsWith(`${mark}--`));
+          const has = Object.keys(op.attributes ?? {}).some(
+            (k) => k === mark || k.startsWith(`${mark}--`),
+          );
           if (has) run[mark] = true;
         }
         const prev = runs[runs.length - 1];
-        if (prev && RICH_MARKS.every((m) => Boolean(prev[m]) === Boolean(run[m]))) prev.text += run.text;
+        if (prev && RICH_MARKS.every((m) => Boolean(prev[m]) === Boolean(run[m])))
+          prev.text += run.text;
         else runs.push(run);
       }
     }
