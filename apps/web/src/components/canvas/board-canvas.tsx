@@ -18,6 +18,7 @@ import { ExportDialog } from '@/components/canvas/export-dialog';
 import { FollowBanner } from '@/components/canvas/follow-banner';
 import { FramesPanel } from '@/components/canvas/frames-panel';
 import { LodShape } from '@/components/canvas/lod-shape';
+import { BoardSearch } from '@/components/canvas/board-search';
 import { Minimap } from '@/components/canvas/minimap';
 import { PresentationMode } from '@/components/canvas/presentation-mode';
 import { SelectionLayer } from '@/components/canvas/selection-layer';
@@ -461,6 +462,7 @@ export function BoardCanvas({
       <VotesLayer store={store} />
       <VotingBar store={store} />
       {presenting ? null : <FramesPanel store={store} actions={actions} />}
+      {presenting ? null : <BoardSearch store={store} />}
       <FollowBanner />
       {store && actions ? (
         <ExportDialog boardId={boardId} boardTitle={title} store={store} actions={actions} />
