@@ -14,9 +14,10 @@ import {
 } from 'lucide-react';
 import { useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
-import type { BoardElement } from '@prostor/shared';
+import type { BoardElement, LineElement } from '@prostor/shared';
 import { ColorSwatches } from '@/components/canvas/color-swatches';
 import { FrameTitleInput } from '@/components/canvas/frame-title-input';
+import { LineControls } from '@/components/canvas/line-controls';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -120,6 +121,9 @@ export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolba
   const grouped = elements.some((el) => el.groupId);
   const allLocked = elements.every((el) => el.locked);
   const ids = elements.map((el) => el.id);
+  const lines = elements.filter(
+    (el): el is LineElement => (el.type === 'line' || el.type === 'arrow') && !el.locked,
+  );
 
   return (
     <div
@@ -156,6 +160,12 @@ export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolba
                 label="Цвет обводки"
               />
             </ColorButton>
+          ) : null}
+          {lines.length > 0 && lines.length === elements.length ? (
+            <>
+              <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+              <LineControls lines={lines} actions={actions} />
+            </>
           ) : null}
           <span className="mx-1 h-5 w-px bg-border" aria-hidden />
           {onRemoveBg &&

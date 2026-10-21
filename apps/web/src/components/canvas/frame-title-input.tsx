@@ -10,7 +10,13 @@ import type { BoardActions } from '@/lib/canvas/board-actions';
  * символ: иначе у коллег заголовок «печатался» бы по букве и каждая буква
  * становилась отдельным шагом отмены.
  */
-export function FrameTitleInput({ frame, actions }: { frame: FrameElement; actions: BoardActions }) {
+export function FrameTitleInput({
+  frame,
+  actions,
+}: {
+  frame: FrameElement;
+  actions: BoardActions;
+}) {
   const [value, setValue] = useState(frame.title);
   // Коллега переименовал фрейм, пока поле не в фокусе, — показываем новое название
   useEffect(() => setValue(frame.title), [frame.title]);

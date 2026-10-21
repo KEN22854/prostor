@@ -44,7 +44,9 @@ describe(`производительность на ${N.toLocaleString('ru')} о
       // Экран ~1920×1080 при zoom 1 в случайном месте доски
       const x = (i * 977) % 20_000;
       const y = (i * 613) % 20_000;
-      const { result, ms } = time(() => store.query({ minX: x, minY: y, maxX: x + 1920, maxY: y + 1080 }));
+      const { result, ms } = time(() =>
+        store.query({ minX: x, minY: y, maxX: x + 1920, maxY: y + 1080 }),
+      );
       found += result.length;
       samples.push(ms);
     }
@@ -85,7 +87,12 @@ describe(`производительность на ${N.toLocaleString('ru')} о
   it('раскладка форматированного текста стикера < 1 мс', () => {
     const measure = (t: string, font: string) => t.length * (font.includes('bold') ? 9 : 8);
     const paragraphs = [
-      { runs: [{ text: 'Гипотеза: ' , bold: true }, { text: 'пользователи бросают корзину на шаге оплаты, потому что' }] },
+      {
+        runs: [
+          { text: 'Гипотеза: ', bold: true },
+          { text: 'пользователи бросают корзину на шаге оплаты, потому что' },
+        ],
+      },
       { bullet: true, runs: [{ text: 'нет оплаты через СБП' }] },
       { bullet: true, runs: [{ text: 'долго грузится форма', italic: true }] },
     ];
@@ -93,7 +100,21 @@ describe(`производительность на ${N.toLocaleString('ru')} о
     for (let i = 0; i < 200; i++) {
       samples.push(
         time(() =>
-          layoutRich(paragraphs, { width: 172, height: 172, fontSize: 18, family: 'Inter', bold: false, italic: false, align: 'left', verticalAlign: 'top', ellipsis: true }, measure),
+          layoutRich(
+            paragraphs,
+            {
+              width: 172,
+              height: 172,
+              fontSize: 18,
+              family: 'Inter',
+              bold: false,
+              italic: false,
+              align: 'left',
+              verticalAlign: 'top',
+              ellipsis: true,
+            },
+            measure,
+          ),
         ).ms,
       );
     }

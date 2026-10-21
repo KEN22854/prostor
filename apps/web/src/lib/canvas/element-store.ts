@@ -21,6 +21,10 @@ export class ElementStore {
   private readonly elements = new Map<string, BoardElement>();
   private readonly index = new SpatialIndex();
   private readonly listeners = new Set<Listener>();
+  /** Привязки линий: объект → линии, привязанные к нему концом */
+  private readonly connectors = new Map<string, Set<string>>();
+  /** Обратная сторона: линия → объекты её привязок (чтобы снять старые при изменении) */
+  private readonly lineTargets = new Map<string, string[]>();
   private version = 0;
 
   constructor(private readonly ymap: Y.Map<unknown>) {
@@ -31,11 +35,14 @@ export class ElementStore {
   private loadAll(): void {
     const entries: Array<{ id: string; bounds: Bounds }> = [];
     this.elements.clear();
+    this.connectors.clear();
+    this.lineTargets.clear();
     for (const [id, value] of this.ymap.entries()) {
       if (!(value instanceof YMap)) continue;
       const el = readElement(id, value as Y.Map<unknown>);
       if (!el) continue;
       this.elements.set(id, el);
+      this.indexBindings(id, el);
       entries.push({ id, bounds: boundsOf(el) });
     }
     this.index.load(entries);
@@ -62,10 +69,39 @@ export class ElementStore {
     if (!el) {
       this.elements.delete(id);
       this.index.remove(id);
+      this.indexBindings(id, null);
       return;
     }
     this.elements.set(id, el);
+    this.indexBindings(id, el);
     this.index.upsert(id, boundsOf(el));
+  }
+
+  private indexBindings(id: string, el: BoardElement | null): void {
+    for (const target of this.lineTargets.get(id) ?? []) {
+      const set = this.connectors.get(target);
+      set?.delete(id);
+      if (set?.size === 0) this.connectors.delete(target);
+    }
+    this.lineTargets.delete(id);
+    if (!el || (el.type !== 'line' && el.type !== 'arrow')) return;
+    const targets = [el.startBinding?.elementId, el.endBinding?.elementId].filter(
+      (t): t is string => typeof t === 'string',
+    );
+    if (targets.length === 0) return;
+    this.lineTargets.set(id, targets);
+    for (const target of targets) {
+      let set = this.connectors.get(target);
+      if (!set) this.connectors.set(target, (set = new Set()));
+      set.add(id);
+    }
+  }
+
+  /** Линии, привязанные к любому из объектов */
+  connectorsOf(ids: Iterable<string>): Set<string> {
+    const result = new Set<string>();
+    for (const id of ids) for (const line of this.connectors.get(id) ?? []) result.add(line);
+    return result;
   }
 
   subscribe = (listener: Listener): (() => void) => {
@@ -116,7 +152,8 @@ export class ElementStore {
   /** Все фреймы доски (их единицы-десятки — полный проход дешёвый) */
   frames(): FrameElement[] {
     const result: FrameElement[] = [];
-    for (const el of this.elements.values()) if (el.type === 'frame') result.push(el as FrameElement);
+    for (const el of this.elements.values())
+      if (el.type === 'frame') result.push(el as FrameElement);
     return result;
   }
 
@@ -162,5 +199,7 @@ export class ElementStore {
     this.listeners.clear();
     this.elements.clear();
     this.index.clear();
+    this.connectors.clear();
+    this.lineTargets.clear();
   }
 }

@@ -68,7 +68,8 @@ export function Minimap({ store }: { store: ElementStore | null }) {
         // выглядел бы на мини-карте как большой серый блок
         if ('points' in el && Array.isArray(el.points)) {
           const pts = el.points;
-          ctx.strokeStyle = 'stroke' in el && typeof el.stroke === 'string' ? el.stroke : NEUTRAL_FILL;
+          ctx.strokeStyle =
+            'stroke' in el && typeof el.stroke === 'string' ? el.stroke : NEUTRAL_FILL;
           ctx.lineWidth = 1;
           ctx.beginPath();
           for (let i = 0; i + 1 < pts.length; i += 2) {

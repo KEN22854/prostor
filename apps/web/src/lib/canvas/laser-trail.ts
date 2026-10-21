@@ -15,7 +15,10 @@ export function pruneTrail(points: TrailPoint[], now: number): TrailPoint[] {
  * расходятся, поэтому переводим в локальное время относительно последней
  * точки: она «только что» нарисована.
  */
-export function toLocalTime(raw: ReadonlyArray<readonly [number, number, number]>, now: number): TrailPoint[] {
+export function toLocalTime(
+  raw: ReadonlyArray<readonly [number, number, number]>,
+  now: number,
+): TrailPoint[] {
   const last = raw[raw.length - 1]?.[2] ?? 0;
   return raw.map(([x, y, t]) => ({ x, y, t: now - (last - t) }));
 }

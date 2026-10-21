@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ShapeElement } from '@prostor/shared';
+import type { LineRouting, ShapeElement } from '@prostor/shared';
 import { DEFAULT_CAMERA, type Camera, type Size } from '@/lib/canvas/viewport';
 
 export type CanvasTool =
@@ -68,6 +68,8 @@ export interface ToolOptions {
   penColor: string;
   penWidth: number;
   penMode: 'pen' | 'marker' | 'highlighter';
+  /** Маршрут новых линий и стрелок */
+  lineRouting: LineRouting;
 }
 
 export type BoardPanel = 'export' | 'history' | 'comments';
@@ -124,6 +126,7 @@ const DEFAULT_TOOL_OPTIONS: ToolOptions = {
   penColor: '#1f2937',
   penWidth: 4,
   penMode: 'pen',
+  lineRouting: 'straight',
 };
 
 const sameIds = (a: readonly string[], b: readonly string[]) =>

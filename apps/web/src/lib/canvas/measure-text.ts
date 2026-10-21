@@ -11,7 +11,8 @@ export function measureText(text: string, font: string): number {
   const key = `${font}\u0000${text}`;
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
-  ctx ??= typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
+  ctx ??=
+    typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
   if (!ctx) return text.length * 8;
   ctx.font = font;
   const width = ctx.measureText(text).width;

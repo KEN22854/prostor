@@ -25,7 +25,12 @@ import { useCanvasStore } from '@/stores/canvas-store';
 
 const FORMATS: Array<{ value: ExportFormat; label: string; hint: string; icon: LucideIcon }> = [
   { value: 'png', label: 'PNG', hint: 'Картинка для чата и презентаций', icon: FileImage },
-  { value: 'pdf', label: 'PDF', hint: 'Для печати; фреймы — отдельными страницами', icon: FileText },
+  {
+    value: 'pdf',
+    label: 'PDF',
+    hint: 'Для печати; фреймы — отдельными страницами',
+    icon: FileText,
+  },
   { value: 'svg', label: 'SVG', hint: 'Вектор со слоями для Figma и Illustrator', icon: FileType2 },
 ];
 
@@ -117,13 +122,21 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
               </button>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">{FORMATS.find((f) => f.value === format)?.hint}</p>
+          <p className="text-xs text-muted-foreground">
+            {FORMATS.find((f) => f.value === format)?.hint}
+          </p>
 
           <div className="space-y-1.5">
             <Label htmlFor="export-scope">Что экспортировать</Label>
-            <NativeSelect id="export-scope" value={effectiveScope} onChange={(e) => setScopeKey(e.target.value)}>
+            <NativeSelect
+              id="export-scope"
+              value={effectiveScope}
+              onChange={(e) => setScopeKey(e.target.value)}
+            >
               <option value="board">Всю доску</option>
-              {selection.length > 0 ? <option value="selection">Выделенное ({selection.length})</option> : null}
+              {selection.length > 0 ? (
+                <option value="selection">Выделенное ({selection.length})</option>
+              ) : null}
               {format === 'pdf' && frames.length > 0 ? (
                 <option value="frames">Все фреймы — по странице ({frames.length})</option>
               ) : null}
@@ -139,7 +152,11 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
             {format === 'png' ? (
               <div className="space-y-1.5">
                 <Label htmlFor="export-scale">Масштаб</Label>
-                <NativeSelect id="export-scale" value={String(scale)} onChange={(e) => setScale(Number(e.target.value))}>
+                <NativeSelect
+                  id="export-scale"
+                  value={String(scale)}
+                  onChange={(e) => setScale(Number(e.target.value))}
+                >
                   <option value="1">1×</option>
                   <option value="2">2× (рекомендуется)</option>
                   <option value="4">4×</option>
@@ -148,7 +165,11 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
             ) : null}
             {format !== 'pdf' ? (
               <label className="flex items-center gap-2 self-end pb-2 text-sm">
-                <input type="checkbox" checked={transparent} onChange={(e) => setTransparent(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={transparent}
+                  onChange={(e) => setTransparent(e.target.checked)}
+                />
                 Прозрачный фон
               </label>
             ) : null}

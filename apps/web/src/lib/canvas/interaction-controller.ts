@@ -1,5 +1,5 @@
 import type Konva from 'konva';
-import { CANVAS, type BoardElement, type Bounds } from '@prostor/shared';
+import { CANVAS, type BoardElement, type Bounds, type LineElement } from '@prostor/shared';
 import type { BoardActions } from '@/lib/canvas/board-actions';
 import {
   STICKY_SIZE,
@@ -10,6 +10,7 @@ import {
   buildSticky,
   buildText,
 } from '@/lib/canvas/element-factory';
+import { anchorAt, isBindable, lineEnds, routeLine } from '@/lib/canvas/connectors';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import type { LaserRenderer } from '@/lib/canvas/laser-renderer';
 import { nextFrameTitle } from '@/lib/canvas/frames';
@@ -28,6 +29,9 @@ const DRAG_THRESHOLD_PX = 3;
 const SNAP_PX = 6;
 const HIT_TOLERANCE_PX = 4;
 const ERASER_RADIUS_PX = 8;
+/** Радиус ручки конца линии и «прилипания» к середине стороны объекта, экранные px */
+const HANDLE_PX = 9;
+const SIDE_SNAP_PX = 14;
 /** Больше стольких объектов — перетаскиваем визуально, а в Yjs пишем один раз в конце */
 const LIVE_MOVE_LIMIT = 150;
 const EDITABLE: ReadonlySet<BoardElement['type']> = new Set(['sticky', 'text', 'shape']);
@@ -62,6 +66,49 @@ const state = () => useCanvasStore.getState();
 /** После создания объекта инструмент возвращается к «выделению», если не закреплён */
 function finishTool(): void {
   if (!state().toolLocked) state().setTool('select');
+}
+
+type Binding = NonNullable<LineElement['startBinding']>;
+
+/** Объект под точкой, к которому можно привязать конец линии (кроме exclude) */
+function bindTargetAt(store: ElementStore, world: Point, exclude?: string): BoardElement | null {
+  const tolerance = HIT_TOLERANCE_PX / zoom();
+  const candidates = store
+    .query(pointQuery(world, tolerance))
+    .filter((el) => el.id !== exclude && isBindable(el) && !el.locked);
+  return topmostAt(candidates, world, tolerance);
+}
+
+function bindingAt(
+  store: ElementStore,
+  world: Point,
+  exclude?: string,
+): { binding: Binding; target: BoardElement } | null {
+  const target = bindTargetAt(store, world, exclude);
+  if (!target) return null;
+  return {
+    target,
+    binding: { elementId: target.id, anchor: anchorAt(target, world, SIDE_SNAP_PX / zoom()) },
+  };
+}
+
+/** Мировые точки линии (для превью в оверлее) */
+function worldPoints(g: { x: number; y: number; points: readonly number[] }): number[] {
+  const pts: number[] = [];
+  for (let i = 0; i + 1 < g.points.length; i += 2) {
+    pts.push(g.x + (g.points[i] ?? 0), g.y + (g.points[i + 1] ?? 0));
+  }
+  return pts;
+}
+
+/** Выделена ровно одна линия/стрелка без блокировки — у неё ручки концов */
+export function selectedLine(store: ElementStore): LineElement | null {
+  const selection = state().selection;
+  if (selection.length !== 1) return null;
+  const el = store.get(selection[0] ?? '');
+  return el && (el.type === 'line' || el.type === 'arrow') && !el.locked
+    ? (el as LineElement)
+    : null;
 }
 
 /**
@@ -150,7 +197,11 @@ export class InteractionController {
         const { voting, boardId } = useVotingStore.getState();
         if (!voting || voting.status !== 'active' || !voting.canVote || !boardId) return false;
         const tolerance = HIT_TOLERANCE_PX / zoom();
-        const hit = topmostAt(this.deps.store.query(pointQuery(world, tolerance)), world, tolerance);
+        const hit = topmostAt(
+          this.deps.store.query(pointQuery(world, tolerance)),
+          world,
+          tolerance,
+        );
         // Голосуют за содержательные объекты: стикеры, фигуры, текст, картинки
         if (!hit || !VOTABLE.has(hit.type)) return true;
         void castVote(boardId, voting.id, hit.id).catch((e: unknown) => this.deps.onError?.(e));
@@ -160,7 +211,11 @@ export class InteractionController {
         if (!actions?.canComment) return false;
         // Комментарий к объекту под курсором (пин поедет за ним) или к точке холста
         const tolerance = HIT_TOLERANCE_PX / zoom();
-        const hit = topmostAt(this.deps.store.query(pointQuery(world, tolerance)), world, tolerance);
+        const hit = topmostAt(
+          this.deps.store.query(pointQuery(world, tolerance)),
+          world,
+          tolerance,
+        );
         useCommentsStore.getState().startDraft({ x: world.x, y: world.y, elementId: hit?.id });
         finishTool();
         return true;
@@ -171,8 +226,21 @@ export class InteractionController {
   }
 
   private startSelect(e: PointerEvent, world: Point, screen: Point): boolean {
-    if (this.deps.hitsTransformer(screen)) return false;
     const actions = this.deps.actions();
+    // Ручка конца выделенной линии — перетаскивание конца (перепривязка)
+    const line = actions?.canEdit ? selectedLine(this.deps.store) : null;
+    if (line) {
+      const ends = lineEnds(line);
+      const r = HANDLE_PX / zoom();
+      for (const which of ['start', 'end'] as const) {
+        const p = ends[which];
+        if (Math.hypot(p.x - world.x, p.y - world.y) <= r) {
+          this.session = new EndpointSession(this.deps, line, which);
+          return true;
+        }
+      }
+    }
+    if (this.deps.hitsTransformer(screen)) return false;
     const tolerance = HIT_TOLERANCE_PX / zoom();
     const hit = topmostAt(this.deps.store.query(pointQuery(world, tolerance)), world, tolerance);
     const selection = state().selection;
@@ -317,6 +385,8 @@ class MoveSession implements Session {
     if (!this.started) return;
     const actions = this.deps.actions();
     actions?.moveFrom(this.origins, this.dx, this.dy, true);
+    // Перенесённая линия отрывается от объектов, которые остались на месте
+    actions?.detachMoved(this.origins.keys());
     // Объект, перенесённый центром во фрейм (или из него), меняет родителя — тем же шагом отмены
     actions?.reparent(this.origins.keys());
   }
@@ -347,7 +417,14 @@ class MarqueeSession implements Session {
     this.deps.overlay.setMarquee(rect);
     // Фрейм попадает в рамку, только если охвачен целиком: иначе рамка внутри фрейма выделяла бы и его
     const hits = elementsInRect(this.deps.store.query(rect), rect)
-      .filter((el) => el.type !== 'frame' || (el.x >= rect.minX && el.y >= rect.minY && el.x + el.width <= rect.maxX && el.y + el.height <= rect.maxY))
+      .filter(
+        (el) =>
+          el.type !== 'frame' ||
+          (el.x >= rect.minX &&
+            el.y >= rect.minY &&
+            el.x + el.width <= rect.maxX &&
+            el.y + el.height <= rect.maxY),
+      )
       .map((el) => el.id);
     const expanded = this.deps.actions()?.expandGroups(hits) ?? hits;
     state().select(Array.from(new Set([...this.base, ...expanded])));
@@ -376,9 +453,33 @@ class CreateSession implements Session {
   ) {
     this.start = snapPointToGrid(start.x, start.y, state().snapToGrid ? CANVAS.gridSize : null);
     this.current = this.start;
+    if (kind === 'line' || kind === 'arrow') {
+      this.startBinding = bindingAt(deps.store, start)?.binding ?? null;
+    }
+  }
+
+  /** Временная линия для превью: та же геометрия, что получится после создания */
+  private draft(): LineElement {
+    return buildLine({
+      type: this.kind === 'arrow' ? 'arrow' : 'line',
+      x: this.start.x,
+      y: this.start.y,
+      dx: this.current.x - this.start.x,
+      dy: this.current.y - this.start.y,
+      stroke: state().toolOptions.strokeColor,
+      strokeWidth: 3,
+      userId: '',
+      zIndex: 'a0',
+      routing: state().toolOptions.lineRouting,
+      startBinding: this.startBinding ?? undefined,
+      endBinding: this.endBinding ?? undefined,
+    });
   }
 
   private readonly start: Point;
+  /** Линия начата на объекте — её начало привязано к нему */
+  private startBinding: Binding | null = null;
+  private endBinding: Binding | null = null;
 
   /** Shift: квадрат / окружность, для линий — шаг 45° */
   private constrained(world: Point): Point {
@@ -405,7 +506,12 @@ class CreateSession implements Session {
     if (this.kind === 'shape' || this.kind === 'frame') {
       this.deps.overlay.setShapePreview(rectFromPoints(this.start, this.current));
     } else {
-      this.deps.overlay.setStroke([this.start.x, this.start.y, this.current.x, this.current.y], {
+      const hit = bindingAt(this.deps.store, world, this.startBinding?.elementId);
+      this.endBinding = hit?.binding ?? null;
+      this.deps.overlay.setBindTarget(hit ? this.deps.store.boundsOf(hit.target.id) : null);
+      const draft = this.draft();
+      const g = routeLine(draft, (id) => this.deps.store.get(id)) ?? draft;
+      this.deps.overlay.setStroke(worldPoints(g), {
         color: state().toolOptions.strokeColor,
         width: 3,
       });
@@ -415,6 +521,7 @@ class CreateSession implements Session {
   end(): void {
     this.deps.overlay.setShapePreview(null);
     this.deps.overlay.setStroke(null);
+    this.deps.overlay.setBindTarget(null);
     const actions = this.deps.actions();
     const user = this.deps.user();
     if (!actions || !user) return;
@@ -426,7 +533,12 @@ class CreateSession implements Session {
     if (this.kind === 'frame') {
       // Клик без протягивания — фрейм 16:9 по центру точки клика
       const rect = tiny
-        ? { minX: this.start.x - 400, minY: this.start.y - 225, maxX: this.start.x + 400, maxY: this.start.y + 225 }
+        ? {
+            minX: this.start.x - 400,
+            minY: this.start.y - 225,
+            maxX: this.start.x + 400,
+            maxY: this.start.y + 225,
+          }
         : rectFromPoints(this.start, this.current);
       const frame = buildFrame({
         x: rect.minX,
@@ -477,6 +589,10 @@ class CreateSession implements Session {
         strokeWidth: 3,
         userId: user.id,
         zIndex: this.deps.nextZIndex(),
+        routing: toolOptions.lineRouting,
+        startBinding: this.startBinding ?? undefined,
+        // Клик без протягивания — линия вправо, второй конец свободный
+        endBinding: tiny ? undefined : (this.endBinding ?? undefined),
       });
     }
     actions.create([el]);
@@ -486,6 +602,61 @@ class CreateSession implements Session {
 
   cancel(): void {
     this.deps.overlay.setShapePreview(null);
+    this.deps.overlay.setStroke(null);
+    this.deps.overlay.setBindTarget(null);
+  }
+}
+
+// ───────────────────────────── Конец линии ─────────────────────────────
+
+/**
+ * Перетаскивание ручки конца выделенной линии: над объектом конец
+ * привязывается к нему (у середины стороны — к стороне), в пустоте —
+ * становится свободным. Записывается одной правкой в конце жеста.
+ */
+class EndpointSession implements Session {
+  private binding: Binding | null = null;
+  private current: Point;
+
+  constructor(
+    private readonly deps: ControllerDeps,
+    private readonly line: LineElement,
+    private readonly which: 'start' | 'end',
+  ) {
+    this.current = lineEnds(line)[which];
+  }
+
+  private key(): 'startBinding' | 'endBinding' {
+    return this.which === 'start' ? 'startBinding' : 'endBinding';
+  }
+
+  private geometry() {
+    const draft: LineElement = { ...this.line, [this.key()]: this.binding ?? undefined };
+    const override = this.binding ? undefined : { [this.which]: this.current };
+    return routeLine(draft, (id) => this.deps.store.get(id), override);
+  }
+
+  move(world: Point): void {
+    this.current = world;
+    const other = this.which === 'start' ? this.line.endBinding : this.line.startBinding;
+    const hit = bindingAt(this.deps.store, world, other?.elementId);
+    this.binding = hit?.binding ?? null;
+    this.deps.overlay.setBindTarget(hit ? this.deps.store.boundsOf(hit.target.id) : null);
+    const g = this.geometry();
+    if (g) this.deps.overlay.setStroke(worldPoints(g), { color: '#6366f1', width: 2 / zoom() });
+  }
+
+  end(): void {
+    this.deps.overlay.setBindTarget(null);
+    this.deps.overlay.setStroke(null);
+    const actions = this.deps.actions();
+    const g = this.geometry();
+    if (!actions || !g) return;
+    actions.update(new Map([[this.line.id, { ...g, [this.key()]: this.binding ?? undefined }]]));
+  }
+
+  cancel(): void {
+    this.deps.overlay.setBindTarget(null);
     this.deps.overlay.setStroke(null);
   }
 }

@@ -48,7 +48,18 @@ export function RichText(props: RichTextProps) {
         },
         measureText,
       ),
-    [props.paragraphs, props.width, props.height, props.fontSize, family, props.bold, props.italic, props.align, props.verticalAlign, props.ellipsis],
+    [
+      props.paragraphs,
+      props.width,
+      props.height,
+      props.fontSize,
+      family,
+      props.bold,
+      props.italic,
+      props.align,
+      props.verticalAlign,
+      props.ellipsis,
+    ],
   );
 
   const sceneFunc = (ctx: Konva.Context) => {
@@ -65,7 +76,8 @@ export function RichText(props: RichTextProps) {
         ctx.setAttr('font', seg.font);
         ctx.fillText(seg.text, seg.x, line.y);
         if (seg.underline) ctx.fillRect(seg.x, line.y + size * 0.38, seg.width, thickness);
-        if (seg.strike) ctx.fillRect(seg.x, line.y - thickness / 2 + size * 0.04, seg.width, thickness);
+        if (seg.strike)
+          ctx.fillRect(seg.x, line.y - thickness / 2 + size * 0.04, seg.width, thickness);
       }
     }
   };

@@ -6,11 +6,13 @@ import {
   can,
   type BoardElement,
   type BoardRole,
+  type LineElement,
   type Bounds,
   type OrgPolicy,
 } from '@prostor/shared';
 import { cloneForPaste, parseClipboard, serializeElements } from '@/lib/canvas/clipboard';
 import { insertElements, maxZIndex, minZIndex, newElementId } from '@/lib/canvas/element-factory';
+import { routeLine, sameGeometry } from '@/lib/canvas/connectors';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import { centerOf, frameFor } from '@/lib/canvas/frames';
 import { boundsOf } from '@/lib/canvas/read-element';
@@ -138,7 +140,8 @@ export class BoardActions {
   withFrameChildren(ids: Iterable<string>): string[] {
     const result = new Set(ids);
     for (const el of this.get(result)) {
-      if (el.type === 'frame') for (const child of this.ctx.store.frameChildren(el.id)) result.add(child);
+      if (el.type === 'frame')
+        for (const child of this.ctx.store.frameChildren(el.id)) result.add(child);
     }
     return Array.from(result);
   }
@@ -153,7 +156,10 @@ export class BoardActions {
     for (const el of this.get(ids)) {
       if (el.type === 'frame') continue;
       const c = centerOf(boundsOf(el));
-      const frame = frameFor(el, this.ctx.store.query({ minX: c.x, minY: c.y, maxX: c.x, maxY: c.y }));
+      const frame = frameFor(
+        el,
+        this.ctx.store.query({ minX: c.x, minY: c.y, maxX: c.x, maxY: c.y }),
+      );
       const next = frame?.id;
       if (next !== el.frameId) patches.set(el.id, { frameId: next });
     }
@@ -193,6 +199,58 @@ export class BoardActions {
         map.set('updatedAt', now);
       }
     }, merge);
+    // Стрелки, привязанные к перемещённым объектам, едут за ними (сами перемещаемые линии — нет)
+    this.reroute(origins.keys(), new Set(origins.keys()));
+  }
+
+  /**
+   * Перенесённая линия отрывается от объектов, которые остались на месте
+   * (иначе пересчёт тут же вернул бы её конец к объекту). Вызывается в конце жеста.
+   */
+  detachMoved(ids: Iterable<string>): void {
+    const moving = new Set(ids);
+    const patches = new Map<string, ElementPatch>();
+    for (const el of this.get(moving)) {
+      if (el.type !== 'line' && el.type !== 'arrow') continue;
+      const patch: ElementPatch = {};
+      if (el.startBinding && !moving.has(el.startBinding.elementId)) patch.startBinding = undefined;
+      if (el.endBinding && !moving.has(el.endBinding.elementId)) patch.endBinding = undefined;
+      if (Object.keys(patch).length > 0) patches.set(el.id, patch);
+    }
+    if (patches.size > 0) this.update(patches, true);
+  }
+
+  /**
+   * Пересчёт геометрии линий, привязанных к changed (и самих изменённых линий
+   * с привязками или нестандартным маршрутом). Пишется тем же шагом отмены.
+   */
+  private reroute(changed: Iterable<string>, skip?: ReadonlySet<string>): void {
+    const store = this.ctx.store;
+    // Итератор (patches.keys()) читается дважды — сначала в массив
+    const ids = Array.from(changed);
+    const lines = store.connectorsOf(ids);
+    for (const id of ids) {
+      const el = store.get(id);
+      if (el && (el.type === 'line' || el.type === 'arrow')) lines.add(id);
+    }
+    const patches = new Map<string, ElementPatch>();
+    for (const id of lines) {
+      if (skip?.has(id)) continue;
+      const line = store.get(id) as LineElement | undefined;
+      if (!line || (line.type !== 'line' && line.type !== 'arrow')) continue;
+      const geometry = routeLine(line, (target) => store.get(target));
+      if (geometry && !sameGeometry(line, geometry)) patches.set(id, { ...geometry });
+    }
+    if (patches.size === 0) return;
+    const now = Date.now();
+    this.transact(() => {
+      for (const [id, patch] of patches) {
+        const map = this.ymap(id);
+        if (!map) continue;
+        for (const [key, value] of Object.entries(patch)) map.set(key, value);
+        map.set('updatedAt', now);
+      }
+    }, true);
   }
 
   nudge(ids: Iterable<string>, dx: number, dy: number): void {
@@ -214,6 +272,7 @@ export class BoardActions {
         map.set('updatedAt', now);
       }
     }, merge);
+    this.reroute(patches.keys());
   }
 
   /** Одинаковое изменение стиля для набора (цвет, толщина…) */
@@ -232,6 +291,8 @@ export class BoardActions {
     if (!this.canEdit || elements.length === 0) return [];
     this.transact(() => insertElements(this.ctx.doc, elements));
     const ids = elements.map((el) => el.id);
+    // Новая стрелка с привязками сразу «садится» на границы объектов
+    this.reroute(ids);
     // Созданное (стикер кликом, вставка, дубликат) в области фрейма попадает в него — тем же шагом отмены
     this.reparent(ids);
     return ids;

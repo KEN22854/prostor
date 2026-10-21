@@ -1,6 +1,11 @@
 import Konva from 'konva';
 import type { Awareness } from 'y-protocols/awareness';
-import { LASER_LIFETIME_MS, pruneTrail, toLocalTime, type TrailPoint } from '@/lib/canvas/laser-trail';
+import {
+  LASER_LIFETIME_MS,
+  pruneTrail,
+  toLocalTime,
+  type TrailPoint,
+} from '@/lib/canvas/laser-trail';
 
 const SEND_INTERVAL_MS = 40;
 const MAX_SENT_POINTS = 48;
@@ -62,7 +67,11 @@ export class LaserRenderer {
       const base = Date.now() - now;
       this.awareness?.setLocalStateField(
         'laser',
-        pts.map((p) => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10, Math.round(base + p.t)]),
+        pts.map((p) => [
+          Math.round(p.x * 10) / 10,
+          Math.round(p.y * 10) / 10,
+          Math.round(base + p.t),
+        ]),
       );
     }, wait);
   }
@@ -75,7 +84,8 @@ export class LaserRenderer {
       const state = raw as { laser?: unknown; user?: { color?: unknown } };
       if (!Array.isArray(state.laser) || state.laser.length === 0) continue;
       const pts = (state.laser as unknown[]).filter(
-        (p): p is [number, number, number] => Array.isArray(p) && p.length === 3 && p.every((n) => typeof n === 'number'),
+        (p): p is [number, number, number] =>
+          Array.isArray(p) && p.length === 3 && p.every((n) => typeof n === 'number'),
       );
       if (pts.length === 0) continue;
       const color = typeof state.user?.color === 'string' ? state.user.color : '#ef4444';

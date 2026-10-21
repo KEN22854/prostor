@@ -11,7 +11,11 @@ export function FollowBanner() {
   if (!follow) return null;
   return (
     <>
-      <div className="pointer-events-none absolute inset-0 z-[16] border-4" style={{ borderColor: follow.color }} aria-hidden />
+      <div
+        className="pointer-events-none absolute inset-0 z-[16] border-4"
+        style={{ borderColor: follow.color }}
+        aria-hidden
+      />
       <div
         className="absolute bottom-16 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-full px-4 py-1.5 text-sm text-white shadow-lg"
         style={{ backgroundColor: follow.color }}

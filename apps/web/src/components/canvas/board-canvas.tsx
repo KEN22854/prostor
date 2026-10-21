@@ -260,7 +260,12 @@ export function BoardCanvas({
   useEffect(() => {
     const layer = cursorLayerRef.current;
     if (!hasStage || !layer) return;
-    const renderer = new LaserRenderer(layer, awareness, () => useCanvasStore.getState().camera.zoom, '#ef4444');
+    const renderer = new LaserRenderer(
+      layer,
+      awareness,
+      () => useCanvasStore.getState().camera.zoom,
+      '#ef4444',
+    );
     laserRef.current = renderer;
     return () => {
       renderer.destroy();
@@ -349,7 +354,14 @@ export function BoardCanvas({
 
   useCanvasInteractions(containerRef, controllerDeps);
   useBoardHotkeys({ actions, store, undoManager, openImagePicker: () => openImagePicker() });
-  useBoardClipboard({ containerRef, actions, doc, userId: user?.id ?? null, insertImages, importPdf });
+  useBoardClipboard({
+    containerRef,
+    actions,
+    doc,
+    userId: user?.id ?? null,
+    insertImages,
+    importPdf,
+  });
 
   const cursor = isPanning
     ? 'grabbing'
@@ -403,7 +415,12 @@ export function BoardCanvas({
       ) : null}
 
       {store && actions ? (
-        <TextEditor store={store} actions={actions} awareness={awareness} undoManager={undoManager} />
+        <TextEditor
+          store={store}
+          actions={actions}
+          awareness={awareness}
+          undoManager={undoManager}
+        />
       ) : null}
       {actions?.canEdit ? (
         <ToolPalette
@@ -467,7 +484,10 @@ export function BoardCanvas({
           // Точку задаёт инструмент «Изображение»; иначе — центр экрана
           const { camera, size: s } = useCanvasStore.getState();
           const v = visibleBounds(camera, s);
-          const at = pendingImagePoint.current ?? { x: (v.minX + v.maxX) / 2, y: (v.minY + v.maxY) / 2 };
+          const at = pendingImagePoint.current ?? {
+            x: (v.minX + v.maxX) / 2,
+            y: (v.minY + v.maxY) / 2,
+          };
           pendingImagePoint.current = null;
           void insertImages(files, at);
         }}

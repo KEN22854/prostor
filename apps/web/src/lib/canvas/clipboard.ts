@@ -73,8 +73,18 @@ export function cloneForPaste(
         (groupMap.set(el.groupId, newElementId()), groupMap.get(el.groupId)))
       : undefined;
     const frameId = el.frameId ? idMap.get(el.frameId) : undefined;
+    // Привязки стрелок: к скопированному объекту — переносим на копию, к остальным — отвязываем
+    const bindings: Record<string, unknown> = {};
+    if (el.type === 'line' || el.type === 'arrow') {
+      for (const key of ['startBinding', 'endBinding'] as const) {
+        const b = el[key];
+        const target = b ? idMap.get(b.elementId) : undefined;
+        bindings[key] = b && target ? { ...b, elementId: target } : undefined;
+      }
+    }
     return {
       ...el,
+      ...bindings,
       id: idMap.get(el.id) ?? newElementId(),
       x: el.x + opts.dx,
       y: el.y + opts.dy,

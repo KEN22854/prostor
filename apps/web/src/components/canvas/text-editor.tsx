@@ -9,7 +9,13 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties }
 import type { Awareness } from 'y-protocols/awareness';
 import { redo, undo, yCursorPlugin, ySyncPlugin, ySyncPluginKey, yUndoPlugin } from 'y-prosemirror';
 import type * as Y from 'yjs';
-import { richToPlain, type BoardElement, type ShapeElement, type StickyElement, type TextElement } from '@prostor/shared';
+import {
+  richToPlain,
+  type BoardElement,
+  type ShapeElement,
+  type StickyElement,
+  type TextElement,
+} from '@prostor/shared';
 import type { BoardActions } from '@/lib/canvas/board-actions';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import { canvasFont } from '@/lib/canvas/fonts';
@@ -77,7 +83,8 @@ const toggleBullet: Command = (state, dispatch) => {
   if (dispatch) {
     const tr = state.tr;
     state.doc.nodesBetween(from, to, (node, pos) => {
-      if (node.type.name === 'paragraph') tr.setNodeMarkup(pos, undefined, { ...node.attrs, bullet: !allBullets });
+      if (node.type.name === 'paragraph')
+        tr.setNodeMarkup(pos, undefined, { ...node.attrs, bullet: !allBullets });
     });
     dispatch(tr);
   }
@@ -88,21 +95,30 @@ const toggleBullet: Command = (state, dispatch) => {
  * Ctrl+Home / Ctrl+End явно: штатная команда браузера внутри холста
  * (absolute-позиционированный редактор с transform) каретку не двигает.
  */
-const caretTo = (where: 'start' | 'end'): Command => (state, dispatch) => {
-  dispatch?.(state.tr.setSelection(where === 'start' ? Selection.atStart(state.doc) : Selection.atEnd(state.doc)).scrollIntoView());
-  return true;
-};
+const caretTo =
+  (where: 'start' | 'end'): Command =>
+  (state, dispatch) => {
+    dispatch?.(
+      state.tr
+        .setSelection(where === 'start' ? Selection.atStart(state.doc) : Selection.atEnd(state.doc))
+        .scrollIntoView(),
+    );
+    return true;
+  };
 
 /** Enter в пустом пункте списка выходит из списка, в непустом — новый пункт */
 const exitEmptyBullet: Command = (state, dispatch) => {
   const { $from, empty } = state.selection;
   const node = $from.parent;
-  if (!empty || node.type.name !== 'paragraph' || !node.attrs.bullet || node.content.size > 0) return false;
+  if (!empty || node.type.name !== 'paragraph' || !node.attrs.bullet || node.content.size > 0)
+    return false;
   dispatch?.(state.tr.setNodeMarkup($from.before(), undefined, { ...node.attrs, bullet: false }));
   return true;
 };
 const splitKeepingBullet = splitBlockAs((node) =>
-  node.type.name === 'paragraph' ? { type: richSchema.nodes.paragraph!, attrs: { bullet: node.attrs.bullet } } : null,
+  node.type.name === 'paragraph'
+    ? { type: richSchema.nodes.paragraph!, attrs: { bullet: node.attrs.bullet } }
+    : null,
 );
 
 const MARK_BUTTONS: Array<{ mark: RichMark; icon: LucideIcon; label: string; hotkey: string }> = [
@@ -121,7 +137,14 @@ interface EditorBoxProps {
   onDone: () => void;
 }
 
-function EditorBox({ element: el, camera, actions, awareness, undoManager, onDone }: EditorBoxProps) {
+function EditorBox({
+  element: el,
+  camera,
+  actions,
+  awareness,
+  undoManager,
+  onDone,
+}: EditorBoxProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const fragmentRef = useRef<Y.XmlFragment | null>(null);
@@ -178,7 +201,15 @@ function EditorBox({ element: el, camera, actions, awareness, undoManager, onDon
       schema: richSchema,
       plugins: [
         ySyncPlugin(fragment),
-        ...(awareness ? [yCursorPlugin(textCursorAwareness(awareness, TEXT_CURSOR_FIELD), {}, TEXT_CURSOR_FIELD)] : []),
+        ...(awareness
+          ? [
+              yCursorPlugin(
+                textCursorAwareness(awareness, TEXT_CURSOR_FIELD),
+                {},
+                TEXT_CURSOR_FIELD,
+              ),
+            ]
+          : []),
         yUndoPlugin(),
         keymap({
           'Mod-z': undo,
@@ -200,17 +231,25 @@ function EditorBox({ element: el, camera, actions, awareness, undoManager, onDon
     });
     const view = new EditorView(host, {
       state,
-      attributes: { 'aria-label': 'Текст объекта', role: 'textbox', 'aria-multiline': 'true', spellcheck: 'true' },
+      attributes: {
+        'aria-label': 'Текст объекта',
+        role: 'textbox',
+        'aria-multiline': 'true',
+        spellcheck: 'true',
+      },
       // «- » или «* » в начале абзаца — пункт списка, как в мессенджерах и Markdown
       handleTextInput(v, from, _to, text) {
         if (text !== ' ') return false;
         const $from = v.state.doc.resolve(from);
         const para = $from.parent;
         const before = para.textBetween(0, $from.parentOffset);
-        if (para.type.name !== 'paragraph' || para.attrs.bullet || !/^[-*•]$/.test(before)) return false;
+        if (para.type.name !== 'paragraph' || para.attrs.bullet || !/^[-*•]$/.test(before))
+          return false;
         const start = $from.start();
         v.dispatch(
-          v.state.tr.delete(start, start + before.length).setNodeMarkup($from.before(), undefined, { ...para.attrs, bullet: true }),
+          v.state.tr
+            .delete(start, start + before.length)
+            .setNodeMarkup($from.before(), undefined, { ...para.attrs, bullet: true }),
         );
         return true;
       },
@@ -221,13 +260,16 @@ function EditorBox({ element: el, camera, actions, awareness, undoManager, onDon
         if (this.isDestroyed) return;
         const next = this.state.apply(tr);
         this.updateState(next);
-        const marks = new Set((next.storedMarks ?? next.selection.$from.marks()).map((m) => m.type.name));
+        const marks = new Set(
+          (next.storedMarks ?? next.selection.$from.marks()).map((m) => m.type.name),
+        );
         setActive(marks);
         if (tr.docChanged && el.type === 'text') {
           if (heightTimer.current) clearTimeout(heightTimer.current);
           heightTimer.current = setTimeout(() => {
             const h = contentHeight();
-            if (h && Math.abs(h - el.height) > 1) actions.update(new Map([[el.id, { height: h }]]), true);
+            if (h && Math.abs(h - el.height) > 1)
+              actions.update(new Map([[el.id, { height: h }]]), true);
           }, 250);
         }
       },
@@ -251,7 +293,8 @@ function EditorBox({ element: el, camera, actions, awareness, undoManager, onDon
     // Фрагмент заменили (коллега одновременно открыл тот же старый стикер) — переподключаемся
     const map = actions.elementMap(el.id);
     const onMapChange = (event: Y.YMapEvent<unknown>) => {
-      if (event.keysChanged.has('content') && map?.get('content') !== fragment) setGeneration((g) => g + 1);
+      if (event.keysChanged.has('content') && map?.get('content') !== fragment)
+        setGeneration((g) => g + 1);
     };
     map?.observe(onMapChange);
 
@@ -276,7 +319,11 @@ function EditorBox({ element: el, camera, actions, awareness, undoManager, onDon
   const pos = worldToScreen(camera, { x: el.x, y: el.y });
   const pad = PADDING[el.type] * camera.zoom;
   const vertical =
-    el.verticalAlign === 'middle' ? 'center' : el.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start';
+    el.verticalAlign === 'middle'
+      ? 'center'
+      : el.verticalAlign === 'bottom'
+        ? 'flex-end'
+        : 'flex-start';
 
   const box: CSSProperties = {
     position: 'absolute',
@@ -319,7 +366,10 @@ function EditorBox({ element: el, camera, actions, awareness, undoManager, onDon
             title={`${label} (${hotkey})`}
             aria-label={label}
             aria-pressed={active.has(mark)}
-            className={cn('rounded p-1.5 text-foreground hover:bg-muted', active.has(mark) && 'bg-accent text-accent-foreground')}
+            className={cn(
+              'rounded p-1.5 text-foreground hover:bg-muted',
+              active.has(mark) && 'bg-accent text-accent-foreground',
+            )}
             onClick={() => run(toggleMark(richSchema.marks[mark]!))}
           >
             <Icon className="size-3.5" />
@@ -335,7 +385,12 @@ function EditorBox({ element: el, camera, actions, awareness, undoManager, onDon
           <List className="size-3.5" />
         </button>
       </div>
-      <div ref={hostRef} className="rich-text-editor" style={content} onKeyDown={(e) => e.stopPropagation()} />
+      <div
+        ref={hostRef}
+        className="rich-text-editor"
+        style={content}
+        onKeyDown={(e) => e.stopPropagation()}
+      />
     </div>
   );
 }

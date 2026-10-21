@@ -38,12 +38,29 @@ export class OverlayRenderer {
     listening: false,
     stroke: ACCENT,
   });
+  /** Объект, к которому прилипнет конец стрелки */
+  private readonly bindTarget = new Konva.Rect({
+    visible: false,
+    listening: false,
+    stroke: ACCENT,
+    fill: 'rgba(99,102,241,0.06)',
+  });
+  /** Ручки концов выделенной линии */
+  private readonly handles = new Konva.Group({ listening: false });
 
   constructor(
     private readonly layer: Konva.Layer,
     private readonly getZoom: () => number,
   ) {
-    layer.add(this.selectionBox, this.shapePreview, this.preview, this.guides, this.marquee);
+    layer.add(
+      this.bindTarget,
+      this.selectionBox,
+      this.shapePreview,
+      this.preview,
+      this.guides,
+      this.marquee,
+      this.handles,
+    );
   }
 
   private get px(): number {
@@ -140,7 +157,46 @@ export class OverlayRenderer {
     this.layer.batchDraw();
   }
 
+  /** Подсветка объекта привязки (рамка с отступом) */
+  setBindTarget(b: Bounds | null): void {
+    if (!b) {
+      this.bindTarget.visible(false);
+    } else {
+      const pad = 4 * this.px;
+      this.bindTarget.setAttrs({
+        visible: true,
+        x: b.minX - pad,
+        y: b.minY - pad,
+        width: b.maxX - b.minX + pad * 2,
+        height: b.maxY - b.minY + pad * 2,
+        strokeWidth: this.px * 2,
+        cornerRadius: 6 * this.px,
+      });
+    }
+    this.layer.batchDraw();
+  }
+
+  /** Ручки концов линии: заливка — конец привязан к объекту */
+  setHandles(handles: ReadonlyArray<{ x: number; y: number; bound: boolean }>): void {
+    this.handles.destroyChildren();
+    for (const h of handles) {
+      this.handles.add(
+        new Konva.Circle({
+          x: h.x,
+          y: h.y,
+          radius: 6 * this.px,
+          fill: h.bound ? ACCENT : '#ffffff',
+          stroke: ACCENT,
+          strokeWidth: 1.5 * this.px,
+          listening: false,
+        }),
+      );
+    }
+    this.layer.batchDraw();
+  }
+
   clearTransient(): void {
+    this.bindTarget.visible(false);
     this.marquee.visible(false);
     this.preview.visible(false);
     this.shapePreview.visible(false);

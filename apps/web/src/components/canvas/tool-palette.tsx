@@ -206,7 +206,40 @@ export function ToolPalette({ onPickImage, onGenerateImage, onImportPdf }: ToolP
       </ToolWithOptions>
 
       <ToolButton tool="line" icon={Minus} label="Линия" hotkey="L" />
-      <ToolButton tool="arrow" icon={ArrowUpRight} label="Стрелка" hotkey="A" />
+      <ToolWithOptions tool="arrow" icon={ArrowUpRight} label="Стрелка" hotkey="A">
+        <Section title="Маршрут (линии и стрелки)">
+          <div className="flex gap-1">
+            {(
+              [
+                ['straight', 'Прямая'],
+                ['elbow', 'Ломаная'],
+                ['curved', 'Кривая'],
+              ] as const
+            ).map(([routing, label]) => (
+              <Button
+                key={routing}
+                size="sm"
+                variant={options.lineRouting === routing ? 'secondary' : 'ghost'}
+                className="h-7 px-2 text-xs"
+                onClick={() => setOptions({ lineRouting: routing })}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+          <p className="mt-1.5 max-w-52 text-xs text-muted-foreground">
+            Начните или закончите стрелку на объекте — она привяжется и будет следовать за ним
+          </p>
+        </Section>
+        <Section title="Цвет">
+          <ColorSwatches
+            colors={STROKE_COLORS}
+            value={options.strokeColor}
+            onChange={(c) => setOptions({ strokeColor: c })}
+            label="Цвет стрелки"
+          />
+        </Section>
+      </ToolWithOptions>
       <ToolButton tool="text" icon={Type} label="Текст" hotkey="T" />
 
       <ToolWithOptions tool="pen" icon={Pencil} label="Карандаш" hotkey="P">
@@ -273,11 +306,19 @@ export function ToolPalette({ onPickImage, onGenerateImage, onImportPdf }: ToolP
       />
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-9" aria-label="Импорт PDF" onClick={onImportPdf}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9"
+            aria-label="Импорт PDF"
+            onClick={onImportPdf}
+          >
             <FileUp />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">Импорт PDF: страницы — фреймами (или перетащите файл на доску)</TooltipContent>
+        <TooltipContent side="right">
+          Импорт PDF: страницы — фреймами (или перетащите файл на доску)
+        </TooltipContent>
       </Tooltip>
       {onGenerateImage ? (
         <Tooltip>

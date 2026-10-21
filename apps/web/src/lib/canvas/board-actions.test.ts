@@ -179,7 +179,15 @@ describe('BoardActions: фреймы', () => {
   function withFrame() {
     const ctx = setup();
     const frame = {
-      ...buildFrame({ x: 0, y: 0, width: 1000, height: 600, title: 'Фрейм 1', userId: 'me', zIndex: 'a0' }),
+      ...buildFrame({
+        x: 0,
+        y: 0,
+        width: 1000,
+        height: 600,
+        title: 'Фрейм 1',
+        userId: 'me',
+        zIndex: 'a0',
+      }),
       id: 'frame',
     };
     ctx.doc.transact(() => insertElements(ctx.doc, [frame]), 'setup');
@@ -222,6 +230,9 @@ describe('BoardActions: фреймы', () => {
   it('фреймы рисуются под объектами независимо от zIndex', () => {
     const { store, add } = withFrame();
     add('low', 10, 10, { zIndex: 'Zz' }); // меньше zIndex фрейма 'a0'
-    expect(store.query({ minX: 0, minY: 0, maxX: 100, maxY: 100 }).map((e) => e.id)).toEqual(['frame', 'low']);
+    expect(store.query({ minX: 0, minY: 0, maxX: 100, maxY: 100 }).map((e) => e.id)).toEqual([
+      'frame',
+      'low',
+    ]);
   });
 });

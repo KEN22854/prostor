@@ -32,7 +32,14 @@ export function TextShape({ element: el, detail, hideText = false }: TextShapePr
   }
   if (isRichFormatted(el.rich) && el.rich) {
     return (
-      <Group x={el.x} y={el.y} rotation={el.rotation} opacity={el.opacity} id={el.id} name="element">
+      <Group
+        x={el.x}
+        y={el.y}
+        rotation={el.rotation}
+        opacity={el.opacity}
+        id={el.id}
+        name="element"
+      >
         <RichText
           paragraphs={el.rich}
           x={0}

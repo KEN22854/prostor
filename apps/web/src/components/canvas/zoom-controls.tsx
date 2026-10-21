@@ -28,7 +28,11 @@ interface ZoomControlsProps {
 }
 
 /** Панель масштаба и инструмента навигации (выделение / рука) */
-export function ZoomControls({ onFit, showNavTools = false, showCommentTool = false }: ZoomControlsProps) {
+export function ZoomControls({
+  onFit,
+  showNavTools = false,
+  showCommentTool = false,
+}: ZoomControlsProps) {
   // Округлённый процент как селектор: панорамирование не перерисовывает панель
   const percent = useCanvasStore((s) => Math.round(s.camera.zoom * 100));
   const tool = useCanvasStore((s) => s.tool);

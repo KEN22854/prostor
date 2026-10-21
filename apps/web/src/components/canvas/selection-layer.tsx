@@ -3,7 +3,8 @@
 import type Konva from 'konva';
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { Layer, Transformer } from 'react-konva';
-import type { BoardElement } from '@prostor/shared';
+import type { BoardElement, LineElement } from '@prostor/shared';
+import { lineEnds } from '@/lib/canvas/connectors';
 import type { BoardActions } from '@/lib/canvas/board-actions';
 import type { DetailLevel } from '@/lib/canvas/constants';
 import type { ElementStore } from '@/lib/canvas/element-store';
@@ -46,7 +47,14 @@ export function SelectionLayer({
   const selection = useCanvasStore((s) => s.selection);
   const editingId = useCanvasStore((s) => s.editingId);
   const tool = useCanvasStore((s) => s.tool);
+  const zoom = useCanvasStore((s) => s.camera.zoom);
   const canEdit = actions?.canEdit ?? false;
+  // Одна линия: вместо рамки трансформации — ручки концов (перетаскивание = перепривязка)
+  const single = selection.length === 1 ? store?.get(selection[0] ?? '') : undefined;
+  const lineId =
+    single && (single.type === 'line' || single.type === 'arrow') && !single.locked && canEdit
+      ? single.id
+      : null;
 
   useLayoutEffect(() => {
     const tr = trRef.current;
@@ -60,6 +68,7 @@ export function SelectionLayer({
         const id = node.id();
         if (!wanted.has(id)) continue;
         if (store?.get(id)?.locked) continue;
+        if (id === lineId) continue;
         nodes.push(node);
       }
     }
@@ -71,11 +80,35 @@ export function SelectionLayer({
     tr.getLayer()?.batchDraw();
 
     const box =
-      selection.length > 0 && (nodes.length < selection.length || detail === 'lod')
+      selection.length > 0 && !lineId && (nodes.length < selection.length || detail === 'lod')
         ? (store?.boundsOfIds(selection) ?? null)
         : null;
     overlay?.setSelectionBox(editingId ? null : box);
-  }, [selection, elements, detail, tool, editingId, store, elementsLayer, overlay]);
+  }, [selection, elements, detail, tool, editingId, store, elementsLayer, overlay, lineId]);
+
+  // Ручки концов выделенной линии: следуют за её геометрией (коллеги, undo) и масштабом
+  useEffect(() => {
+    if (!overlay) return;
+    if (!lineId || !store || tool !== 'select' || editingId) {
+      overlay.setHandles([]);
+      return;
+    }
+    const draw = () => {
+      const line = store.get(lineId) as LineElement | undefined;
+      if (!line) return overlay.setHandles([]);
+      const ends = lineEnds(line);
+      overlay.setHandles([
+        { ...ends.start, bound: Boolean(line.startBinding) },
+        { ...ends.end, bound: Boolean(line.endBinding) },
+      ]);
+    };
+    draw();
+    const unsubscribe = store.subscribe(draw);
+    return () => {
+      unsubscribe();
+      overlay.setHandles([]);
+    };
+  }, [overlay, store, lineId, tool, editingId, zoom]);
 
   // Пересчёт рамки, когда выделенные элементы меняют коллеги или undo
   useEffect(() => {

@@ -161,6 +161,9 @@ export function buildLine(
     dy: number;
     stroke: string;
     strokeWidth: number;
+    routing?: LineElement['routing'];
+    startBinding?: LineElement['startBinding'];
+    endBinding?: LineElement['endBinding'];
   },
 ): LineElement {
   return {
@@ -171,6 +174,9 @@ export function buildLine(
     strokeWidth: p.strokeWidth,
     startArrow: 'none',
     endArrow: p.type === 'arrow' ? 'arrow' : 'none',
+    routing: p.routing ?? 'straight',
+    ...(p.startBinding ? { startBinding: p.startBinding } : {}),
+    ...(p.endBinding ? { endBinding: p.endBinding } : {}),
   };
 }
 

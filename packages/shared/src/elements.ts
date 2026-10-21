@@ -170,7 +170,14 @@ export const lineSchema = baseElementSchema.extend({
   endBinding: bindingSchema,
   startArrow: z.enum(['none', 'arrow', 'dot']).default('none'),
   endArrow: z.enum(['none', 'arrow', 'dot']).default('arrow'),
+  /** Маршрут: прямая, ломаная под прямыми углами, плавная кривая */
+  routing: z.enum(['straight', 'elbow', 'curved']).default('straight'),
+  /** Подпись посередине линии */
+  label: z.string().max(500).optional(),
 });
+
+export type LineRouting = 'straight' | 'elbow' | 'curved';
+export type BindingAnchor = 'auto' | 'top' | 'right' | 'bottom' | 'left';
 
 export const pathSchema = baseElementSchema.extend({
   type: z.literal('path'),

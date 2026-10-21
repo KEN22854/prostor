@@ -10,6 +10,7 @@ import type {
   TextElement,
   RichParagraph,
 } from '@prostor/shared';
+import { midpointOf } from '@/lib/canvas/connectors';
 import { isRichFormatted } from '@prostor/shared';
 import { compareRenderOrder } from '@/lib/canvas/frames';
 import { layoutRich } from '@/lib/rich-text/layout';
@@ -67,7 +68,17 @@ interface TextStyle {
 }
 
 function textBlock(
-  box: { text: string; rich?: RichParagraph[]; x: number; y: number; width: number; height: number; align: 'left' | 'center' | 'right'; verticalAlign: 'top' | 'middle' | 'bottom'; ellipsis: boolean },
+  box: {
+    text: string;
+    rich?: RichParagraph[];
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    align: 'left' | 'center' | 'right';
+    verticalAlign: 'top' | 'middle' | 'bottom';
+    ellipsis: boolean;
+  },
   style: TextStyle,
   opts: SvgExportOptions,
 ): string {
@@ -75,8 +86,10 @@ function textBlock(
   const weight = style.fontWeight === 'bold' ? 'bold' : 'normal';
   const italic = style.fontStyle === 'italic' ? 'italic ' : '';
   const family = opts.fontFamily ?? FONT;
-  if (box.rich && isRichFormatted(box.rich)) return richBlock({ ...box, rich: box.rich }, style, family, opts);
-  const measure: Measure = (t) => opts.measure(t, `${italic}${weight} ${style.fontSize}px ${family}`);
+  if (box.rich && isRichFormatted(box.rich))
+    return richBlock({ ...box, rich: box.rich }, style, family, opts);
+  const measure: Measure = (t) =>
+    opts.measure(t, `${italic}${weight} ${style.fontSize}px ${family}`);
   const { lines, anchor } = layoutText({ ...box, fontSize: style.fontSize }, measure);
   const tspans = lines
     .map((l) => `<tspan ${attrs({ x: box.x + l.x, y: box.y + l.y })}>${escapeXml(l.text)}</tspan>`)
@@ -192,13 +205,37 @@ function sticky(el: StickyElement, opts: SvgExportOptions): string {
     `<rect ${attrs({ width: el.width, height: el.height, rx: 3, fill: el.fill, stroke: 'rgba(0,0,0,0.08)', 'stroke-width': 1 })}/>`,
     `<rect ${attrs({ y: el.height - 6, width: el.width, height: 6, fill: 'rgba(0,0,0,0.06)' })}/>`,
     textBlock(
-      { text: el.text, rich: el.rich, x: pad, y: pad, width: Math.max(0, el.width - pad * 2), height: Math.max(0, el.height - pad * 2 - (el.authorName ? 16 : 0)), align: el.align, verticalAlign: el.verticalAlign, ellipsis: true },
-      { fontSize: el.fontSize, fontWeight: el.fontWeight, fontStyle: el.fontStyle, color: el.textColor },
+      {
+        text: el.text,
+        rich: el.rich,
+        x: pad,
+        y: pad,
+        width: Math.max(0, el.width - pad * 2),
+        height: Math.max(0, el.height - pad * 2 - (el.authorName ? 16 : 0)),
+        align: el.align,
+        verticalAlign: el.verticalAlign,
+        ellipsis: true,
+      },
+      {
+        fontSize: el.fontSize,
+        fontWeight: el.fontWeight,
+        fontStyle: el.fontStyle,
+        color: el.textColor,
+      },
       opts,
     ),
     el.text && el.authorName
       ? textBlock(
-          { text: el.authorName, x: pad, y: el.height - pad - 12, width: el.width - pad * 2, height: 12, align: 'left', verticalAlign: 'top', ellipsis: true },
+          {
+            text: el.authorName,
+            x: pad,
+            y: el.height - pad - 12,
+            width: el.width - pad * 2,
+            height: 12,
+            align: 'left',
+            verticalAlign: 'top',
+            ellipsis: true,
+          },
           { fontSize: 11, color: 'rgba(0,0,0,0.45)' },
           opts,
         )
@@ -211,8 +248,23 @@ function shape(el: ShapeElement, opts: SvgExportOptions): string {
   return (
     shapeOutline(el) +
     textBlock(
-      { text: el.text ?? '', rich: el.rich, x: pad, y: pad, width: Math.max(0, el.width - pad * 2), height: Math.max(0, el.height - pad * 2), align: 'center', verticalAlign: 'middle', ellipsis: true },
-      { fontSize: el.fontSize, fontWeight: el.fontWeight, fontStyle: el.fontStyle, color: el.textColor },
+      {
+        text: el.text ?? '',
+        rich: el.rich,
+        x: pad,
+        y: pad,
+        width: Math.max(0, el.width - pad * 2),
+        height: Math.max(0, el.height - pad * 2),
+        align: 'center',
+        verticalAlign: 'middle',
+        ellipsis: true,
+      },
+      {
+        fontSize: el.fontSize,
+        fontWeight: el.fontWeight,
+        fontStyle: el.fontStyle,
+        color: el.textColor,
+      },
       opts,
     )
   );
@@ -220,13 +272,35 @@ function shape(el: ShapeElement, opts: SvgExportOptions): string {
 
 function text(el: TextElement, opts: SvgExportOptions): string {
   return textBlock(
-    { text: el.text, rich: el.rich, x: 0, y: 0, width: el.width, height: el.height, align: el.align, verticalAlign: el.verticalAlign, ellipsis: false },
-    { fontSize: el.fontSize, fontWeight: el.fontWeight, fontStyle: el.fontStyle, color: el.textColor },
+    {
+      text: el.text,
+      rich: el.rich,
+      x: 0,
+      y: 0,
+      width: el.width,
+      height: el.height,
+      align: el.align,
+      verticalAlign: el.verticalAlign,
+      ellipsis: false,
+    },
+    {
+      fontSize: el.fontSize,
+      fontWeight: el.fontWeight,
+      fontStyle: el.fontStyle,
+      color: el.textColor,
+    },
     opts,
   );
 }
 
-function arrowHead(tipX: number, tipY: number, angle: number, length: number, width: number, color: string): string {
+function arrowHead(
+  tipX: number,
+  tipY: number,
+  angle: number,
+  length: number,
+  width: number,
+  color: string,
+): string {
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   const bx = tipX - length * cos;
@@ -240,7 +314,11 @@ function line(el: LineElement): string {
   const p = el.points;
   const pts: string[] = [];
   for (let i = 0; i + 1 < p.length; i += 2) pts.push(`${n(p[i] ?? 0)},${n(p[i + 1] ?? 0)}`);
-  let out = `<polyline points="${pts.join(' ')}" ${attrs({
+  const curved = el.routing === 'curved' && p.length >= 6;
+  const geometry = curved
+    ? `<path ${attrs({ d: smoothPath(p, 0.5) })}`
+    : `<polyline points="${pts.join(' ')}"`;
+  let out = `${geometry} ${attrs({
     fill: 'none',
     stroke: el.stroke,
     'stroke-width': el.strokeWidth,
@@ -252,18 +330,38 @@ function line(el: LineElement): string {
   const len = p.length;
   const end = el.type === 'arrow' ? el.endArrow !== 'none' : el.endArrow === 'arrow';
   if (end && len >= 4) {
-    const angle = Math.atan2((p[len - 1] ?? 0) - (p[len - 3] ?? 0), (p[len - 2] ?? 0) - (p[len - 4] ?? 0));
+    const angle = Math.atan2(
+      (p[len - 1] ?? 0) - (p[len - 3] ?? 0),
+      (p[len - 2] ?? 0) - (p[len - 4] ?? 0),
+    );
     out += arrowHead(p[len - 2] ?? 0, p[len - 1] ?? 0, angle, head, head, el.stroke);
   }
   if (el.startArrow === 'arrow' && len >= 4) {
     const angle = Math.atan2((p[1] ?? 0) - (p[3] ?? 0), (p[0] ?? 0) - (p[2] ?? 0));
     out += arrowHead(p[0] ?? 0, p[1] ?? 0, angle, head, head, el.stroke);
   }
+  const label = el.label?.trim();
+  if (label) {
+    // Плашка подписи в середине линии, как на холсте (ширина — по оценке длины текста)
+    const mid = midpointOf(p);
+    const w = label.length * 7.5 + 12;
+    const h = 26;
+    out += `<rect ${attrs({ x: mid.x - w / 2, y: mid.y - h / 2, width: w, height: h, rx: 6, fill: '#ffffff', stroke: el.stroke, 'stroke-width': 1 })}/>`;
+    out += `<text ${attrs({ x: mid.x, y: mid.y + 5, 'text-anchor': 'middle', 'font-size': 14, 'font-family': 'Inter, sans-serif', fill: '#1f2937' })}>${escapeXml(label)}</text>`;
+  }
   return out;
 }
 
 /** Контрольные точки сглаживания — тот же алгоритм, что Konva.Line с tension */
-function controlPoints(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t: number): [number, number, number, number] {
+function controlPoints(
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  t: number,
+): [number, number, number, number] {
   const d01 = Math.hypot(x1 - x0, y1 - y0);
   const d12 = Math.hypot(x2 - x1, y2 - y1);
   const fa = (t * d01) / (d01 + d12);
@@ -293,7 +391,9 @@ export function smoothPath(points: readonly number[], tension = 0.4): string {
     segs.push(`C${t(i)} ${t(i + 1)} ${t(i + 2)} ${t(i + 3)} ${t(i + 4)} ${t(i + 5)}`);
     i += 6;
   }
-  segs.push(`Q${t(tp.length - 2)} ${t(tp.length - 1)} ${n(at(p.length - 2))} ${n(at(p.length - 1))}`);
+  segs.push(
+    `Q${t(tp.length - 2)} ${t(tp.length - 1)} ${n(at(p.length - 2))} ${n(at(p.length - 1))}`,
+  );
   return segs.join(' ');
 }
 
@@ -322,10 +422,20 @@ function image(el: ImageElement, opts: SvgExportOptions): string {
 function frameBody(el: FrameElement, opts: SvgExportOptions): string {
   return (
     textBlock(
-      { text: el.title, x: 0, y: -26, width: el.width, height: 20, align: 'left', verticalAlign: 'top', ellipsis: true },
+      {
+        text: el.title,
+        x: 0,
+        y: -26,
+        width: el.width,
+        height: 20,
+        align: 'left',
+        verticalAlign: 'top',
+        ellipsis: true,
+      },
       { fontSize: 16, fontWeight: 'bold', color: '#64748b' },
       opts,
-    ) + `<rect ${attrs({ width: el.width, height: el.height, rx: 6, fill: el.fill, stroke: 'rgba(100,116,139,0.35)', 'stroke-width': 1 })}/>`
+    ) +
+    `<rect ${attrs({ width: el.width, height: el.height, rx: 6, fill: el.fill, stroke: 'rgba(100,116,139,0.35)', 'stroke-width': 1 })}/>`
   );
 }
 
@@ -367,7 +477,9 @@ function layerBody(elements: BoardElement[], opts: SvgExportOptions): string {
     if (emittedGroups.has(el.groupId)) continue;
     emittedGroups.add(el.groupId);
     const members = elements.filter((m) => m.groupId === el.groupId);
-    out.push(`<g ${attrs({ id: `group-${el.groupId}`, 'data-type': 'group' })}>${members.map((m) => elementToSvg(m, opts)).join('')}</g>`);
+    out.push(
+      `<g ${attrs({ id: `group-${el.groupId}`, 'data-type': 'group' })}>${members.map((m) => elementToSvg(m, opts)).join('')}</g>`,
+    );
   }
   return out.join('');
 }
@@ -383,9 +495,17 @@ export function elementsToSvg(elements: readonly BoardElement[], opts: SvgExport
   const layers: string[] = [];
   for (const frame of frames) {
     const children = sorted.filter((el) => el.frameId === frame.id && el.type !== 'frame');
-    layers.push(layer(`frame-${frame.id}`, frame.title || 'Фрейм', elementToSvg(frame, opts) + layerBody(children, opts)));
+    layers.push(
+      layer(
+        `frame-${frame.id}`,
+        frame.title || 'Фрейм',
+        elementToSvg(frame, opts) + layerBody(children, opts),
+      ),
+    );
   }
-  const loose = sorted.filter((el) => el.type !== 'frame' && !(el.frameId && frameIds.has(el.frameId)));
+  const loose = sorted.filter(
+    (el) => el.type !== 'frame' && !(el.frameId && frameIds.has(el.frameId)),
+  );
   if (loose.length > 0) layers.push(layer('board', 'Доска', layerBody(loose, opts)));
 
   const { bounds: b } = opts;
