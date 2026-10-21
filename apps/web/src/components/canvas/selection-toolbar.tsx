@@ -3,6 +3,7 @@
 import type * as Y from 'yjs';
 import {
   BringToFront,
+  Crop,
   Copy,
   Group,
   Lock,
@@ -116,7 +117,7 @@ export function SelectionToolbar({
   const t = useT();
   const tp = usePlural();
   const selection = useCanvasStore((s) => s.selection);
-  const editing = useCanvasStore((s) => s.editingId !== null);
+  const editing = useCanvasStore((s) => s.editingId !== null || s.croppingId !== null);
   const tool = useCanvasStore((s) => s.tool);
   const select = useCanvasStore((s) => s.select);
   // Перерисовка при изменении выделенных элементов (цвет, блокировка, группа)
@@ -208,6 +209,14 @@ export function SelectionToolbar({
               icon={Wand2}
               label={t('Убрать фон')}
               onClick={() => onRemoveBg(ids[0] ?? '')}
+            />
+          ) : null}
+          {elements.length === 1 && elements[0]?.type === 'image' && !elements[0].locked ? (
+            <IconAction
+              icon={Crop}
+              label={t('Обрезать')}
+              hotkey={t('двойной клик')}
+              onClick={() => useCanvasStore.getState().setCropping(ids[0] ?? null)}
             />
           ) : null}
           <IconAction

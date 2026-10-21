@@ -584,4 +584,12 @@ export const EN: Readonly<Record<string, string>> = {
   Транспорт: 'Transport',
   Погода: 'Weather',
   Символы: 'Symbols',
+  // Обрезка
+  Обрезать: 'Crop',
+  'двойной клик': 'double-click',
+  'Обрезка изображения': 'Image crop',
+  Свободно: 'Free',
+  Исходные: 'Original',
+  Сбросить: 'Reset',
+  Готово: 'Done',
 };

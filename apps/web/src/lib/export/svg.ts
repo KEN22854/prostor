@@ -420,7 +420,13 @@ function image(el: ImageElement, opts: SvgExportOptions): string {
   if (!href) {
     return `<rect ${attrs({ width: el.width, height: el.height, fill: 'rgba(148,163,184,0.15)', stroke: '#94a3b8', 'stroke-dasharray': '6 4' })}/>`;
   }
-  return `<image ${attrs({ width: el.width, height: el.height, href, preserveAspectRatio: 'none' })}>${el.alt ? `<title>${escapeXml(el.alt)}</title>` : ''}</image>`;
+  const title = el.alt ? `<title>${escapeXml(el.alt)}</title>` : '';
+  if (el.crop) {
+    // Обрезка: вложенный svg с viewBox на видимую часть исходника
+    const c = el.crop;
+    return `<svg ${attrs({ width: el.width, height: el.height, viewBox: `${c.x} ${c.y} ${c.width} ${c.height}`, preserveAspectRatio: 'none' })}><image ${attrs({ width: el.naturalWidth, height: el.naturalHeight, href, preserveAspectRatio: 'none' })}>${title}</image></svg>`;
+  }
+  return `<image ${attrs({ width: el.width, height: el.height, href, preserveAspectRatio: 'none' })}>${title}</image>`;
 }
 
 function frameBody(el: FrameElement, opts: SvgExportOptions): string {

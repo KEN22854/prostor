@@ -20,6 +20,8 @@ import { requireBoardAccess } from '@/services/boards';
 const API = 'https://api.iconify.design';
 const SEARCH_TTL = 24 * 3600;
 const SVG_TTL = 30 * 24 * 3600;
+/** Версия формата SVG в кэше (v2 — собственный размер 512 px) */
+const SVG_CACHE = 'stickers:svg2';
 const BATCH = 100;
 
 /** Поиск стикеров: id вида набор:имя; русский запрос переводится словарём */
@@ -77,7 +79,9 @@ export function iconToSvg(icon: IconData, set: IconSet): string | null {
   const h = icon.height ?? set.height ?? 16;
   const l = icon.left ?? 0;
   const t = icon.top ?? 0;
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${l} ${t} ${w} ${h}" width="${w}" height="${h}">${icon.body}</svg>`;
+  // Собственный размер 512 px: браузер растрирует SVG в нём — стикер чёткий и при обрезке/увеличении
+  const k = 512 / Math.max(w, h);
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${l} ${t} ${w} ${h}" width="${Math.round(w * k)}" height="${Math.round(h * k)}">${icon.body}</svg>`;
 }
 
 /** SVG нескольких стикеров: из кэша, остальное — пакетами по набору */
@@ -87,7 +91,7 @@ export async function stickerSvgs(ids: string[]): Promise<Record<string, string>
   if (valid.length === 0) return result;
   const redis = await readyRedis().catch(() => null);
   const cached =
-    (await redis?.mget(valid.map((id) => `stickers:svg:${id}`)).catch(() => null)) ?? [];
+    (await redis?.mget(valid.map((id) => `${SVG_CACHE}:${id}`)).catch(() => null)) ?? [];
   const missing = new Map<string, string[]>();
   valid.forEach((id, i) => {
     const svg = cached[i];
@@ -116,7 +120,7 @@ export async function stickerSvgs(ids: string[]): Promise<Record<string, string>
         const svg = icon ? iconToSvg({ ...icon, ...(alias ?? {}), body: icon.body }, set) : null;
         if (!svg) continue;
         result[`${prefix}:${name}`] = svg;
-        pipeline?.set(`stickers:svg:${prefix}:${name}`, svg, 'EX', SVG_TTL);
+        pipeline?.set(`${SVG_CACHE}:${prefix}:${name}`, svg, 'EX', SVG_TTL);
       }
       await pipeline?.exec().catch(() => undefined);
     }

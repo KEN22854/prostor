@@ -45,7 +45,7 @@ export function SelectionLayer({
 }: SelectionLayerProps) {
   const trRef = useRef<Konva.Transformer>(null);
   const selection = useCanvasStore((s) => s.selection);
-  const editingId = useCanvasStore((s) => s.editingId);
+  const editingId = useCanvasStore((s) => s.editingId ?? s.croppingId);
   const tool = useCanvasStore((s) => s.tool);
   const zoom = useCanvasStore((s) => s.camera.zoom);
   const canEdit = actions?.canEdit ?? false;

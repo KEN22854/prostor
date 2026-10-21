@@ -198,7 +198,20 @@ export const imageSchema = baseElementSchema.extend({
   naturalWidth: z.number().int().positive(),
   naturalHeight: z.number().int().positive(),
   alt: z.string().max(500).optional(),
+  /** Обрезка: видимая часть в пикселях исходника (нет — картинка целиком) */
+  crop: z
+    .object({
+      x: finite.nonnegative(),
+      y: finite.nonnegative(),
+      width: finite.positive(),
+      height: finite.positive(),
+    })
+    .optional(),
+  /** Подпись источника (автор, лицензия) — для картинок из ленты */
+  attribution: z.string().max(500).optional(),
 });
+
+export type ImageCrop = NonNullable<z.infer<typeof imageSchema>['crop']>;
 
 export const frameSchema = baseElementSchema.extend({
   type: z.literal('frame'),

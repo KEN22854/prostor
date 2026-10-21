@@ -12,6 +12,7 @@ import { errorMessage } from '@/lib/utils';
 import { useAiStore } from '@/stores/ai-store';
 import { useCanvasStore } from '@/stores/canvas-store';
 import type * as Y from 'yjs';
+import { applyCrop } from '@/lib/canvas/image-crop';
 
 interface RemoveBgDeps {
   boardId: string;
@@ -86,7 +87,11 @@ export function useRemoveBg({ boardId, doc, store, actions, userId }: RemoveBgDe
         const { assetId, width, height, crop } = job.result;
         const current = store?.get(elementId);
         if (current?.type === 'image' && (current as ImageElement).assetId === image.assetId) {
-          const el = current as ImageElement;
+          // Фон убирался у всего исходника: обрезку снимаем, место считаем от полной картинки
+          const cropped = current as ImageElement;
+          const el = cropped.crop
+            ? { ...cropped, ...applyCrop(cropped, null), crop: undefined }
+            : cropped;
           actions.update(
             new Map([
               [
@@ -95,6 +100,8 @@ export function useRemoveBg({ boardId, doc, store, actions, userId }: RemoveBgDe
                   assetId,
                   naturalWidth: width,
                   naturalHeight: height,
+                  crop: undefined,
+                  ...(cropped.crop ? { x: el.x, y: el.y, width: el.width, height: el.height } : {}),
                   ...(crop ? croppedPlacement(el, crop) : {}),
                 },
               ],

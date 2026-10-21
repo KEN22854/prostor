@@ -13,6 +13,22 @@ import { useT } from '@/lib/i18n/client';
  * same-origin, поэтому canvas не «пачкается» и экспорт PNG/PDF работает.
  * use-image кеширует загрузку: повторный рендер ноды не качает файл заново.
  */
+/**
+ * crop в пикселях исходника → в пикселях загруженной картинки. У SVG-стикеров
+ * «исходник» на доске — растр 512 px, а браузер грузит SVG в размерах viewBox.
+ */
+function konvaCrop(el: ImageElement, image: HTMLImageElement) {
+  if (!el.crop) return undefined;
+  const kx = (image.naturalWidth || el.naturalWidth) / el.naturalWidth;
+  const ky = (image.naturalHeight || el.naturalHeight) / el.naturalHeight;
+  return {
+    x: el.crop.x * kx,
+    y: el.crop.y * ky,
+    width: el.crop.width * kx,
+    height: el.crop.height * ky,
+  };
+}
+
 export function ImageShape({
   element: el,
   detail,
@@ -30,7 +46,13 @@ export function ImageShape({
   return (
     <Group x={el.x} y={el.y} rotation={el.rotation} opacity={el.opacity} id={el.id} name="element">
       {image && status === 'loaded' ? (
-        <KonvaImage image={image} width={el.width} height={el.height} perfectDrawEnabled={false} />
+        <KonvaImage
+          image={image}
+          width={el.width}
+          height={el.height}
+          crop={konvaCrop(el, image)}
+          perfectDrawEnabled={false}
+        />
       ) : (
         <>
           <Rect

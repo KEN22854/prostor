@@ -21,6 +21,7 @@ import { LodShape } from '@/components/canvas/lod-shape';
 import { BoardSearch } from '@/components/canvas/board-search';
 import { StickerLibrary } from '@/components/canvas/sticker-library';
 import { TableCellEditor } from '@/components/canvas/table-cell-editor';
+import { CropEditor } from '@/components/canvas/crop-editor';
 import { EmbedPlayer } from '@/components/canvas/embed-player';
 import { Minimap } from '@/components/canvas/minimap';
 import { PresentationMode } from '@/components/canvas/presentation-mode';
@@ -444,6 +445,9 @@ export function BoardCanvas({
         <TableCellEditor store={store} actions={actions} />
       ) : null}
       {store && !presenting ? <EmbedPlayer store={store} /> : null}
+      {store && actions?.canEdit && !presenting ? (
+        <CropEditor store={store} actions={actions} />
+      ) : null}
       {actions?.canEdit && !presenting ? (
         <ToolPalette
           onPickImage={() => openImagePicker()}
