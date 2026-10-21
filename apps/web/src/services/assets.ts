@@ -86,6 +86,20 @@ export async function uploadBoardImage(
   if (!matchesSignature(bytes, mime.data)) {
     throw new ApiError(415, 'bad_signature', 'Содержимое файла не соответствует формату');
   }
+  return storeBoardImage(user.id, boardId, bytes, mime.data, fields.data);
+}
+
+/**
+ * Сохранение проверенного изображения в S3 и Asset (с дедупликацией по sha256
+ * в пределах доски). Используют загрузка файла и превью ссылок.
+ */
+export async function storeBoardImage(
+  ownerId: string,
+  boardId: string,
+  bytes: Uint8Array,
+  mimeType: string,
+  size: { width: number; height: number },
+): Promise<UploadedAsset> {
   const sha256 = createHash('sha256').update(bytes).digest('hex');
 
   // Дедупликация: та же картинка на той же доске уже загружена — переиспользуем
@@ -98,28 +112,28 @@ export async function uploadBoardImage(
       id: existing.id,
       url: assetUrl(existing.id),
       mimeType: existing.mimeType,
-      width: existing.width ?? fields.data.width,
-      height: existing.height ?? fields.data.height,
+      width: existing.width ?? size.width,
+      height: existing.height ?? size.height,
     };
   }
 
-  const key = `boards/${boardId}/${randomUUID()}.${EXT[mime.data] ?? 'bin'}`;
-  await putObject(key, bytes, mime.data);
+  const key = `boards/${boardId}/${randomUUID()}.${EXT[mimeType] ?? 'bin'}`;
+  await putObject(key, bytes, mimeType);
   const asset = await prisma.asset.create({
     data: {
-      ownerId: user.id,
+      ownerId,
       boardId,
       kind: 'IMAGE',
       s3Key: key,
-      mimeType: mime.data,
+      mimeType,
       sizeBytes: bytes.byteLength,
-      width: fields.data.width,
-      height: fields.data.height,
+      width: size.width,
+      height: size.height,
       sha256,
     },
     select: { id: true },
   });
-  return { id: asset.id, url: assetUrl(asset.id), mimeType: mime.data, ...fields.data };
+  return { id: asset.id, url: assetUrl(asset.id), mimeType, ...size };
 }
 
 export interface AssetDownload extends ObjectStream {

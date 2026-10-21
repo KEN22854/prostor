@@ -107,6 +107,8 @@ interface CanvasState {
   presentation: { index: number; notes: boolean } | null;
   /** Ячейка таблицы, открытая в редакторе */
   editingCell: { id: string; row: number; col: number } | null;
+  /** Карточка ссылки, у которой открыт живой плеер (iframe) */
+  playingEmbedId: string | null;
   /** Открытая панель доски (экспорт, история версий) — кнопки в шапке живут вне холста */
   panel: BoardPanel | null;
   follow: FollowTarget | null;
@@ -122,6 +124,7 @@ interface CanvasState {
   setEditing: (id: string | null) => void;
   setPresentation: (presentation: { index: number; notes: boolean } | null) => void;
   setEditingCell: (cell: { id: string; row: number; col: number } | null) => void;
+  setPlayingEmbed: (id: string | null) => void;
   setPanel: (panel: BoardPanel | null) => void;
   setFollow: (follow: FollowTarget | null) => void;
   reset: () => void;
@@ -162,6 +165,7 @@ export const useCanvasStore = create<CanvasState>()((set) => ({
   editingId: null,
   presentation: null,
   editingCell: null,
+  playingEmbedId: null,
   panel: null,
   follow: null,
 
@@ -188,6 +192,7 @@ export const useCanvasStore = create<CanvasState>()((set) => ({
   setEditing: (editingId) => set({ editingId }),
   setPresentation: (presentation) => set({ presentation }),
   setEditingCell: (editingCell) => set({ editingCell }),
+  setPlayingEmbed: (playingEmbedId) => set({ playingEmbedId }),
   setPanel: (panel) => set({ panel }),
   setFollow: (follow) => set({ follow }),
   reset: () =>

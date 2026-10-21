@@ -1,5 +1,6 @@
 import type {
   BoardElement,
+  EmbedElement,
   Bounds,
   FrameElement,
   ImageElement,
@@ -13,6 +14,7 @@ import type {
 } from '@prostor/shared';
 import { midpointOf } from '@/lib/canvas/connectors';
 import { TABLE_CELL_PADDING, cellText, tableLayout } from '@/lib/canvas/table';
+import { EMBED_CARD } from '@/lib/canvas/element-factory';
 import { isRichFormatted } from '@prostor/shared';
 import { compareRenderOrder } from '@/lib/canvas/frames';
 import { layoutRich } from '@/lib/rich-text/layout';
@@ -494,6 +496,57 @@ function table(el: TableElement, opts: SvgExportOptions): string {
   return parts.join('');
 }
 
+/** Карточка ссылки: превью, заголовок, сайт; ссылка кликабельна в SVG */
+function embed(el: EmbedElement, opts: SvgExportOptions): string {
+  const media = Math.max(0, el.height - EMBED_CARD.textHeight);
+  const href = el.imageAssetId ? opts.images.get(el.imageAssetId) : undefined;
+  const clipId = `clip-${el.id}`;
+  const parts = [
+    `<rect ${attrs({ width: el.width, height: el.height, rx: 10, fill: '#ffffff', stroke: '#e2e8f0', 'stroke-width': 1 })}/>`,
+  ];
+  if (media > 0) {
+    parts.push(
+      `<clipPath id="${clipId}"><rect ${attrs({ width: el.width, height: media + 10, rx: 10 })}/></clipPath>`,
+    );
+    parts.push(
+      href
+        ? `<image ${attrs({ width: el.width, height: media, href, preserveAspectRatio: 'xMidYMid slice', 'clip-path': `url(#${clipId})` })}/>`
+        : `<rect ${attrs({ width: el.width, height: media, fill: '#f1f5f9', 'clip-path': `url(#${clipId})` })}/>`,
+    );
+  }
+  parts.push(
+    textBlock(
+      {
+        text: el.title,
+        x: 16,
+        y: media + 12,
+        width: el.width - 28,
+        height: 40,
+        align: 'left',
+        verticalAlign: 'top',
+        ellipsis: true,
+      },
+      { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
+      opts,
+    ),
+    textBlock(
+      {
+        text: el.siteName,
+        x: 16,
+        y: media + EMBED_CARD.textHeight - 24,
+        width: el.width - 28,
+        height: 18,
+        align: 'left',
+        verticalAlign: 'top',
+        ellipsis: true,
+      },
+      { fontSize: 12, color: '#64748b' },
+      opts,
+    ),
+  );
+  return `<a ${attrs({ href: el.url, target: '_blank' })}>${parts.join('')}</a>`;
+}
+
 function placeholder(el: BoardElement): string {
   return `<rect ${attrs({ width: el.width, height: el.height, rx: 8, fill: '#f8fafc', stroke: '#94a3b8', 'stroke-dasharray': '6 4' })}/>`;
 }
@@ -517,6 +570,8 @@ export function elementToSvg(el: BoardElement, opts: SvgExportOptions): string {
       return wrapElement(el, frameBody(el as FrameElement, opts));
     case 'table':
       return wrapElement(el, table(el as TableElement, opts));
+    case 'embed':
+      return wrapElement(el, embed(el as EmbedElement, opts));
     default:
       return wrapElement(el, placeholder(el));
   }

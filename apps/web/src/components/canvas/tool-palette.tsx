@@ -2,6 +2,7 @@
 
 import {
   ArrowUpRight,
+  Link2,
   Table2,
   Circle,
   Diamond,
@@ -134,9 +135,16 @@ interface ToolPaletteProps {
   /** Генерация изображения по описанию — если включена на сервере */
   onGenerateImage?: () => void;
   onImportPdf: () => void;
+  /** Ссылка, видео, Figma — карточка с превью */
+  onAddLink?: () => void;
 }
 
-export function ToolPalette({ onPickImage, onGenerateImage, onImportPdf }: ToolPaletteProps) {
+export function ToolPalette({
+  onPickImage,
+  onGenerateImage,
+  onImportPdf,
+  onAddLink,
+}: ToolPaletteProps) {
   const options = useCanvasStore((s) => s.toolOptions);
   const setOptions = useCanvasStore((s) => s.setToolOptions);
   const setTool = useCanvasStore((s) => s.setTool);
@@ -322,6 +330,24 @@ export function ToolPalette({ onPickImage, onGenerateImage, onImportPdf }: ToolP
           Импорт PDF: страницы — фреймами (или перетащите файл на доску)
         </TooltipContent>
       </Tooltip>
+      {onAddLink ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-9"
+              aria-label="Ссылка или видео"
+              onClick={onAddLink}
+            >
+              <Link2 />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            Ссылка, YouTube, Figma, Google Docs (или просто вставьте ссылку Ctrl+V)
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
       {onGenerateImage ? (
         <Tooltip>
           <TooltipTrigger asChild>

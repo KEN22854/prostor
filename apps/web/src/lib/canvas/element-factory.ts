@@ -5,6 +5,8 @@ import {
   Y_KEYS,
   richTextSchema,
   type BoardElement,
+  type EmbedElement,
+  type EmbedPreview,
   type FrameElement,
   type ImageElement,
   type LineElement,
@@ -186,6 +188,36 @@ export function buildLine(
     routing: p.routing ?? 'straight',
     ...(p.startBinding ? { startBinding: p.startBinding } : {}),
     ...(p.endBinding ? { endBinding: p.endBinding } : {}),
+  };
+}
+
+/** Ширина карточки ссылки и высота её текстовой части */
+export const EMBED_CARD = { width: 360, textHeight: 76 } as const;
+
+/**
+ * Карточка ссылки по превью с сервера. Картинка превью задаёт высоту
+ * (в разумных пределах), без картинки — у плееров соотношение сторон сервиса.
+ */
+export function buildEmbed(p: BaseParams & { preview: EmbedPreview }): EmbedElement {
+  const { preview } = p;
+  const width = EMBED_CARD.width;
+  const imageRatio =
+    preview.imageWidth && preview.imageHeight ? preview.imageHeight / preview.imageWidth : null;
+  const mediaHeight = imageRatio
+    ? Math.round(width * Math.min(1.2, Math.max(0.35, imageRatio)))
+    : preview.embedUrl
+      ? Math.round(width / preview.aspect)
+      : 0;
+  return {
+    ...baseFields(p, width, mediaHeight + EMBED_CARD.textHeight),
+    type: 'embed',
+    url: preview.url,
+    provider: preview.provider,
+    embedUrl: preview.embedUrl,
+    title: preview.title,
+    description: preview.description,
+    siteName: preview.siteName,
+    imageAssetId: preview.imageAssetId,
   };
 }
 

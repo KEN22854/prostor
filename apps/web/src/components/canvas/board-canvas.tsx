@@ -20,6 +20,7 @@ import { FramesPanel } from '@/components/canvas/frames-panel';
 import { LodShape } from '@/components/canvas/lod-shape';
 import { BoardSearch } from '@/components/canvas/board-search';
 import { TableCellEditor } from '@/components/canvas/table-cell-editor';
+import { EmbedPlayer } from '@/components/canvas/embed-player';
 import { Minimap } from '@/components/canvas/minimap';
 import { PresentationMode } from '@/components/canvas/presentation-mode';
 import { SelectionLayer } from '@/components/canvas/selection-layer';
@@ -34,6 +35,8 @@ import { useCanvasInteractions } from '@/hooks/use-canvas-interactions';
 import { useCanvasNavigation } from '@/hooks/use-canvas-navigation';
 import { useElementStore } from '@/hooks/use-element-store';
 import { useFollow } from '@/hooks/use-follow';
+import { useEmbedInsert } from '@/hooks/use-embed-insert';
+import { usePrompt } from '@/components/ui/prompt-dialog';
 import { useImageInsert } from '@/hooks/use-image-insert';
 import { usePdfImport } from '@/hooks/use-pdf-import';
 import { usePresenceBroadcast } from '@/hooks/use-presence-broadcast';
@@ -314,6 +317,22 @@ export function BoardCanvas({
 
   // ── Изображения ──
   const insertImages = useImageInsert({ boardId, doc, actions, userId: user?.id ?? null });
+  const insertEmbed = useEmbedInsert({ boardId, doc, actions, userId: user?.id ?? null });
+  const [linkDialog, askLink] = usePrompt();
+  const addLink = async () => {
+    const url = await askLink({
+      title: 'Добавить ссылку',
+      description:
+        'YouTube, Vimeo, Loom, Figma, Google Docs, Miro — со встроенным просмотром; любой сайт — карточкой',
+      label: 'https://…',
+      confirmLabel: 'Добавить',
+      maxLength: 2048,
+    });
+    if (!url) return;
+    const { camera, size: s } = useCanvasStore.getState();
+    const v = visibleBounds(camera, s);
+    await insertEmbed(url, { x: (v.minX + v.maxX) / 2, y: (v.minY + v.maxY) / 2 });
+  };
   const removeBg = useRemoveBg({ boardId, doc, store, actions, userId: user?.id ?? null });
   const importPdf = usePdfImport({ boardId, doc, actions, userId: user?.id ?? null });
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -366,6 +385,7 @@ export function BoardCanvas({
     userId: user?.id ?? null,
     insertImages,
     importPdf,
+    insertEmbed,
   });
 
   const cursor = isPanning
@@ -431,11 +451,13 @@ export function BoardCanvas({
       {store && actions?.canEdit && !presenting ? (
         <TableCellEditor store={store} actions={actions} />
       ) : null}
+      {store && !presenting ? <EmbedPlayer store={store} /> : null}
       {actions?.canEdit && !presenting ? (
         <ToolPalette
           onPickImage={() => openImagePicker()}
           onGenerateImage={ai.generateImage ? () => setGenerateOpen(true) : undefined}
           onImportPdf={() => pdfInputRef.current?.click()}
+          onAddLink={() => void addLink()}
         />
       ) : null}
       {store && actions && !presenting ? (
@@ -490,6 +512,7 @@ export function BoardCanvas({
         containerRef={containerRef}
       />
 
+      {linkDialog}
       <input
         ref={fileInputRef}
         type="file"

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { EMBED_PROVIDERS } from './embeds';
 
 /**
  * Модель элементов доски.
@@ -36,6 +37,7 @@ export const ELEMENT_TYPES = [
   'timer',
   'vote',
   'bpmn',
+  'embed',
 ] as const;
 export const elementTypeSchema = z.enum(ELEMENT_TYPES);
 export type ElementType = z.infer<typeof elementTypeSchema>;
@@ -236,6 +238,18 @@ export const tableSchema = baseElementSchema.extend({
   cells: z.array(z.array(z.string().max(TABLE_LIMITS.maxCellLength))).optional(),
 });
 
+/** Ссылка-карточка; у видео и дизайн-сервисов — с плеером (embedUrl) */
+export const embedSchema = baseElementSchema.extend({
+  type: z.literal('embed'),
+  url: z.string().max(2048),
+  provider: z.enum(EMBED_PROVIDERS),
+  embedUrl: z.string().max(4096).nullable().optional(),
+  title: z.string().max(500),
+  description: z.string().max(1000).nullable().optional(),
+  siteName: z.string().max(200),
+  imageAssetId: z.string().max(64).nullable().optional(),
+});
+
 /**
  * Элементы, ещё не реализованные в итерациях 1–4, описаны «мягко»:
  * общие поля + произвольный payload. Схемы ужесточаются в своих итерациях.
@@ -272,6 +286,7 @@ export const boardElementSchema = z.discriminatedUnion('type', [
   imageSchema,
   frameSchema,
   tableSchema,
+  embedSchema,
   generic('mindmapNode'),
   generic('kanban'),
   generic('document'),
@@ -291,6 +306,7 @@ export type PathElement = z.infer<typeof pathSchema>;
 export type ImageElement = z.infer<typeof imageSchema>;
 export type FrameElement = z.infer<typeof frameSchema>;
 export type TableElement = z.infer<typeof tableSchema>;
+export type EmbedElement = z.infer<typeof embedSchema>;
 export type GenericElement = z.infer<typeof genericElementSchema>;
 export type BoardElement =
   | StickyElement
@@ -301,6 +317,7 @@ export type BoardElement =
   | ImageElement
   | FrameElement
   | TableElement
+  | EmbedElement
   | GenericElement;
 
 /** Axis-aligned bounding box в мировых координатах */

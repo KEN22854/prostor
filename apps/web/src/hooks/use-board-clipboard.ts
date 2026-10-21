@@ -3,6 +3,7 @@
 import { useEffect, type RefObject } from 'react';
 import { toast } from 'sonner';
 import type * as Y from 'yjs';
+import { looksLikeUrl } from '@prostor/shared';
 import type { BoardActions } from '@/lib/canvas/board-actions';
 import { buildText, nextZIndex } from '@/lib/canvas/element-factory';
 import { isTypingTarget } from '@/lib/canvas/keyboard';
@@ -18,6 +19,8 @@ interface ClipboardDeps {
   insertImages: (files: readonly File[], at: Point) => Promise<void>;
   /** Импорт PDF, брошенного на холст */
   importPdf?: (file: File, at: Point) => Promise<void>;
+  /** Вставленная ссылка — карточка с превью (YouTube, Figma, сайт) */
+  insertEmbed?: (url: string, at: Point) => Promise<void>;
 }
 
 const MAX_PLAIN_TEXT = 10_000;
@@ -40,6 +43,7 @@ export function useBoardClipboard({
   userId,
   insertImages,
   importPdf,
+  insertEmbed,
 }: ClipboardDeps): void {
   useEffect(() => {
     const el = containerRef.current;
@@ -101,6 +105,11 @@ export function useBoardClipboard({
         useCanvasStore.getState().select(pasted);
         return;
       }
+      // Одна ссылка — карточка с превью
+      if (insertEmbed && looksLikeUrl(text)) {
+        void insertEmbed(text.trim(), insertionPoint());
+        return;
+      }
       // Обычный текст — новый текстовый блок
       if (!doc || !userId) return;
       const at = insertionPoint();
@@ -157,5 +166,5 @@ export function useBoardClipboard({
       el.removeEventListener('dragover', onDragOver);
       el.removeEventListener('drop', onDrop);
     };
-  }, [containerRef, actions, doc, userId, insertImages, importPdf]);
+  }, [containerRef, actions, doc, userId, insertImages, importPdf, insertEmbed]);
 }

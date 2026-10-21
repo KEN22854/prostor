@@ -302,6 +302,11 @@ export class InteractionController {
     const selection = state().selection;
     if (hit.groupId && selection.length > 1) {
       state().select([hit.id]);
+    } else if (hit.type === 'embed') {
+      // Ссылка: плеер поверх карточки, а у обычной ссылки — сайт в новой вкладке
+      state().select([hit.id]);
+      if (hit.embedUrl) state().setPlayingEmbed(hit.id);
+      else window.open(hit.url, '_blank', 'noopener,noreferrer');
     } else if (hit.type === 'table' && actions?.canEdit && !hit.locked) {
       // Двойной клик по таблице — редактирование ячейки под курсором
       const cell = cellAt(hit, world);

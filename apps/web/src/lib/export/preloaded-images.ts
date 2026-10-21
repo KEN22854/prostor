@@ -21,11 +21,21 @@ function loadImage(url: string): Promise<HTMLImageElement | null> {
   });
 }
 
+/** Ассеты, которые рисуются при экспорте: картинки и превью карточек ссылок */
+function imageAssetIds(elements: readonly BoardElement[]): string[] {
+  const ids: string[] = [];
+  for (const el of elements) {
+    if (el.type === 'image' && 'assetId' in el) ids.push(el.assetId);
+    if (el.type === 'embed' && el.imageAssetId) ids.push(el.imageAssetId);
+  }
+  return ids;
+}
+
 export async function preloadImages(
   elements: readonly BoardElement[],
 ): Promise<Map<string, HTMLImageElement>> {
   const ids = new Set<string>();
-  for (const el of elements) if (el.type === 'image' && 'assetId' in el) ids.add(el.assetId);
+  for (const id of imageAssetIds(elements)) ids.add(id);
   const entries = await Promise.all(
     Array.from(ids).map(async (id) => [id, await loadImage(assetUrl(id))] as const),
   );
@@ -39,7 +49,7 @@ export async function imagesAsDataUrls(
   elements: readonly BoardElement[],
 ): Promise<Map<string, string>> {
   const ids = new Set<string>();
-  for (const el of elements) if (el.type === 'image' && 'assetId' in el) ids.add(el.assetId);
+  for (const id of imageAssetIds(elements)) ids.add(id);
   const map = new Map<string, string>();
   await Promise.all(
     Array.from(ids).map(async (id) => {

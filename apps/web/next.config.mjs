@@ -24,7 +24,7 @@ const nextConfig = {
   // Серверные библиотеки очередей не бандлим: BullMQ опционально подключает
   // клиент Valkey, и webpack падал бы с «Module not found». В standalone-сборку
   // они попадают через трассировку node_modules.
-  serverExternalPackages: ['bullmq', 'ioredis'],
+  serverExternalPackages: ['bullmq', 'ioredis', 'undici'],
   reactStrictMode: true,
   // Плашка dev-индикатора Next перекрывает панель зума холста в углу экрана.
   // Ошибки сборки и рантайма по-прежнему показываются оверлеем.

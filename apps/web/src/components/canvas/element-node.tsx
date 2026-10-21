@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import type {
   BoardElement,
+  EmbedElement,
   FrameElement,
   ImageElement,
   LineElement,
@@ -13,6 +14,7 @@ import type {
   TextElement,
 } from '@prostor/shared';
 import { BasicShape } from '@/components/canvas/shapes/basic-shape';
+import { EmbedShape } from '@/components/canvas/shapes/embed-shape';
 import { FrameShape } from '@/components/canvas/shapes/frame-shape';
 import { ImageShape } from '@/components/canvas/shapes/image-shape';
 import { LineShape } from '@/components/canvas/shapes/line-shape';
@@ -61,6 +63,8 @@ export const ElementNode = memo(function ElementNode({
       return <ImageShape element={element as ImageElement} detail={detail} />;
     case 'frame':
       return <FrameShape element={element as FrameElement} />;
+    case 'embed':
+      return <EmbedShape element={element as EmbedElement} detail={detail} />;
     case 'table':
       return (
         <TableShape element={element as TableElement} detail={detail} editingCell={editingCell} />
