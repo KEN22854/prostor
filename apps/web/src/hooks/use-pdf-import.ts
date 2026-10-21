@@ -28,11 +28,18 @@ export function usePdfImport({ boardId, doc, actions, userId }: PdfImportDeps) {
       const toastId = toast.loading(`Импорт «${file.name}»…`);
       try {
         const pages = await rasterizePdf(file, boardId, (done, total) =>
-          toast.loading(`Импорт «${file.name}»: страница ${Math.min(done + 1, total)} из ${total}`, { id: toastId }),
+          toast.loading(
+            `Импорт «${file.name}»: страница ${Math.min(done + 1, total)} из ${total}`,
+            { id: toastId },
+          ),
         );
         if (pages.length === 0) throw new Error('В PDF нет страниц');
         // По два элемента на страницу (фрейм и картинка) — ключи порядка поверх всех объектов
-        const keys = generateNKeysBetween(maxZIndex(doc.getMap(Y_KEYS.elements)), null, pages.length * 2);
+        const keys = generateNKeysBetween(
+          maxZIndex(doc.getMap(Y_KEYS.elements)),
+          null,
+          pages.length * 2,
+        );
         let k = 0;
         const elements = layoutPdfPages(pages, {
           at,
@@ -53,7 +60,8 @@ export function usePdfImport({ boardId, doc, actions, userId }: PdfImportDeps) {
         select(frames.map((f) => f.id));
         toast.success(`Импортировано страниц: ${created.length / 2}`, {
           id: toastId,
-          description: pages.length === MAX_PDF_PAGES ? `Показаны первые ${MAX_PDF_PAGES} страниц` : undefined,
+          description:
+            pages.length === MAX_PDF_PAGES ? `Показаны первые ${MAX_PDF_PAGES} страниц` : undefined,
         });
       } catch (e: unknown) {
         toast.error(errorMessage(e, 'Не удалось импортировать PDF'), { id: toastId });

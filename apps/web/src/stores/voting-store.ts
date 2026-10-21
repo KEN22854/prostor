@@ -18,23 +18,40 @@ export const useVotingStore = create<VotingState>()((set) => ({
 }));
 
 export async function reloadVoting(boardId: string): Promise<void> {
-  const { voting } = await apiRequest<{ voting: VotingDto | null }>(`/api/boards/${boardId}/voting`);
+  const { voting } = await apiRequest<{ voting: VotingDto | null }>(
+    `/api/boards/${boardId}/voting`,
+  );
   const current = useVotingStore.getState().boardId;
   if (current && current !== boardId) return;
   useVotingStore.getState().set(boardId, voting);
 }
 
-export async function startVoting(boardId: string, title: string, votesPerUser: number): Promise<void> {
-  await apiRequest(`/api/boards/${boardId}/voting`, { method: 'POST', body: { title, votesPerUser } });
+export async function startVoting(
+  boardId: string,
+  title: string,
+  votesPerUser: number,
+): Promise<void> {
+  await apiRequest(`/api/boards/${boardId}/voting`, {
+    method: 'POST',
+    body: { title, votesPerUser },
+  });
   await reloadVoting(boardId);
 }
 
-export async function castVote(boardId: string, sessionId: string, elementId: string): Promise<void> {
+export async function castVote(
+  boardId: string,
+  sessionId: string,
+  elementId: string,
+): Promise<void> {
   await apiRequest(`/api/voting/${sessionId}/votes`, { method: 'POST', body: { elementId } });
   await reloadVoting(boardId);
 }
 
-export async function retractVote(boardId: string, sessionId: string, elementId: string): Promise<void> {
+export async function retractVote(
+  boardId: string,
+  sessionId: string,
+  elementId: string,
+): Promise<void> {
   await apiRequest(`/api/voting/${sessionId}/votes`, { method: 'DELETE', body: { elementId } });
   await reloadVoting(boardId);
 }

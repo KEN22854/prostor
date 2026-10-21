@@ -54,6 +54,8 @@ export function useBoardHotkeys({
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || isTypingTarget(e.target)) return;
+      // В режиме презентации клавиши обрабатывает только он
+      if (useCanvasStore.getState().presentation) return;
       const s = useCanvasStore.getState();
       const selection = s.selection;
       const key = letter(e);

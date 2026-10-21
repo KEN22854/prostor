@@ -3,7 +3,13 @@
 import { useEffect } from 'react';
 import type { Awareness } from 'y-protocols/awareness';
 import type { Camera } from '@/lib/canvas/viewport';
-import { cameraForViewport, closeEnough, findFollowTarget, findPresenter, lerpCamera } from '@/lib/presence/follow';
+import {
+  cameraForViewport,
+  closeEnough,
+  findFollowTarget,
+  findPresenter,
+  lerpCamera,
+} from '@/lib/presence/follow';
 import { useCanvasStore } from '@/stores/canvas-store';
 
 /** Доля пути к цели за кадр: ~150 мс до совпадения, без рывков между апдейтами (4/с) */
@@ -44,9 +50,19 @@ export function useFollow(awareness: Awareness | null, selfId: string | undefine
 
       // Автоследование за ведущим показа
       const presenter = findPresenter(awareness, selfId);
-      if (presenter && presenter.since !== dismissedSince && (!follow || follow.auto) && follow?.userId !== presenter.user.id) {
+      if (
+        presenter &&
+        presenter.since !== dismissedSince &&
+        (!follow || follow.auto) &&
+        follow?.userId !== presenter.user.id
+      ) {
         presenterSince = presenter.since;
-        setFollow({ userId: presenter.user.id, name: presenter.user.name, color: presenter.user.color, auto: true });
+        setFollow({
+          userId: presenter.user.id,
+          name: presenter.user.name,
+          color: presenter.user.color,
+          auto: true,
+        });
         return;
       }
       if (!presenter && follow?.auto) {

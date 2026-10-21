@@ -48,12 +48,15 @@ export function useBoardTimer(doc: Y.Doc | null): { timer: BoardTimer | null; le
   const left = timer ? remainingMs(timer, now) : 0;
 
   useEffect(() => {
-    if (!timer || timer.status !== 'running' || left > 0 || finishedRun.current === timer.runId) return;
+    if (!timer || timer.status !== 'running' || left > 0 || finishedRun.current === timer.runId)
+      return;
     finishedRun.current = timer.runId;
     // Доска открыта уже после окончания — сигнал не нужен
     if (timer.endsAt && Date.now() - timer.endsAt < 5_000) {
       beep();
-      toast.info('Время вышло', { description: timer.startedByName ? `Таймер запустил(а) ${timer.startedByName}` : undefined });
+      toast.info('Время вышло', {
+        description: timer.startedByName ? `Таймер запустил(а) ${timer.startedByName}` : undefined,
+      });
     }
   }, [timer, left]);
 

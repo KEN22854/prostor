@@ -15,7 +15,11 @@ export interface VersionPreview {
   doc: Y.Doc;
 }
 
-async function postState(boardId: string, doc: Y.Doc, params: Record<string, string>): Promise<void> {
+async function postState(
+  boardId: string,
+  doc: Y.Doc,
+  params: Record<string, string>,
+): Promise<void> {
   const query = new URLSearchParams(params).toString();
   const res = await fetch(`/api/boards/${boardId}/versions?${query}`, {
     method: 'POST',
@@ -80,7 +84,9 @@ export function useVersionHistory(boardId: string, connection: BoardConnection |
     try {
       // Сначала фиксируем текущее состояние — восстановление не должно терять историю
       await postState(boardId, connection.doc, { reason: 'PRE_RESTORE' });
-      await apiRequest(`/api/boards/${boardId}/versions/${preview.version.id}/restore`, { method: 'POST' });
+      await apiRequest(`/api/boards/${boardId}/versions/${preview.version.id}/restore`, {
+        method: 'POST',
+      });
       connection.undoManager.stopCapturing();
       const stats = restoreVersion(connection.doc, Y.encodeStateAsUpdate(preview.doc));
       connection.undoManager.stopCapturing();

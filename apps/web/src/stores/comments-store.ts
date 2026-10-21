@@ -41,10 +41,19 @@ export const useCommentsStore = create<CommentsState>()((set) => ({
   draft: null,
 
   setThreads: (boardId, threads) => set({ boardId, threads, loaded: true }),
-  setVisible: (visible) => set(visible ? { visible } : { visible, openThreadId: null, draft: null }),
+  setVisible: (visible) =>
+    set(visible ? { visible } : { visible, openThreadId: null, draft: null }),
   setShowResolved: (showResolved) => set({ showResolved }),
   openThread: (openThreadId) => set({ openThreadId, draft: null }),
   startDraft: (draft) => set({ draft, openThreadId: null, visible: true }),
   reset: () =>
-    set({ boardId: null, threads: [], loaded: false, openThreadId: null, draft: null, showResolved: false, visible: true }),
+    set({
+      boardId: null,
+      threads: [],
+      loaded: false,
+      openThreadId: null,
+      draft: null,
+      showResolved: false,
+      visible: true,
+    }),
 }));

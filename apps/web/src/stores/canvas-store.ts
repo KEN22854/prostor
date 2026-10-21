@@ -100,6 +100,8 @@ interface CanvasState {
   selection: readonly string[];
   /** Элемент, текст которого редактируется в inline-редакторе */
   editingId: string | null;
+  /** Режим презентации: номер текущего слайда (фрейма) и показ заметок; null — выключен */
+  presentation: { index: number; notes: boolean } | null;
   /** Открытая панель доски (экспорт, история версий) — кнопки в шапке живут вне холста */
   panel: BoardPanel | null;
   follow: FollowTarget | null;
@@ -113,6 +115,7 @@ interface CanvasState {
   setPanning: (panning: boolean) => void;
   select: (ids: readonly string[]) => void;
   setEditing: (id: string | null) => void;
+  setPresentation: (presentation: { index: number; notes: boolean } | null) => void;
   setPanel: (panel: BoardPanel | null) => void;
   setFollow: (follow: FollowTarget | null) => void;
   reset: () => void;
@@ -151,6 +154,7 @@ export const useCanvasStore = create<CanvasState>()((set) => ({
   isPanning: false,
   selection: [],
   editingId: null,
+  presentation: null,
   panel: null,
   follow: null,
 
@@ -175,6 +179,7 @@ export const useCanvasStore = create<CanvasState>()((set) => ({
   select: (ids) =>
     set((state) => (sameIds(state.selection, ids) ? state : { selection: ids, editingId: null })),
   setEditing: (editingId) => set({ editingId }),
+  setPresentation: (presentation) => set({ presentation }),
   setPanel: (panel) => set({ panel }),
   setFollow: (follow) => set({ follow }),
   reset: () =>

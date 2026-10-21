@@ -155,7 +155,7 @@ export function useCanvasNavigation(
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target)) return;
+      if (isTypingTarget(e.target) || useCanvasStore.getState().presentation) return;
       if (e.code === 'Space') {
         e.preventDefault();
         if (!e.repeat) store.getState().setSpacePressed(true);

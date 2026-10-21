@@ -19,6 +19,7 @@ import { FollowBanner } from '@/components/canvas/follow-banner';
 import { FramesPanel } from '@/components/canvas/frames-panel';
 import { LodShape } from '@/components/canvas/lod-shape';
 import { Minimap } from '@/components/canvas/minimap';
+import { PresentationMode } from '@/components/canvas/presentation-mode';
 import { SelectionLayer } from '@/components/canvas/selection-layer';
 import { SelectionToolbar } from '@/components/canvas/selection-toolbar';
 import { TextEditor } from '@/components/canvas/text-editor';
@@ -111,6 +112,7 @@ export function BoardCanvas({
   onStoreReady,
 }: BoardCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const presenting = useCanvasStore((s) => s.presentation !== null);
   const stageRef = useRef<Konva.Stage>(null);
   const elementsLayerRef = useRef<Konva.Layer>(null);
   const remoteLayerRef = useRef<Konva.Layer>(null);
@@ -422,14 +424,14 @@ export function BoardCanvas({
           undoManager={undoManager}
         />
       ) : null}
-      {actions?.canEdit ? (
+      {actions?.canEdit && !presenting ? (
         <ToolPalette
           onPickImage={() => openImagePicker()}
           onGenerateImage={ai.generateImage ? () => setGenerateOpen(true) : undefined}
           onImportPdf={() => pdfInputRef.current?.click()}
         />
       ) : null}
-      {store && actions ? (
+      {store && actions && !presenting ? (
         <SelectionToolbar
           store={store}
           actions={actions}
@@ -458,17 +460,27 @@ export function BoardCanvas({
       <CommentsLayer boardId={boardId} store={store} canComment={Boolean(actions?.canComment)} />
       <VotesLayer store={store} />
       <VotingBar store={store} />
-      <FramesPanel store={store} />
+      {presenting ? null : <FramesPanel store={store} actions={actions} />}
       <FollowBanner />
       {store && actions ? (
         <ExportDialog boardId={boardId} boardTitle={title} store={store} actions={actions} />
       ) : null}
-      <ZoomControls
-        onFit={fit}
-        showNavTools={!actions?.canEdit}
-        showCommentTool={!actions?.canEdit && Boolean(actions?.canComment)}
+      {presenting ? null : (
+        <>
+          <ZoomControls
+            onFit={fit}
+            showNavTools={!actions?.canEdit}
+            showCommentTool={!actions?.canEdit && Boolean(actions?.canComment)}
+          />
+          <Minimap store={store} />
+        </>
+      )}
+      <PresentationMode
+        store={store}
+        actions={actions}
+        awareness={awareness}
+        containerRef={containerRef}
       />
-      <Minimap store={store} />
 
       <input
         ref={fileInputRef}
