@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface ColorSwatchesProps {
   colors: readonly string[];
@@ -12,6 +13,7 @@ interface ColorSwatchesProps {
 
 /** Палитра цветов (прозрачный — шахматка) */
 export function ColorSwatches({ colors, value, onChange, label }: ColorSwatchesProps) {
+  const t = useT();
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
       {colors.map((color) => {
@@ -23,7 +25,7 @@ export function ColorSwatches({ colors, value, onChange, label }: ColorSwatchesP
             type="button"
             role="radio"
             aria-checked={selected}
-            aria-label={transparent ? 'Без заливки' : color}
+            aria-label={transparent ? t('Без заливки') : color}
             onClick={() => onChange(color)}
             className={cn(
               'flex size-6 items-center justify-center rounded-full border border-black/10 transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',

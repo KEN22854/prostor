@@ -16,6 +16,7 @@ import {
   stopTimer,
 } from '@/lib/board-timer';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const PRESETS = [1, 3, 5, 10, 15];
 
@@ -28,6 +29,7 @@ interface BoardTimerControlProps {
 
 /** Таймер ведущего в шапке доски: отсчёт виден всем участникам */
 export function BoardTimerControl({ doc, canControl, userName }: BoardTimerControlProps) {
+  const t = useT();
   const { timer, left } = useBoardTimer(doc);
   const [custom, setCustom] = useState('');
   const [open, setOpen] = useState(false);
@@ -48,7 +50,7 @@ export function BoardTimerControl({ doc, canControl, userName }: BoardTimerContr
               (finished || urgent) && 'border-destructive text-destructive',
               finished && 'animate-pulse',
             )}
-            aria-label={`Таймер: ${formatClock(left)}${timer.status === 'paused' ? ', на паузе' : ''}`}
+            aria-label={`Таймер: ${formatClock(left)}${timer.status === 'paused' ? t(', на паузе') : ''}`}
             data-testid="board-timer"
           >
             <Timer className="size-4" />
@@ -56,7 +58,7 @@ export function BoardTimerControl({ doc, canControl, userName }: BoardTimerContr
             {timer.status === 'paused' ? <Pause className="size-3" /> : null}
           </Button>
         ) : (
-          <Button variant="ghost" size="icon" aria-label="Таймер">
+          <Button variant="ghost" size="icon" aria-label={t('Таймер')}>
             <Timer />
           </Button>
         )}
@@ -79,26 +81,26 @@ export function BoardTimerControl({ doc, canControl, userName }: BoardTimerContr
                     onClick={() => pauseTimer(doc)}
                     disabled={finished}
                   >
-                    <Pause /> Пауза
+                    <Pause /> {t('Пауза')}
                   </Button>
                 ) : (
                   <Button size="sm" variant="outline" onClick={() => resumeTimer(doc)}>
-                    <Play /> Дальше
+                    <Play /> {t('Дальше')}
                   </Button>
                 )}
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => addTime(doc, 60_000)}
-                  aria-label="Добавить минуту"
+                  aria-label={t('Добавить минуту')}
                 >
-                  <Plus /> 1 мин
+                  <Plus /> {t('1 мин')}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => stopTimer(doc)}
-                  aria-label="Остановить таймер"
+                  aria-label={t('Остановить таймер')}
                 >
                   <Square />
                 </Button>
@@ -107,7 +109,7 @@ export function BoardTimerControl({ doc, canControl, userName }: BoardTimerContr
           </>
         ) : (
           <>
-            <p className="text-sm font-medium">Таймер для всех участников</p>
+            <p className="text-sm font-medium">{t('Таймер для всех участников')}</p>
             <div className="grid grid-cols-5 gap-1">
               {PRESETS.map((m) => (
                 <Button
@@ -135,18 +137,18 @@ export function BoardTimerControl({ doc, canControl, userName }: BoardTimerContr
               }}
             >
               <Input
-                aria-label="Минут"
-                placeholder="Минут"
+                aria-label={t('Минут')}
+                placeholder={t('Минут')}
                 inputMode="decimal"
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 onKeyDown={(e) => e.stopPropagation()}
               />
               <Button type="submit" size="sm">
-                <Play /> Старт
+                <Play /> {t('Старт')}
               </Button>
             </form>
-            <p className="text-xs text-muted-foreground">Пресеты — минуты</p>
+            <p className="text-xs text-muted-foreground">{t('Пресеты — минуты')}</p>
           </>
         )}
       </PopoverContent>

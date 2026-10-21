@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 /** Переключатель писем об упоминаниях и ответах (в приложении уведомления приходят всегда) */
 export function EmailNotificationsToggle({ initial }: { initial: boolean }) {
+  const t = useT();
   const [enabled, setEnabled] = useState(initial);
   const [saving, setSaving] = useState(false);
 
@@ -18,10 +20,12 @@ export function EmailNotificationsToggle({ initial }: { initial: boolean }) {
         method: 'PATCH',
         body: { emailNotifications: next },
       });
-      toast.success(next ? 'Письма об упоминаниях включены' : 'Письма об упоминаниях выключены');
+      toast.success(
+        next ? t('Письма об упоминаниях включены') : t('Письма об упоминаниях выключены'),
+      );
     } catch (e: unknown) {
       setEnabled(!next);
-      toast.error(errorMessage(e, 'Не удалось сохранить настройку'));
+      toast.error(errorMessage(e, t('Не удалось сохранить настройку')));
     } finally {
       setSaving(false);
     }
@@ -37,7 +41,7 @@ export function EmailNotificationsToggle({ initial }: { initial: boolean }) {
         onChange={(e) => void change(e.target.checked)}
       />
       <span>
-        <span className="block font-medium">Письма об упоминаниях и ответах</span>
+        <span className="block font-medium">{t('Письма об упоминаниях и ответах')}</span>
         <span className="block text-muted-foreground">
           Приходят, если вы не прочитали уведомление в Просторе в течение пары минут
         </span>

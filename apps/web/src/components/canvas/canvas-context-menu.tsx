@@ -30,6 +30,7 @@ import { isCanvasTarget } from '@/lib/canvas/keyboard';
 import { screenToWorld } from '@/lib/canvas/viewport';
 import { useAiStore } from '@/stores/ai-store';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 interface CanvasContextMenuProps {
   containerRef: RefObject<HTMLElement | null>;
@@ -53,6 +54,7 @@ export function CanvasContextMenu({
   onRemoveBg,
   onFit,
 }: CanvasContextMenuProps) {
+  const t = useT();
   const [menu, setMenu] = useState<{ x: number; y: number; ids: string[] } | null>(null);
   const aiTasks = useAiStore((s) => s.tasks);
 
@@ -117,10 +119,10 @@ export function CanvasContextMenu({
                 useCanvasStore.getState().select(all);
               }}
             >
-              <MousePointerSquareDashed /> Выделить всё
+              <MousePointerSquareDashed /> {t('Выделить всё')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={onFit}>
-              <Maximize /> Показать всё
+              <Maximize /> {t('Показать всё')}
             </DropdownMenuItem>
           </>
         ) : canEdit ? (
@@ -131,7 +133,7 @@ export function CanvasContextMenu({
                   disabled={Boolean(aiTasks[removeBgKey]) || single.locked}
                   onSelect={() => onRemoveBg(single.id)}
                 >
-                  <Wand2 /> Убрать фон
+                  <Wand2 /> {t('Убрать фон')}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>
@@ -140,7 +142,7 @@ export function CanvasContextMenu({
               onSelect={() => {
                 const copies = actions?.duplicate(ids) ?? [];
                 if (copies.length > 0) useCanvasStore.getState().select(copies);
-                else toast.error('Копирование запрещено настройками организации');
+                else toast.error(t('Копирование запрещено настройками организации'));
               }}
             >
               <Copy /> Дублировать{' '}
@@ -148,7 +150,7 @@ export function CanvasContextMenu({
             </DropdownMenuItem>
             {elements.some((e) => e.groupId) ? (
               <DropdownMenuItem onSelect={() => actions?.ungroup(ids)}>
-                <Ungroup /> Разгруппировать
+                <Ungroup /> {t('Разгруппировать')}
               </DropdownMenuItem>
             ) : elements.length > 1 ? (
               <DropdownMenuItem onSelect={() => actions?.group(ids)}>
@@ -157,19 +159,19 @@ export function CanvasContextMenu({
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuItem onSelect={() => actions?.bringToFront(ids)}>
-              <BringToFront /> На передний план
+              <BringToFront /> {t('На передний план')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => actions?.sendToBack(ids)}>
-              <SendToBack /> На задний план
+              <SendToBack /> {t('На задний план')}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => actions?.toggleLock(ids)}>
               {elements.every((e) => e.locked) ? (
                 <>
-                  <LockOpen /> Разблокировать
+                  <LockOpen /> {t('Разблокировать')}
                 </>
               ) : (
                 <>
-                  <Lock /> Заблокировать
+                  <Lock /> {t('Заблокировать')}
                 </>
               )}
             </DropdownMenuItem>
@@ -185,12 +187,12 @@ export function CanvasContextMenu({
                   );
               }}
             >
-              <Trash2 /> Удалить <span className="ml-auto text-xs opacity-70">Del</span>
+              <Trash2 /> {t('Удалить')} <span className="ml-auto text-xs opacity-70">Del</span>
             </DropdownMenuItem>
           </>
         ) : (
           <DropdownMenuItem onSelect={onFit}>
-            <Maximize /> Показать всё
+            <Maximize /> {t('Показать всё')}
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

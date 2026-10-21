@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface TreeNode extends FolderDto {
   children: TreeNode[];
@@ -52,13 +53,14 @@ interface FolderTreeProps {
 
 /** Дерево папок рабочего пространства в боковой панели дашборда */
 export function FolderTree({ folders, activeId, baseQuery }: FolderTreeProps) {
+  const t = useT();
   const tree = useMemo(() => buildTree(folders), [folders]);
   // Раскрыты предки активной папки
   const activePath = folders.find((f) => f.id === activeId)?.path ?? '';
   if (tree.length === 0)
-    return <p className="px-2 py-1 text-xs text-muted-foreground">Папок пока нет</p>;
+    return <p className="px-2 py-1 text-xs text-muted-foreground">{t('Папок пока нет')}</p>;
   return (
-    <ul className="space-y-0.5" role="tree" aria-label="Папки">
+    <ul className="space-y-0.5" role="tree" aria-label={t('Папки')}>
       {tree.map((node) => (
         <FolderItem
           key={node.id}
@@ -82,6 +84,7 @@ interface FolderItemProps {
 }
 
 function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItemProps) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(activePath.includes(`/${node.id}/`));
   const [shareOpen, setShareOpen] = useState(false);
@@ -102,7 +105,7 @@ function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItem
       await apiRequest(`/api/folders/${node.id}`, { method: 'PATCH', body: { name } });
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось переименовать'));
+      toast.error(errorMessage(e, t('Не удалось переименовать')));
     }
   }
 
@@ -115,11 +118,11 @@ function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItem
       return;
     try {
       await apiRequest(`/api/folders/${node.id}`, { method: 'DELETE' });
-      toast.success('Папка удалена');
+      toast.success(t('Папка удалена'));
       router.push(`/dashboard${baseQuery ? `?${baseQuery}` : ''}`);
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось удалить папку'));
+      toast.error(errorMessage(e, t('Не удалось удалить папку')));
     }
   }
 
@@ -142,7 +145,7 @@ function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItem
             'rounded p-0.5 text-muted-foreground',
             node.children.length === 0 && 'invisible',
           )}
-          aria-label={open ? 'Свернуть' : 'Развернуть'}
+          aria-label={open ? t('Свернуть') : t('Развернуть')}
           onClick={() => setOpen(!open)}
         >
           <ChevronRight className={cn('size-3.5 transition-transform', open && 'rotate-90')} />
@@ -172,16 +175,16 @@ function FolderItem({ node, depth, activeId, activePath, baseQuery }: FolderItem
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onSelect={() => void rename()}>
-                <Pencil /> Переименовать
+                <Pencil /> {t('Переименовать')}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setShareOpen(true)}>
-                <Users /> Доступ к папке
+                <Users /> {t('Доступ к папке')}
               </DropdownMenuItem>
               {isOwner ? (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem destructive onSelect={() => void remove()}>
-                    <Trash2 /> Удалить
+                    <Trash2 /> {t('Удалить')}
                   </DropdownMenuItem>
                 </>
               ) : null}

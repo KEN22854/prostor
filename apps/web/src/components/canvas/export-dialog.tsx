@@ -22,6 +22,7 @@ import { collectPages, type ExportScope } from '@/lib/export/export-pages';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 const FORMATS: Array<{ value: ExportFormat; label: string; hint: string; icon: LucideIcon }> = [
   { value: 'png', label: 'PNG', hint: 'Картинка для чата и презентаций', icon: FileImage },
@@ -43,6 +44,7 @@ interface ExportDialogProps {
 
 /** Экспорт доски, выделения или фреймов. Файл собирается в браузере. */
 export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDialogProps) {
+  const t = useT();
   const open = useCanvasStore((s) => s.panel === 'export');
   const setPanel = useCanvasStore((s) => s.setPanel);
   const selection = useCanvasStore((s) => s.selection);
@@ -67,7 +69,7 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
     const s = scope();
     const pages = collectPages(store, s, boardTitle, (ids) => actions.withFrameChildren(ids));
     if (pages.length === 0) {
-      toast.error('Нечего экспортировать — доска или выделение пусты');
+      toast.error(t('Нечего экспортировать — доска или выделение пусты'));
       return;
     }
     setBusy(true);
@@ -85,10 +87,10 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
         background: transparent && format !== 'pdf' ? null : '#ffffff',
         fileName: name,
       });
-      toast.success('Файл готов');
+      toast.success(t('Файл готов'));
       setPanel(null);
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось экспортировать доску'));
+      toast.error(errorMessage(e, t('Не удалось экспортировать доску')));
     } finally {
       setBusy(false);
     }
@@ -98,12 +100,14 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
     <Dialog open={open} onOpenChange={(v) => !busy && setPanel(v ? 'export' : null)}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Экспорт</DialogTitle>
-          <DialogDescription>Файл создаётся в браузере и сразу скачивается.</DialogDescription>
+          <DialogTitle>{t('Экспорт')}</DialogTitle>
+          <DialogDescription>
+            {t('Файл создаётся в браузере и сразу скачивается.')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div role="radiogroup" aria-label="Формат" className="grid grid-cols-3 gap-2">
+          <div role="radiogroup" aria-label={t('Формат')} className="grid grid-cols-3 gap-2">
             {FORMATS.map(({ value, label, hint, icon: Icon }) => (
               <button
                 key={value}
@@ -127,13 +131,13 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
           </p>
 
           <div className="space-y-1.5">
-            <Label htmlFor="export-scope">Что экспортировать</Label>
+            <Label htmlFor="export-scope">{t('Что экспортировать')}</Label>
             <NativeSelect
               id="export-scope"
               value={effectiveScope}
               onChange={(e) => setScopeKey(e.target.value)}
             >
-              <option value="board">Всю доску</option>
+              <option value="board">{t('Всю доску')}</option>
               {selection.length > 0 ? (
                 <option value="selection">Выделенное ({selection.length})</option>
               ) : null}
@@ -151,14 +155,14 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
           <div className="grid grid-cols-2 gap-3">
             {format === 'png' ? (
               <div className="space-y-1.5">
-                <Label htmlFor="export-scale">Масштаб</Label>
+                <Label htmlFor="export-scale">{t('Масштаб')}</Label>
                 <NativeSelect
                   id="export-scale"
                   value={String(scale)}
                   onChange={(e) => setScale(Number(e.target.value))}
                 >
                   <option value="1">1×</option>
-                  <option value="2">2× (рекомендуется)</option>
+                  <option value="2">{t('2× (рекомендуется)')}</option>
                   <option value="4">4×</option>
                 </NativeSelect>
               </div>
@@ -170,7 +174,7 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
                   checked={transparent}
                   onChange={(e) => setTransparent(e.target.checked)}
                 />
-                Прозрачный фон
+                {t('Прозрачный фон')}
               </label>
             ) : null}
           </div>
@@ -178,7 +182,7 @@ export function ExportDialog({ boardId, boardTitle, store, actions }: ExportDial
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => setPanel(null)} disabled={busy}>
-            Отмена
+            {t('Отмена')}
           </Button>
           <Button onClick={() => void run()} disabled={busy}>
             {busy ? <Loader2 className="animate-spin" /> : null}

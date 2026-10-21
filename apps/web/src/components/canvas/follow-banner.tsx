@@ -3,9 +3,11 @@
 import { Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 /** Рамка цвета ведущего вокруг холста и полоса «Вы следуете за …» */
 export function FollowBanner() {
+  const t = useT();
   const follow = useCanvasStore((s) => s.follow);
   const setFollow = useCanvasStore((s) => s.setFollow);
   if (!follow) return null;
@@ -31,7 +33,7 @@ export function FollowBanner() {
           className="h-7 rounded-full px-3 text-xs"
           onClick={() => setFollow(null)}
         >
-          {follow.auto ? 'Смотреть самостоятельно' : 'Перестать'}
+          {follow.auto ? t('Смотреть самостоятельно') : t('Перестать')}
         </Button>
       </div>
     </>

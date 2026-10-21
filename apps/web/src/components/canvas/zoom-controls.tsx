@@ -7,6 +7,7 @@ import { ZOOM_STEP } from '@/hooks/use-canvas-navigation';
 import { zoomAt } from '@/lib/canvas/viewport';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 function zoomCenter(factor: number | ((zoom: number) => number)) {
   const { size, setCamera } = useCanvasStore.getState();
@@ -33,6 +34,7 @@ export function ZoomControls({
   showNavTools = false,
   showCommentTool = false,
 }: ZoomControlsProps) {
+  const t = useT();
   // Округлённый процент как селектор: панорамирование не перерисовывает панель
   const percent = useCanvasStore((s) => Math.round(s.camera.zoom * 100));
   const tool = useCanvasStore((s) => s.tool);
@@ -52,13 +54,13 @@ export function ZoomControls({
                 size="icon"
                 className={cn('size-8', tool === 'select' && 'bg-accent text-accent-foreground')}
                 onClick={() => setTool('select')}
-                aria-label="Выделение"
+                aria-label={t('Выделение')}
                 aria-pressed={tool === 'select'}
               >
                 <MousePointer2 />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Выделение (V)</TooltipContent>
+            <TooltipContent>{t('Выделение (V)')}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -67,13 +69,13 @@ export function ZoomControls({
                 size="icon"
                 className={cn('size-8', tool === 'hand' && 'bg-accent text-accent-foreground')}
                 onClick={() => setTool('hand')}
-                aria-label="Рука"
+                aria-label={t('Рука')}
                 aria-pressed={tool === 'hand'}
               >
                 <Hand />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Рука (H или зажатый пробел)</TooltipContent>
+            <TooltipContent>{t('Рука (H или зажатый пробел)')}</TooltipContent>
           </Tooltip>
           {showCommentTool ? (
             <Tooltip>
@@ -83,13 +85,13 @@ export function ZoomControls({
                   size="icon"
                   className={cn('size-8', tool === 'comment' && 'bg-accent text-accent-foreground')}
                   onClick={() => setTool('comment')}
-                  aria-label="Комментарий"
+                  aria-label={t('Комментарий')}
                   aria-pressed={tool === 'comment'}
                 >
                   <MessageCircle />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Комментарий (C)</TooltipContent>
+              <TooltipContent>{t('Комментарий (C)')}</TooltipContent>
             </Tooltip>
           ) : null}
           <Tooltip>
@@ -99,13 +101,13 @@ export function ZoomControls({
                 size="icon"
                 className={cn('size-8', tool === 'laser' && 'bg-accent text-accent-foreground')}
                 onClick={() => setTool('laser')}
-                aria-label="Лазерная указка"
+                aria-label={t('Лазерная указка')}
                 aria-pressed={tool === 'laser'}
               >
                 <Zap />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Лазерная указка (K)</TooltipContent>
+            <TooltipContent>{t('Лазерная указка (K)')}</TooltipContent>
           </Tooltip>
 
           <span className="mx-1 h-5 w-px bg-border" aria-hidden />
@@ -117,7 +119,7 @@ export function ZoomControls({
         size="icon"
         className="size-8"
         onClick={() => zoomCenter(1 / ZOOM_STEP)}
-        aria-label="Уменьшить"
+        aria-label={t('Уменьшить')}
       >
         <Minus />
       </Button>
@@ -140,7 +142,7 @@ export function ZoomControls({
         size="icon"
         className="size-8"
         onClick={() => zoomCenter(ZOOM_STEP)}
-        aria-label="Увеличить"
+        aria-label={t('Увеличить')}
       >
         <Plus />
       </Button>
@@ -151,12 +153,12 @@ export function ZoomControls({
             size="icon"
             className="size-8"
             onClick={onFit}
-            aria-label="Показать всё"
+            aria-label={t('Показать всё')}
           >
             <Maximize />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Показать всё (Shift+1)</TooltipContent>
+        <TooltipContent>{t('Показать всё (Shift+1)')}</TooltipContent>
       </Tooltip>
     </div>
   );

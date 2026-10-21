@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { apiRequest } from '@/lib/fetcher';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface Member {
   userId: string;
@@ -54,6 +55,7 @@ export function CommentComposer({
   onSubmit,
   onCancel,
 }: CommentComposerProps) {
+  const t = useT();
   const ref = useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = useState(initial);
   const [members, setMembers] = useState<Member[]>([]);
@@ -164,7 +166,7 @@ export function CommentComposer({
         <ul
           className="absolute left-0 right-0 top-full z-10 mt-1 rounded-md border bg-popover p-1 shadow-md"
           role="listbox"
-          aria-label="Упомянуть участника"
+          aria-label={t('Упомянуть участника')}
         >
           {suggestions.map((m, i) => (
             <li key={m.userId} role="option" aria-selected={i === highlight}>
@@ -190,11 +192,13 @@ export function CommentComposer({
         </ul>
       ) : null}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-muted-foreground">Enter — отправить, @ — упомянуть</span>
+        <span className="text-xs text-muted-foreground">
+          {t('Enter — отправить, @ — упомянуть')}
+        </span>
         <div className="flex gap-1">
           {onCancel ? (
             <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-              Отмена
+              {t('Отмена')}
             </Button>
           ) : null}
           <Button

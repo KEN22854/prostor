@@ -8,6 +8,7 @@ import { NEUTRAL_FILL } from '@/lib/canvas/constants';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import { centerOn, unionBounds, visibleBounds } from '@/lib/canvas/viewport';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 const WIDTH = 200;
 const HEIGHT = 130;
@@ -38,6 +39,7 @@ function mappingFor(world: Bounds): Mapping {
  * — доли миллисекунды. Клик/перетаскивание — переход к точке доски.
  */
 export function Minimap({ store }: { store: ElementStore | null }) {
+  const t = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mappingRef = useRef<Mapping | null>(null);
   const [open, setOpen] = useState(true);
@@ -164,7 +166,7 @@ export function Minimap({ store }: { store: ElementStore | null }) {
         size="icon"
         className="absolute bottom-4 right-4 bg-background shadow-sm"
         onClick={() => setOpen(true)}
-        aria-label="Показать мини-карту"
+        aria-label={t('Показать мини-карту')}
       >
         <MapIcon />
       </Button>
@@ -177,14 +179,14 @@ export function Minimap({ store }: { store: ElementStore | null }) {
         ref={canvasRef}
         style={{ width: WIDTH, height: HEIGHT }}
         className="block cursor-pointer touch-none"
-        aria-label="Мини-карта доски"
+        aria-label={t('Мини-карта доски')}
         data-testid="minimap"
       />
       <button
         type="button"
         onClick={() => setOpen(false)}
         className="absolute right-1 top-1 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-        aria-label="Скрыть мини-карту"
+        aria-label={t('Скрыть мини-карту')}
       >
         <X className="size-3.5" />
       </button>

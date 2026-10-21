@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { BoardActions } from '@/lib/canvas/board-actions';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const ROUTINGS: ReadonlyArray<{ value: LineRouting; label: string; icon: LucideIcon }> = [
   { value: 'straight', label: 'Прямая', icon: Minus },
@@ -58,6 +59,7 @@ function Toggle({
  * название фрейма, чтобы не плодить шаг отмены на каждую букву.
  */
 export function LineControls({ lines, actions }: { lines: LineElement[]; actions: BoardActions }) {
+  const t = useT();
   const ids = lines.map((l) => l.id);
   const first = lines[0];
   if (!first) return null;
@@ -73,20 +75,20 @@ export function LineControls({ lines, actions }: { lines: LineElement[]; actions
         <Toggle
           key={r.value}
           active={routing === r.value}
-          label={r.label}
+          label={t(r.label)}
           icon={r.icon}
           onClick={() => patchAll({ routing: r.value })}
         />
       ))}
       <Toggle
         active={startOn}
-        label="Наконечник в начале"
+        label={t('Наконечник в начале')}
         icon={ArrowLeft}
         onClick={() => patchAll({ startArrow: startOn ? 'none' : 'arrow' })}
       />
       <Toggle
         active={endOn}
-        label="Наконечник в конце"
+        label={t('Наконечник в конце')}
         icon={ArrowRight}
         onClick={() => patchAll({ endArrow: endOn ? 'none' : 'arrow' })}
       />
@@ -96,6 +98,7 @@ export function LineControls({ lines, actions }: { lines: LineElement[]; actions
 }
 
 function LineLabelInput({ line, actions }: { line: LineElement; actions: BoardActions }) {
+  const t = useT();
   const [value, setValue] = useState(line.label ?? '');
   useEffect(() => setValue(line.label ?? ''), [line.label]);
 
@@ -108,8 +111,8 @@ function LineLabelInput({ line, actions }: { line: LineElement; actions: BoardAc
 
   return (
     <Input
-      aria-label="Подпись линии"
-      placeholder="Подпись"
+      aria-label={t('Подпись линии')}
+      placeholder={t('Подпись')}
       value={value}
       maxLength={500}
       className="ml-1 h-8 w-36"

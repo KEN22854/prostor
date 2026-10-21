@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { ApiClientError, apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface ChangePasswordFormProps {
   email: string;
@@ -31,6 +32,7 @@ interface ChangePasswordFormProps {
  * входим заново с новым паролем — пользователь остаётся в системе.
  */
 export function ChangePasswordForm({ email, hasPassword }: ChangePasswordFormProps) {
+  const t = useT();
   const router = useRouter();
   const form = useForm<ChangePasswordInput>({
     resolver: zodResolver(changePasswordSchema),
@@ -46,7 +48,7 @@ export function ChangePasswordForm({ email, hasPassword }: ChangePasswordFormPro
     } catch (e: unknown) {
       const fieldError = e instanceof ApiClientError ? e.fields.currentPassword : undefined;
       if (fieldError) form.setError('currentPassword', { message: fieldError });
-      else toast.error(errorMessage(e, 'Не удалось сменить пароль'));
+      else toast.error(errorMessage(e, t('Не удалось сменить пароль')));
       return;
     }
     const result = await signIn('credentials', {
@@ -55,7 +57,7 @@ export function ChangePasswordForm({ email, hasPassword }: ChangePasswordFormPro
       redirect: false,
     });
     if (!result || result.error) {
-      toast.success('Пароль изменён. Войдите с новым паролем');
+      toast.success(t('Пароль изменён. Войдите с новым паролем'));
       router.push('/login');
       return;
     }
@@ -78,7 +80,7 @@ export function ChangePasswordForm({ email, hasPassword }: ChangePasswordFormPro
             name="currentPassword"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Текущий пароль</FormLabel>
+                <FormLabel>{t('Текущий пароль')}</FormLabel>
                 <FormControl>
                   <Input type="password" autoComplete="current-password" {...field} />
                 </FormControl>
@@ -92,7 +94,7 @@ export function ChangePasswordForm({ email, hasPassword }: ChangePasswordFormPro
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Новый пароль</FormLabel>
+              <FormLabel>{t('Новый пароль')}</FormLabel>
               <FormControl>
                 <Input type="password" autoComplete="new-password" {...field} />
               </FormControl>
@@ -105,7 +107,7 @@ export function ChangePasswordForm({ email, hasPassword }: ChangePasswordFormPro
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Повторите пароль</FormLabel>
+              <FormLabel>{t('Повторите пароль')}</FormLabel>
               <FormControl>
                 <Input type="password" autoComplete="new-password" {...field} />
               </FormControl>
@@ -115,7 +117,7 @@ export function ChangePasswordForm({ email, hasPassword }: ChangePasswordFormPro
         />
         <Button type="submit" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" /> : null}
-          {hasPassword ? 'Сменить пароль' : 'Установить пароль'}
+          {hasPassword ? t('Сменить пароль') : t('Установить пароль')}
         </Button>
       </form>
     </Form>

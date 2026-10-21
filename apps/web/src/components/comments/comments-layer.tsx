@@ -12,6 +12,7 @@ import { markThreadRead, postComment } from '@/lib/comments-api';
 import { cn, errorMessage } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useCommentsStore } from '@/stores/comments-store';
+import { useT } from '@/lib/i18n/client';
 
 interface CommentsLayerProps {
   boardId: string;
@@ -37,6 +38,7 @@ const zero = () => 0;
  * движение камеры дешёвая.
  */
 export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps) {
+  const t = useT();
   const camera = useCanvasStore((s) => s.camera);
   const size = useCanvasStore((s) => s.size);
   const { threads, visible, showResolved, openThreadId, draft, openThread, startDraft } =
@@ -44,7 +46,7 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
   // Объекты двигаются — пины едут за ними
   useSyncExternalStore(store?.subscribe ?? noop, store?.getVersion ?? zero, zero);
 
-  const open = threads.find((t) => t.id === openThreadId) ?? null;
+  const open = threads.find((thread) => thread.id === openThreadId) ?? null;
 
   // Открыли тред (из панели, уведомления, письма) — его уведомления прочитаны
   useEffect(() => {
@@ -55,7 +57,7 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
   const openFound = Boolean(open);
   useEffect(() => {
     if (!openThreadId || !openFound) return;
-    const thread = useCommentsStore.getState().threads.find((t) => t.id === openThreadId);
+    const thread = useCommentsStore.getState().threads.find((thread) => thread.id === openThreadId);
     const anchor = thread ? anchorOf(thread, store) : null;
     if (!anchor) return;
     const { camera: cam, size: s, setCamera } = useCanvasStore.getState();
@@ -84,30 +86,30 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
     >
       {visible
         ? threads
-            .filter((t) => showResolved || !t.resolvedAt || t.id === openThreadId)
-            .map((t) => {
-              const anchor = anchorOf(t, store);
+            .filter((thread) => showResolved || !thread.resolvedAt || thread.id === openThreadId)
+            .map((thread) => {
+              const anchor = anchorOf(thread, store);
               if (!anchor) return null;
               const p = worldToScreen(camera, anchor);
               if (p.x < -40 || p.y < -40 || p.x > size.width + 40 || p.y > size.height + 40)
                 return null;
-              const count = t.replies.length + 1;
+              const count = thread.replies.length + 1;
               return (
                 <button
-                  key={t.id}
+                  key={thread.id}
                   type="button"
                   className={cn(
                     'pointer-events-auto absolute flex -translate-y-full items-center gap-1 rounded-full rounded-bl-none border-2 border-background px-1.5 py-0.5 text-xs font-semibold text-white shadow-md transition-transform hover:scale-110',
-                    t.resolvedAt && 'opacity-60',
-                    t.id === openThreadId && 'ring-2 ring-primary',
+                    thread.resolvedAt && 'opacity-60',
+                    thread.id === openThreadId && 'ring-2 ring-primary',
                   )}
-                  style={{ left: p.x, top: p.y, backgroundColor: colorForUser(t.authorId) }}
-                  aria-label={`Обсуждение: ${t.authorName}, ${count} сообщ.`}
+                  style={{ left: p.x, top: p.y, backgroundColor: colorForUser(thread.authorId) }}
+                  aria-label={`Обсуждение: ${thread.authorName}, ${count} сообщ.`}
                   data-testid="comment-pin"
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => openThread(t.id === openThreadId ? null : t.id)}
+                  onClick={() => openThread(thread.id === openThreadId ? null : thread.id)}
                 >
-                  {initials(t.authorName)}
+                  {initials(thread.authorName)}
                   {count > 1 ? (
                     <span className="rounded-full bg-black/20 px-1">{count}</span>
                   ) : null}
@@ -147,7 +149,7 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
           >
             <CommentComposer
               boardId={boardId}
-              placeholder="Новый комментарий…"
+              placeholder={t('Новый комментарий…')}
               autoFocus
               submitLabel="Комментировать"
               onCancel={() => startDraft(null)}
@@ -156,7 +158,7 @@ export function CommentsLayer({ boardId, store, canComment }: CommentsLayerProps
                   const { threadId } = await postComment(boardId, { body, ...draft });
                   openThread(threadId);
                 } catch (e: unknown) {
-                  toast.error(errorMessage(e, 'Не удалось добавить комментарий'));
+                  toast.error(errorMessage(e, t('Не удалось добавить комментарий')));
                   throw e;
                 }
               }}

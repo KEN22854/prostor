@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { apiRequest } from '@/lib/fetcher';
 import { cn } from '@/lib/utils';
 import { useCommentsStore } from '@/stores/comments-store';
+import { useT } from '@/lib/i18n/client';
 
 const POLL_MS = 60_000;
 
@@ -33,6 +34,7 @@ function describe(n: NotificationDto): string {
 
 /** Уведомления: упоминания, ответы, приглашения. Опрос раз в минуту и при возврате на вкладку */
 export function NotificationsBell() {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const [items, setItems] = useState<NotificationDto[]>([]);
@@ -94,7 +96,7 @@ export function NotificationsBell() {
           variant="ghost"
           size="icon"
           className="relative"
-          aria-label={unread > 0 ? `Уведомления: ${unread} новых` : 'Уведомления'}
+          aria-label={unread > 0 ? `Уведомления: ${unread} новых` : t('Уведомления')}
         >
           <Bell />
           {unread > 0 ? (
@@ -109,7 +111,7 @@ export function NotificationsBell() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <span className="text-sm font-medium">Уведомления</span>
+          <span className="text-sm font-medium">{t('Уведомления')}</span>
           {unread > 0 ? (
             <Button
               variant="ghost"
@@ -117,13 +119,15 @@ export function NotificationsBell() {
               className="h-7 px-2 text-xs"
               onClick={() => void markRead(null)}
             >
-              <CheckCheck className="size-3.5" /> Прочитать все
+              <CheckCheck className="size-3.5" /> {t('Прочитать все')}
             </Button>
           ) : null}
         </div>
-        <ul className="max-h-96 overflow-y-auto" aria-label="Список уведомлений">
+        <ul className="max-h-96 overflow-y-auto" aria-label={t('Список уведомлений')}>
           {items.length === 0 ? (
-            <li className="p-6 text-center text-sm text-muted-foreground">Уведомлений пока нет</li>
+            <li className="p-6 text-center text-sm text-muted-foreground">
+              {t('Уведомлений пока нет')}
+            </li>
           ) : (
             items.map((n) => (
               <li key={n.id}>

@@ -12,6 +12,7 @@ import { sortFrames } from '@/lib/canvas/frames';
 import { boundsOf } from '@/lib/canvas/read-element';
 import { fitBounds } from '@/lib/canvas/viewport';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 const noop = () => () => undefined;
 const zero = () => 0;
@@ -28,6 +29,7 @@ export function FramesPanel({
   store: ElementStore | null;
   actions: BoardActions | null;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   // Подписка только пока список открыт: правки доски не перерисовывают закрытую кнопку
   useSyncExternalStore(open && store ? store.subscribe : noop, store?.getVersion ?? zero, zero);
@@ -57,7 +59,7 @@ export function FramesPanel({
 
   const present = () => {
     setOpen(false);
-    if (!startPresentation(store)) toast.info('Добавьте фреймы — каждый станет слайдом');
+    if (!startPresentation(store)) toast.info(t('Добавьте фреймы — каждый станет слайдом'));
   };
 
   return (
@@ -72,16 +74,17 @@ export function FramesPanel({
         onClick={present}
         data-testid="start-presentation"
       >
-        <Play /> Показать
+        <Play /> {t('Показать')}
       </Button>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="bg-background/95 shadow-md backdrop-blur">
-            <Frame /> Фреймы <span className="text-xs text-muted-foreground">{frames.length}</span>
+            <Frame /> {t('Фреймы')}{' '}
+            <span className="text-xs text-muted-foreground">{frames.length}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-72 p-1" onPointerDown={(e) => e.stopPropagation()}>
-          <ul className="max-h-80 overflow-y-auto" aria-label="Фреймы доски">
+          <ul className="max-h-80 overflow-y-auto" aria-label={t('Фреймы доски')}>
             {frames.map((f, i) => (
               <li key={f.id} className="group flex items-center gap-1 rounded hover:bg-muted">
                 <button

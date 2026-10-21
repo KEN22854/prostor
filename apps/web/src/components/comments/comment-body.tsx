@@ -4,13 +4,13 @@ import { tokenizeComment } from '@prostor/shared';
 export function CommentBody({ body }: { body: string }) {
   return (
     <p className="whitespace-pre-wrap break-words text-sm">
-      {tokenizeComment(body).map((t, i) =>
-        t.kind === 'mention' ? (
+      {tokenizeComment(body).map((token, i) =>
+        token.kind === 'mention' ? (
           <span key={i} className="rounded bg-primary/10 px-0.5 font-medium text-primary">
-            @{t.name}
+            @{token.name}
           </span>
         ) : (
-          <span key={i}>{t.text}</span>
+          <span key={i}>{token.text}</span>
         ),
       )}
     </p>

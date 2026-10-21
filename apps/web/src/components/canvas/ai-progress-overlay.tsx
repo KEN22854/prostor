@@ -6,6 +6,7 @@ import type { ElementStore } from '@/lib/canvas/element-store';
 import { worldToScreen } from '@/lib/canvas/viewport';
 import { useAiStore } from '@/stores/ai-store';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 /**
  * Индикатор выполняющейся ИИ-задачи поверх объекта (или места будущей
@@ -13,6 +14,7 @@ import { useCanvasStore } from '@/stores/canvas-store';
  * задач единицы, а CSS-анимация не нагружает перерисовку холста.
  */
 export function AiProgressOverlay({ store }: { store: ElementStore | null }) {
+  const t = useT();
   const tasks = useAiStore((s) => s.tasks);
   const camera = useCanvasStore((s) => s.camera);
   // Рамка следует за элементом, если его двигают во время обработки
@@ -43,7 +45,7 @@ export function AiProgressOverlay({ store }: { store: ElementStore | null }) {
             <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-primary/10 via-transparent to-primary/20" />
             <div className="relative flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1 text-xs font-medium shadow">
               <Sparkles className="size-3.5 text-primary" aria-hidden />
-              {task.label}… {task.progress}%
+              {t(task.label)}… {task.progress}%
             </div>
             <div className="relative h-1 w-2/3 max-w-40 overflow-hidden rounded-full bg-background/80">
               <div

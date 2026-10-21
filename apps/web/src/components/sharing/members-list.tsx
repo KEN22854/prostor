@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/native-select';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface MembersListProps {
   state: SharingStateDto;
@@ -23,6 +24,7 @@ interface MembersListProps {
 
 /** Участники доски: роли меняет и удаляет только владелец; любой может выйти сам */
 export function MembersList({ state, onChanged }: MembersListProps) {
+  const t = useT();
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -36,7 +38,7 @@ export function MembersList({ state, onChanged }: MembersListProps) {
       toast.success(`Роль изменена: ${ROLE_LABELS[role]}`);
       await onChanged();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось изменить роль'));
+      toast.error(errorMessage(e, t('Не удалось изменить роль')));
     } finally {
       setBusy(null);
     }
@@ -52,14 +54,14 @@ export function MembersList({ state, onChanged }: MembersListProps) {
     try {
       await apiRequest(`/api/boards/${state.boardId}/members/${userId}`, { method: 'DELETE' });
       if (self) {
-        toast.success('Вы покинули доску');
+        toast.success(t('Вы покинули доску'));
         router.push('/dashboard');
         return;
       }
-      toast.success('Участник удалён');
+      toast.success(t('Участник удалён'));
       await onChanged();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось удалить участника'));
+      toast.error(errorMessage(e, t('Не удалось удалить участника')));
     } finally {
       setBusy(null);
     }
@@ -68,7 +70,7 @@ export function MembersList({ state, onChanged }: MembersListProps) {
   return (
     <ul
       className="max-h-80 divide-y overflow-y-auto rounded-lg border"
-      aria-label="Участники доски"
+      aria-label={t('Участники доски')}
     >
       {state.members.map((m) => (
         <li key={m.userId} className="flex items-center gap-3 p-2.5" data-testid="member-row">
@@ -82,7 +84,7 @@ export function MembersList({ state, onChanged }: MembersListProps) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
               {m.name ?? m.email}
-              {m.isYou ? <span className="ml-1 text-muted-foreground">(вы)</span> : null}
+              {m.isYou ? <span className="ml-1 text-muted-foreground">{t('(вы)')}</span> : null}
             </p>
             <p className="truncate text-xs text-muted-foreground">{m.email}</p>
           </div>
@@ -109,7 +111,7 @@ export function MembersList({ state, onChanged }: MembersListProps) {
               variant="ghost"
               size="icon"
               className="size-8 shrink-0"
-              aria-label={m.isYou ? 'Покинуть доску' : `Удалить ${m.name ?? m.email}`}
+              aria-label={m.isYou ? t('Покинуть доску') : `Удалить ${m.name ?? m.email}`}
               disabled={busy === m.userId}
               onClick={() => void remove(m.userId, m.isYou)}
             >

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const FILTERS: Array<{ value: ListBoardsQuery['filter']; label: string }> = [
   { value: 'all', label: 'Все' },
@@ -33,6 +34,7 @@ const SORTS: Array<{ value: ListBoardsQuery['sort']; label: string }> = [
  * перечитывает список, ссылку можно отправить коллеге, «назад» работает.
  */
 export function BoardsToolbar({ query }: { query: ListBoardsQuery }) {
+  const t = useT();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -58,7 +60,11 @@ export function BoardsToolbar({ query }: { query: ListBoardsQuery }) {
 
   return (
     <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center', pending && 'opacity-70')}>
-      <div role="tablist" aria-label="Фильтр досок" className="flex gap-1 rounded-lg bg-muted p-1">
+      <div
+        role="tablist"
+        aria-label={t('Фильтр досок')}
+        className="flex gap-1 rounded-lg bg-muted p-1"
+      >
         {FILTERS.map((f) => (
           <button
             key={f.value}
@@ -72,7 +78,7 @@ export function BoardsToolbar({ query }: { query: ListBoardsQuery }) {
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {f.label}
+            {t(f.label)}
           </button>
         ))}
       </div>
@@ -84,9 +90,9 @@ export function BoardsToolbar({ query }: { query: ListBoardsQuery }) {
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Поиск по названию и содержимому"
+            placeholder={t('Поиск по названию и содержимому')}
             className="pl-9"
-            aria-label="Поиск досок"
+            aria-label={t('Поиск досок')}
           />
         </div>
         <DropdownMenu>
@@ -94,7 +100,7 @@ export function BoardsToolbar({ query }: { query: ListBoardsQuery }) {
             <Button variant="outline">
               <ArrowUpDown />
               <span className="hidden sm:inline">
-                {SORTS.find((s) => s.value === query.sort)?.label}
+                {t(SORTS.find((s) => s.value === query.sort)?.label ?? '')}
               </span>
             </Button>
           </DropdownMenuTrigger>
@@ -105,7 +111,7 @@ export function BoardsToolbar({ query }: { query: ListBoardsQuery }) {
             >
               {SORTS.map((s) => (
                 <DropdownMenuRadioItem key={s.value} value={s.value}>
-                  {s.label}
+                  {t(s.label)}
                 </DropdownMenuRadioItem>
               ))}
             </DropdownMenuRadioGroup>

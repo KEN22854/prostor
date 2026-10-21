@@ -7,6 +7,7 @@ import { LOCAL_ORIGIN } from '@prostor/shared';
 import { Button } from '@/components/ui/button';
 import { clearAllElements, generateTestElements } from '@/lib/canvas/dev-generate';
 import type { BoardConnection } from '@/lib/yjs/board-connection';
+import { useT } from '@/lib/i18n/client';
 
 /** Счётчик FPS по requestAnimationFrame (обновление раз в 500 мс) */
 function useFps(): number {
@@ -40,6 +41,7 @@ interface DevPerfPanelProps {
  * Не попадает в production-сборку (рендерится только при NODE_ENV=development).
  */
 export function DevPerfPanel({ connection, userId }: DevPerfPanelProps) {
+  const t = useT();
   const fps = useFps();
   const [open, setOpen] = useState(false);
 
@@ -70,10 +72,10 @@ export function DevPerfPanel({ connection, userId }: DevPerfPanelProps) {
       {open ? (
         <div className="flex flex-col gap-1 rounded-lg border bg-background/95 p-2 shadow-md backdrop-blur">
           <Button size="sm" variant="ghost" onClick={() => generate(1_000)}>
-            + 1 000 объектов
+            {t('+ 1 000 объектов')}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => generate(10_000)}>
-            + 10 000 объектов
+            {t('+ 10 000 объектов')}
           </Button>
           <Button
             size="sm"
@@ -81,7 +83,7 @@ export function DevPerfPanel({ connection, userId }: DevPerfPanelProps) {
             className="text-destructive"
             onClick={() => clearAllElements(connection.doc, LOCAL_ORIGIN)}
           >
-            Очистить доску
+            {t('Очистить доску')}
           </Button>
         </div>
       ) : null}

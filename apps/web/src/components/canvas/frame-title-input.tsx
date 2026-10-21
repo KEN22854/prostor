@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { FrameElement } from '@prostor/shared';
 import { Input } from '@/components/ui/input';
 import type { BoardActions } from '@/lib/canvas/board-actions';
+import { useT } from '@/lib/i18n/client';
 
 /**
  * Название фрейма в панели свойств. Пишем в Yjs по Enter/blur, а не на каждый
@@ -17,6 +18,7 @@ export function FrameTitleInput({
   frame: FrameElement;
   actions: BoardActions;
 }) {
+  const t = useT();
   const [value, setValue] = useState(frame.title);
   // Коллега переименовал фрейм, пока поле не в фокусе, — показываем новое название
   useEffect(() => setValue(frame.title), [frame.title]);
@@ -29,7 +31,7 @@ export function FrameTitleInput({
 
   return (
     <Input
-      aria-label="Название фрейма"
+      aria-label={t('Название фрейма')}
       value={value}
       maxLength={200}
       className="h-8 w-44"

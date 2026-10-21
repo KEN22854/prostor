@@ -30,6 +30,7 @@ import {
   toggleReaction,
 } from '@/lib/comments-api';
 import { cn, errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface CommentItemProps {
   boardId: string;
@@ -39,10 +40,11 @@ interface CommentItemProps {
 }
 
 function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const react = (emoji: string) =>
     toggleReaction(boardId, comment.id, emoji).catch((e: unknown) =>
-      toast.error(errorMessage(e, 'Не удалось поставить реакцию')),
+      toast.error(errorMessage(e, t('Не удалось поставить реакцию'))),
     );
 
   return (
@@ -58,7 +60,7 @@ function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
         <span className="truncate text-sm font-medium">{comment.authorName}</span>
         <span className="shrink-0 text-xs text-muted-foreground">
           {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: ru })}
-          {comment.editedAt ? ' · изменено' : ''}
+          {comment.editedAt ? t(' · изменено') : ''}
         </span>
         {comment.canEdit || comment.canDelete ? (
           <DropdownMenu>
@@ -67,14 +69,16 @@ function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
                 variant="ghost"
                 size="icon"
                 className="ml-auto size-6 opacity-0 focus:opacity-100 group-hover:opacity-100"
-                aria-label="Действия с комментарием"
+                aria-label={t('Действия с комментарием')}
               >
                 <MoreHorizontal className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {comment.canEdit ? (
-                <DropdownMenuItem onSelect={() => setEditing(true)}>Изменить</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setEditing(true)}>
+                  {t('Изменить')}
+                </DropdownMenuItem>
               ) : null}
               {comment.canDelete ? (
                 <DropdownMenuItem
@@ -85,12 +89,12 @@ function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
                       : 'Удалить комментарий?';
                     if (window.confirm(msg)) {
                       void removeComment(boardId, comment.id).catch((e: unknown) =>
-                        toast.error(errorMessage(e, 'Не удалось удалить')),
+                        toast.error(errorMessage(e, t('Не удалось удалить'))),
                       );
                     }
                   }}
                 >
-                  Удалить
+                  {t('Удалить')}
                 </DropdownMenuItem>
               ) : null}
             </DropdownMenuContent>
@@ -100,7 +104,7 @@ function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
       {editing ? (
         <CommentComposer
           boardId={boardId}
-          placeholder="Изменить комментарий"
+          placeholder={t('Изменить комментарий')}
           initial={comment.body}
           autoFocus
           submitLabel="Сохранить"
@@ -137,7 +141,7 @@ function CommentItem({ boardId, comment, canReact, isRoot }: CommentItemProps) {
               <button
                 type="button"
                 className="rounded-full p-0.5 text-muted-foreground opacity-0 hover:bg-muted focus:opacity-100 group-hover:opacity-100"
-                aria-label="Добавить реакцию"
+                aria-label={t('Добавить реакцию')}
               >
                 <SmilePlus className="size-3.5" />
               </button>
@@ -170,6 +174,7 @@ interface ThreadCardProps {
 
 /** Обсуждение: корневой комментарий, ответы, реакции, «решено», ответ */
 export function ThreadCard({ boardId, thread, canComment, onClose }: ThreadCardProps) {
+  const t = useT();
   const resolved = thread.resolvedAt !== null;
   return (
     <div
@@ -180,7 +185,7 @@ export function ThreadCard({ boardId, thread, canComment, onClose }: ThreadCardP
     >
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-xs font-medium text-muted-foreground">
-          {resolved ? 'Обсуждение решено' : 'Обсуждение'}
+          {resolved ? t('Обсуждение решено') : t('Обсуждение')}
         </span>
         <div className="flex items-center gap-0.5">
           {thread.canResolve ? (
@@ -191,18 +196,20 @@ export function ThreadCard({ boardId, thread, canComment, onClose }: ThreadCardP
               onClick={() =>
                 void setResolved(boardId, thread.id, !resolved)
                   .then(() => !resolved && onClose())
-                  .catch((e: unknown) => toast.error(errorMessage(e, 'Не удалось изменить статус')))
+                  .catch((e: unknown) =>
+                    toast.error(errorMessage(e, t('Не удалось изменить статус'))),
+                  )
               }
             >
               {resolved ? <RotateCcw className="size-3.5" /> : <Check className="size-3.5" />}
-              {resolved ? 'Открыть снова' : 'Решено'}
+              {resolved ? t('Открыть снова') : t('Решено')}
             </Button>
           ) : null}
           <Button
             variant="ghost"
             size="icon"
             className="size-7"
-            aria-label="Закрыть обсуждение"
+            aria-label={t('Закрыть обсуждение')}
             onClick={onClose}
           >
             <X className="size-3.5" />
@@ -225,13 +232,13 @@ export function ThreadCard({ boardId, thread, canComment, onClose }: ThreadCardP
         <div className="border-t p-3">
           <CommentComposer
             boardId={boardId}
-            placeholder="Ответить…"
+            placeholder={t('Ответить…')}
             autoFocus
             onSubmit={async (body) => {
               try {
                 await postComment(boardId, { body, parentId: thread.id });
               } catch (e: unknown) {
-                toast.error(errorMessage(e, 'Не удалось отправить'));
+                toast.error(errorMessage(e, t('Не удалось отправить')));
                 throw e;
               }
             }}

@@ -40,6 +40,7 @@ import {
   useCanvasStore,
   type CanvasTool,
 } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 const SHAPES: Array<{ kind: ShapeElement['shape']; icon: LucideIcon; label: string }> = [
   { kind: 'rect', icon: Square, label: 'Прямоугольник' },
@@ -145,6 +146,7 @@ export function ToolPalette({
   onImportPdf,
   onAddLink,
 }: ToolPaletteProps) {
+  const t = useT();
   const options = useCanvasStore((s) => s.toolOptions);
   const setOptions = useCanvasStore((s) => s.setToolOptions);
   const setTool = useCanvasStore((s) => s.setTool);
@@ -157,27 +159,27 @@ export function ToolPalette({
     <div
       className="absolute left-3 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-0.5 rounded-xl border bg-background/95 p-1 shadow-md backdrop-blur"
       role="toolbar"
-      aria-label="Инструменты"
+      aria-label={t('Инструменты')}
       aria-orientation="vertical"
       onPointerDown={(e) => e.stopPropagation()}
     >
-      <ToolButton tool="select" icon={MousePointer2} label="Выделение" hotkey="V" />
-      <ToolButton tool="hand" icon={Hand} label="Рука" hotkey="H" />
+      <ToolButton tool="select" icon={MousePointer2} label={t('Выделение')} hotkey="V" />
+      <ToolButton tool="hand" icon={Hand} label={t('Рука')} hotkey="H" />
       <span className="mx-1.5 my-0.5 h-px bg-border" aria-hidden />
 
-      <ToolWithOptions tool="sticky" icon={StickyNote} label="Стикер" hotkey="N">
-        <Section title="Цвет стикера">
+      <ToolWithOptions tool="sticky" icon={StickyNote} label={t('Стикер')} hotkey="N">
+        <Section title={t('Цвет стикера')}>
           <ColorSwatches
             colors={STICKY_COLORS}
             value={options.stickyColor}
             onChange={(c) => setOptions({ stickyColor: c })}
-            label="Цвет стикера"
+            label={t('Цвет стикера')}
           />
         </Section>
       </ToolWithOptions>
 
-      <ToolWithOptions tool="shape" icon={ShapeIcon} label="Фигура" hotkey="R / O">
-        <Section title="Фигура">
+      <ToolWithOptions tool="shape" icon={ShapeIcon} label={t('Фигура')} hotkey="R / O">
+        <Section title={t('Фигура')}>
           <div className="grid grid-cols-6 gap-1">
             {SHAPES.map(({ kind, icon: Icon, label }) => (
               <Button
@@ -196,27 +198,27 @@ export function ToolPalette({
             ))}
           </div>
         </Section>
-        <Section title="Заливка">
+        <Section title={t('Заливка')}>
           <ColorSwatches
             colors={FILL_COLORS}
             value={options.shapeFill}
             onChange={(c) => setOptions({ shapeFill: c })}
-            label="Заливка"
+            label={t('Заливка')}
           />
         </Section>
-        <Section title="Обводка">
+        <Section title={t('Обводка')}>
           <ColorSwatches
             colors={STROKE_COLORS}
             value={options.strokeColor}
             onChange={(c) => setOptions({ strokeColor: c })}
-            label="Обводка"
+            label={t('Обводка')}
           />
         </Section>
       </ToolWithOptions>
 
-      <ToolButton tool="line" icon={Minus} label="Линия" hotkey="L" />
-      <ToolWithOptions tool="arrow" icon={ArrowUpRight} label="Стрелка" hotkey="A">
-        <Section title="Маршрут (линии и стрелки)">
+      <ToolButton tool="line" icon={Minus} label={t('Линия')} hotkey="L" />
+      <ToolWithOptions tool="arrow" icon={ArrowUpRight} label={t('Стрелка')} hotkey="A">
+        <Section title={t('Маршрут (линии и стрелки)')}>
           <div className="flex gap-1">
             {(
               [
@@ -237,23 +239,25 @@ export function ToolPalette({
             ))}
           </div>
           <p className="mt-1.5 max-w-52 text-xs text-muted-foreground">
-            Начните или закончите стрелку на объекте — она привяжется и будет следовать за ним
+            {t(
+              'Начните или закончите стрелку на объекте — она привяжется и будет следовать за ним',
+            )}
           </p>
         </Section>
-        <Section title="Цвет">
+        <Section title={t('Цвет')}>
           <ColorSwatches
             colors={STROKE_COLORS}
             value={options.strokeColor}
             onChange={(c) => setOptions({ strokeColor: c })}
-            label="Цвет стрелки"
+            label={t('Цвет стрелки')}
           />
         </Section>
       </ToolWithOptions>
-      <ToolButton tool="text" icon={Type} label="Текст" hotkey="T" />
-      <ToolButton tool="table" icon={Table2} label="Таблица" hotkey="B" />
+      <ToolButton tool="text" icon={Type} label={t('Текст')} hotkey="T" />
+      <ToolButton tool="table" icon={Table2} label={t('Таблица')} hotkey="B" />
 
-      <ToolWithOptions tool="pen" icon={Pencil} label="Карандаш" hotkey="P">
-        <Section title="Режим">
+      <ToolWithOptions tool="pen" icon={Pencil} label={t('Карандаш')} hotkey="P">
+        <Section title={t('Режим')}>
           <div className="flex gap-1">
             {(
               [
@@ -274,15 +278,15 @@ export function ToolPalette({
             ))}
           </div>
         </Section>
-        <Section title="Цвет">
+        <Section title={t('Цвет')}>
           <ColorSwatches
             colors={STROKE_COLORS}
             value={options.penColor}
             onChange={(c) => setOptions({ penColor: c })}
-            label="Цвет карандаша"
+            label={t('Цвет карандаша')}
           />
         </Section>
-        <Section title="Толщина">
+        <Section title={t('Толщина')}>
           <div className="flex items-center gap-1">
             {PEN_WIDTHS.map((w) => (
               <Button
@@ -303,14 +307,14 @@ export function ToolPalette({
         </Section>
       </ToolWithOptions>
 
-      <ToolButton tool="frame" icon={Frame} label="Фрейм" hotkey="F" />
-      <ToolButton tool="comment" icon={MessageCircle} label="Комментарий" hotkey="C" />
-      <ToolButton tool="laser" icon={Zap} label="Лазерная указка" hotkey="K" />
-      <ToolButton tool="eraser" icon={Eraser} label="Ластик (стирает росчерки)" hotkey="E" />
+      <ToolButton tool="frame" icon={Frame} label={t('Фрейм')} hotkey="F" />
+      <ToolButton tool="comment" icon={MessageCircle} label={t('Комментарий')} hotkey="C" />
+      <ToolButton tool="laser" icon={Zap} label={t('Лазерная указка')} hotkey="K" />
+      <ToolButton tool="eraser" icon={Eraser} label={t('Ластик (стирает росчерки)')} hotkey="E" />
       <ToolButton
         tool="image"
         icon={ImageIcon}
-        label="Изображение"
+        label={t('Изображение')}
         hotkey="I"
         onSelect={onPickImage}
       />
@@ -320,7 +324,7 @@ export function ToolPalette({
             variant="ghost"
             size="icon"
             className="size-9"
-            aria-label="Импорт PDF"
+            aria-label={t('Импорт PDF')}
             onClick={onImportPdf}
           >
             <FileUp />
@@ -337,7 +341,7 @@ export function ToolPalette({
               variant="ghost"
               size="icon"
               className="size-9"
-              aria-label="Ссылка или видео"
+              aria-label={t('Ссылка или видео')}
               onClick={onAddLink}
             >
               <Link2 />
@@ -355,13 +359,13 @@ export function ToolPalette({
               variant="ghost"
               size="icon"
               className="size-9 text-primary"
-              aria-label="Сгенерировать изображение"
+              aria-label={t('Сгенерировать изображение')}
               onClick={onGenerateImage}
             >
               <Sparkles />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Сгенерировать изображение (ИИ)</TooltipContent>
+          <TooltipContent side="right">{t('Сгенерировать изображение (ИИ)')}</TooltipContent>
         </Tooltip>
       ) : null}
 
@@ -372,14 +376,16 @@ export function ToolPalette({
             variant="ghost"
             size="icon"
             className={cn('size-9', snapToObjects && 'text-primary')}
-            aria-label="Привязка к объектам"
+            aria-label={t('Привязка к объектам')}
             aria-pressed={snapToObjects}
             onClick={() => setSnap({ snapToObjects: !snapToObjects })}
           >
             <Magnet />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">Привязка к объектам (Alt — временно выключить)</TooltipContent>
+        <TooltipContent side="right">
+          {t('Привязка к объектам (Alt — временно выключить)')}
+        </TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -387,14 +393,14 @@ export function ToolPalette({
             variant="ghost"
             size="icon"
             className={cn('size-9', snapToGrid && 'text-primary')}
-            aria-label="Привязка к сетке"
+            aria-label={t('Привязка к сетке')}
             aria-pressed={snapToGrid}
             onClick={() => setSnap({ snapToGrid: !snapToGrid })}
           >
             <Grid3x3 />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="right">Привязка к сетке</TooltipContent>
+        <TooltipContent side="right">{t('Привязка к сетке')}</TooltipContent>
       </Tooltip>
     </div>
   );

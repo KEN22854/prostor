@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface BoardDangerZoneProps {
   boardId: string;
@@ -27,6 +28,7 @@ export function BoardDangerZone({
   isOwner,
   isMember,
 }: BoardDangerZoneProps) {
+  const t = useT();
   const router = useRouter();
   const [confirm, setConfirm] = useState('');
   const [pending, setPending] = useState(false);
@@ -39,7 +41,7 @@ export function BoardDangerZone({
       router.push('/dashboard');
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось выполнить действие'));
+      toast.error(errorMessage(e, t('Не удалось выполнить действие')));
       setPending(false);
     }
   }
@@ -48,11 +50,12 @@ export function BoardDangerZone({
     return (
       <div className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Доска переместится в корзину и исчезнет у всех участников. Чтобы подтвердить, введите её
-          название.
+          {t(
+            'Доска переместится в корзину и исчезнет у всех участников. Чтобы подтвердить, введите её название.',
+          )}
         </p>
         <div className="space-y-1.5">
-          <Label htmlFor="confirm-delete">Название доски</Label>
+          <Label htmlFor="confirm-delete">{t('Название доски')}</Label>
           <Input
             id="confirm-delete"
             value={confirm}
@@ -66,7 +69,7 @@ export function BoardDangerZone({
           onClick={() => void run(`/api/boards/${boardId}`, `Доска «${title}» удалена`)}
         >
           {pending ? <Loader2 className="animate-spin" /> : <Trash2 />}
-          Удалить доску
+          {t('Удалить доску')}
         </Button>
       </div>
     );
@@ -75,7 +78,7 @@ export function BoardDangerZone({
   if (!isMember) {
     return (
       <p className="text-sm text-muted-foreground">
-        Доступ выдан через папку или организацию — покинуть доску отдельно нельзя.
+        {t('Доступ выдан через папку или организацию — покинуть доску отдельно нельзя.')}
       </p>
     );
   }
@@ -83,7 +86,7 @@ export function BoardDangerZone({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Вы потеряете доступ. Вернуться можно будет только по новому приглашению.
+        {t('Вы потеряете доступ. Вернуться можно будет только по новому приглашению.')}
       </p>
       <Button
         variant="outline"
@@ -94,7 +97,7 @@ export function BoardDangerZone({
         }}
       >
         {pending ? <Loader2 className="animate-spin" /> : <LogOut />}
-        Покинуть доску
+        {t('Покинуть доску')}
       </Button>
     </div>
   );

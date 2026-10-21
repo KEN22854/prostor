@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { usePrompt } from '@/components/ui/prompt-dialog';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface CreateFolderButtonProps {
   orgId: string | null;
@@ -16,6 +17,7 @@ interface CreateFolderButtonProps {
 
 /** Новая папка: в корне рабочего пространства или внутри открытой папки */
 export function CreateFolderButton({ orgId, parentId }: CreateFolderButtonProps) {
+  const t = useT();
   const router = useRouter();
   const [dialog, ask] = usePrompt();
 
@@ -33,7 +35,7 @@ export function CreateFolderButton({ orgId, parentId }: CreateFolderButtonProps)
       });
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось создать папку'));
+      toast.error(errorMessage(e, t('Не удалось создать папку')));
     }
   }
 
@@ -44,8 +46,8 @@ export function CreateFolderButton({ orgId, parentId }: CreateFolderButtonProps)
         variant="ghost"
         size="icon"
         className="size-7"
-        aria-label={parentId ? 'Новая вложенная папка' : 'Новая папка'}
-        title={parentId ? 'Новая вложенная папка' : 'Новая папка'}
+        aria-label={parentId ? t('Новая вложенная папка') : t('Новая папка')}
+        title={parentId ? t('Новая вложенная папка') : t('Новая папка')}
         onClick={() => void create()}
       >
         <FolderPlus className="size-4" />

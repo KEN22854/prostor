@@ -8,6 +8,7 @@ import { AUDIT_ACTIONS, AUDIT_ACTION_LABELS, type AuditEntryDto } from '@prostor
 import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/native-select';
 import { apiRequest } from '@/lib/fetcher';
+import { useT } from '@/lib/i18n/client';
 
 /** Краткая расшифровка metadata для таблицы */
 function details(e: AuditEntryDto): string {
@@ -22,6 +23,7 @@ function details(e: AuditEntryDto): string {
 
 /** Журнал аудита: фильтр по действию, подгрузка страниц, выгрузка CSV */
 export function AuditLogView({ endpoint }: { endpoint: string }) {
+  const t = useT();
   const [entries, setEntries] = useState<AuditEntryDto[] | null>(null);
   const [next, setNext] = useState<string | null>(null);
   const [action, setAction] = useState('');
@@ -66,11 +68,11 @@ export function AuditLogView({ endpoint }: { endpoint: string }) {
       <div className="flex flex-wrap items-center gap-2">
         <div className="w-64">
           <NativeSelect
-            aria-label="Действие"
+            aria-label={t('Действие')}
             value={action}
             onChange={(e) => setAction(e.target.value)}
           >
-            <option value="">Все действия</option>
+            <option value="">{t('Все действия')}</option>
             {AUDIT_ACTIONS.map((a) => (
               <option key={a} value={a}>
                 {AUDIT_ACTION_LABELS[a]}
@@ -88,11 +90,11 @@ export function AuditLogView({ endpoint }: { endpoint: string }) {
         <table className="w-full text-sm" data-testid="audit-table">
           <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
             <tr>
-              <th className="px-3 py-2 font-medium">Когда</th>
-              <th className="px-3 py-2 font-medium">Действие</th>
-              <th className="px-3 py-2 font-medium">Кто</th>
-              <th className="px-3 py-2 font-medium">Доска</th>
-              <th className="px-3 py-2 font-medium">Подробности</th>
+              <th className="px-3 py-2 font-medium">{t('Когда')}</th>
+              <th className="px-3 py-2 font-medium">{t('Действие')}</th>
+              <th className="px-3 py-2 font-medium">{t('Кто')}</th>
+              <th className="px-3 py-2 font-medium">{t('Доска')}</th>
+              <th className="px-3 py-2 font-medium">{t('Подробности')}</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -105,7 +107,7 @@ export function AuditLogView({ endpoint }: { endpoint: string }) {
             ) : entries.length === 0 ? (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-muted-foreground">
-                  Записей нет
+                  {t('Записей нет')}
                 </td>
               </tr>
             ) : (
@@ -133,7 +135,7 @@ export function AuditLogView({ endpoint }: { endpoint: string }) {
       {next ? (
         <Button variant="outline" size="sm" onClick={() => void more()} disabled={loadingMore}>
           {loadingMore ? <Loader2 className="animate-spin" /> : null}
-          Показать ещё
+          {t('Показать ещё')}
         </Button>
       ) : null}
     </div>

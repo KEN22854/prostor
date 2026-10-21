@@ -17,8 +17,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ApiClientError, postJson } from '@/lib/fetcher';
+import { useT } from '@/lib/i18n/client';
 
 export function ForgotPasswordForm() {
+  const t = useT();
   const [sentTo, setSentTo] = useState<string | null>(null);
   const form = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -30,7 +32,9 @@ export function ForgotPasswordForm() {
       await postJson('/api/account/forgot-password', values);
       setSentTo(values.email);
     } catch (error: unknown) {
-      toast.error(error instanceof ApiClientError ? error.message : 'Не удалось отправить письмо');
+      toast.error(
+        error instanceof ApiClientError ? error.message : t('Не удалось отправить письмо'),
+      );
     }
   }
 
@@ -40,11 +44,13 @@ export function ForgotPasswordForm() {
       <div className="flex flex-col items-center gap-3 text-center" role="status">
         <MailCheck className="size-10 text-primary" aria-hidden />
         <p className="text-sm">
-          Если аккаунт <span className="font-medium">{sentTo}</span> существует, мы отправили на
-          него ссылку для сброса пароля. Проверьте почту и папку «Спам».
+          {t(
+            'Если аккаунт {email} существует, мы отправили на него ссылку для сброса пароля. Проверьте почту и папку «Спам».',
+            { email: sentTo },
+          )}
         </p>
         <Button variant="ghost" size="sm" onClick={() => setSentTo(null)}>
-          Отправить ещё раз
+          {t('Отправить ещё раз')}
         </Button>
       </div>
     );
@@ -70,7 +76,7 @@ export function ForgotPasswordForm() {
         />
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" /> : null}
-          Отправить ссылку
+          {t('Отправить ссылку')}
         </Button>
       </form>
     </Form>

@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const dateFmt = new Intl.DateTimeFormat('ru', { dateStyle: 'short', timeStyle: 'short' });
 
@@ -23,6 +24,7 @@ const dateFmt = new Intl.DateTimeFormat('ru', { dateStyle: 'short', timeStyle: '
  * заголовок X-Prostor-Signature: sha256=<hex>.
  */
 export function WebhooksCard() {
+  const t = useT();
   const [hooks, setHooks] = useState<WebhookDto[] | null>(null);
   const [url, setUrl] = useState('');
   const [events, setEvents] = useState<WebhookEvent[]>(['comment.created', 'board.updated']);
@@ -32,7 +34,7 @@ export function WebhooksCard() {
   const load = () =>
     apiRequest<{ webhooks: WebhookDto[] }>('/api/account/webhooks')
       .then((r) => setHooks(r.webhooks))
-      .catch((e: unknown) => toast.error(errorMessage(e, 'Не удалось загрузить вебхуки')));
+      .catch((e: unknown) => toast.error(errorMessage(e, t('Не удалось загрузить вебхуки'))));
   useEffect(() => void load(), []);
 
   async function create() {
@@ -46,7 +48,7 @@ export function WebhooksCard() {
       setHooks((list) => [hook, ...(list ?? [])]);
       setUrl('');
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось создать вебхук'));
+      toast.error(errorMessage(e, t('Не удалось создать вебхук')));
     } finally {
       setBusy(false);
     }
@@ -60,7 +62,7 @@ export function WebhooksCard() {
       });
       setHooks((list) => list?.map((h) => (h.id === hook.id ? next : h)) ?? null);
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось изменить вебхук'));
+      toast.error(errorMessage(e, t('Не удалось изменить вебхук')));
     }
   }
 
@@ -71,17 +73,17 @@ export function WebhooksCard() {
       setHooks((list) => list?.filter((h) => h.id !== id) ?? null);
       if (created?.id === id) setCreated(null);
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось удалить вебхук'));
+      toast.error(errorMessage(e, t('Не удалось удалить вебхук')));
     }
   }
 
   async function ping(id: string) {
     try {
       await apiRequest(`/api/account/webhooks/${id}/ping`, { method: 'POST' });
-      toast.success('Проверочное событие отправлено — статус обновится через пару секунд');
+      toast.success(t('Проверочное событие отправлено — статус обновится через пару секунд'));
       setTimeout(() => void load(), 3_000);
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось отправить проверку'));
+      toast.error(errorMessage(e, t('Не удалось отправить проверку')));
     }
   }
 
@@ -92,7 +94,9 @@ export function WebhooksCard() {
           className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-3"
           role="status"
         >
-          <p className="font-medium">Секрет подписи — скопируйте сейчас, больше он не покажется</p>
+          <p className="font-medium">
+            {t('Секрет подписи — скопируйте сейчас, больше он не покажется')}
+          </p>
           <div className="flex gap-2">
             <Input
               readOnly
@@ -103,11 +107,11 @@ export function WebhooksCard() {
             <Button
               variant="outline"
               size="icon"
-              aria-label="Скопировать секрет"
+              aria-label={t('Скопировать секрет')}
               onClick={() =>
                 void navigator.clipboard
                   .writeText(created.secret)
-                  .then(() => toast.success('Секрет скопирован'))
+                  .then(() => toast.success(t('Секрет скопирован')))
               }
             >
               <Copy />
@@ -131,11 +135,11 @@ export function WebhooksCard() {
           value={url}
           type="url"
           placeholder="https://example.com/prostor-webhook"
-          aria-label="Адрес вебхука"
+          aria-label={t('Адрес вебхука')}
           onChange={(e) => setUrl(e.target.value)}
         />
         <fieldset className="grid gap-1.5 sm:grid-cols-2">
-          <legend className="mb-1 text-muted-foreground">События</legend>
+          <legend className="mb-1 text-muted-foreground">{t('События')}</legend>
           {WEBHOOK_EVENTS.map((event) => (
             <label key={event} className="flex items-center gap-2">
               <input
@@ -153,16 +157,16 @@ export function WebhooksCard() {
           ))}
         </fieldset>
         <Button type="submit" disabled={busy || !url.trim() || events.length === 0}>
-          <Webhook /> Добавить вебхук
+          <Webhook /> {t('Добавить вебхук')}
         </Button>
       </form>
 
       {hooks === null ? (
-        <p className="text-muted-foreground">Загрузка…</p>
+        <p className="text-muted-foreground">{t('Загрузка…')}</p>
       ) : hooks.length === 0 ? (
-        <p className="text-muted-foreground">Вебхуков пока нет</p>
+        <p className="text-muted-foreground">{t('Вебхуков пока нет')}</p>
       ) : (
-        <ul className="divide-y rounded-md border" aria-label="Вебхуки">
+        <ul className="divide-y rounded-md border" aria-label={t('Вебхуки')}>
           {hooks.map((h) => (
             <li key={h.id} className="flex items-start gap-3 px-3 py-2">
               <div className="min-w-0 flex-1">
@@ -175,12 +179,12 @@ export function WebhooksCard() {
                   {h.url}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {h.events.length} {h.events.length === 1 ? 'событие' : 'событий'}
-                  {h.boardTitle ? ` · доска «${h.boardTitle}»` : ' · все доски'}
+                  {h.events.length} {h.events.length === 1 ? t('событие') : t('событий')}
+                  {h.boardTitle ? ` · доска «${h.boardTitle}»` : t(' · все доски')}
                   {h.lastDeliveryAt
                     ? ` · ${dateFmt.format(new Date(h.lastDeliveryAt))}: ${h.lastError ?? `HTTP ${h.lastStatus ?? '—'}`}`
-                    : ' · доставок ещё не было'}
-                  {!h.active && h.failureCount > 0 ? ' · выключен после серии ошибок' : ''}
+                    : t(' · доставок ещё не было')}
+                  {!h.active && h.failureCount > 0 ? t(' · выключен после серии ошибок') : ''}
                 </p>
               </div>
               <label className="flex items-center gap-1 text-xs">
@@ -190,12 +194,12 @@ export function WebhooksCard() {
                   checked={h.active}
                   onChange={() => void toggle(h)}
                 />
-                Вкл.
+                {t('Вкл.')}
               </label>
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Отправить проверку"
+                aria-label={t('Отправить проверку')}
                 onClick={() => void ping(h.id)}
               >
                 <Send />
@@ -203,7 +207,7 @@ export function WebhooksCard() {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Удалить вебхук"
+                aria-label={t('Удалить вебхук')}
                 onClick={() => void remove(h.id)}
               >
                 <Trash2 />

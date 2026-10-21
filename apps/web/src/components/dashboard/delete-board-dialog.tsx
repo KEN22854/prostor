@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface DeleteBoardDialogProps {
   board: BoardListItem;
@@ -24,6 +25,7 @@ interface DeleteBoardDialogProps {
 }
 
 export function DeleteBoardDialog({ board, open, onOpenChange }: DeleteBoardDialogProps) {
+  const t = useT();
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -35,7 +37,7 @@ export function DeleteBoardDialog({ board, open, onOpenChange }: DeleteBoardDial
       onOpenChange(false);
       router.refresh();
     } catch (error: unknown) {
-      toast.error(errorMessage(error, 'Не удалось удалить доску'));
+      toast.error(errorMessage(error, t('Не удалось удалить доску')));
     } finally {
       setPending(false);
     }
@@ -45,18 +47,18 @@ export function DeleteBoardDialog({ board, open, onOpenChange }: DeleteBoardDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Удалить доску?</DialogTitle>
+          <DialogTitle>{t('Удалить доску?')}</DialogTitle>
           <DialogDescription>
             «{board.title}» исчезнет у всех участников. Подключённые пользователи будут отключены.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Отмена
+            {t('Отмена')}
           </Button>
           <Button variant="destructive" onClick={() => void confirm()} disabled={pending}>
             {pending ? <Loader2 className="animate-spin" /> : null}
-            Удалить
+            {t('Удалить')}
           </Button>
         </DialogFooter>
       </DialogContent>

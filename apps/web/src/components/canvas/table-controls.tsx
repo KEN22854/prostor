@@ -21,6 +21,7 @@ import {
 } from '@/lib/canvas/table';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 function Action({
   icon: Icon,
@@ -64,6 +65,7 @@ function Action({
  * удаление — строки/столбца этой ячейки (или последних).
  */
 export function TableControls({ table, actions }: { table: TableElement; actions: BoardActions }) {
+  const t = useT();
   const cell = useCanvasStore((s) => (s.editingCell?.id === table.id ? s.editingCell : null));
   const row = cell?.row ?? table.rows - 1;
   const col = cell?.col ?? table.cols - 1;
@@ -75,17 +77,17 @@ export function TableControls({ table, actions }: { table: TableElement; actions
     <>
       <Action
         icon={BetweenHorizontalEnd}
-        label="Строка ниже"
+        label={t('Строка ниже')}
         onClick={() => apply(insertRow(table, row + 1))}
       />
       <Action
         icon={BetweenVerticalEnd}
-        label="Столбец правее"
+        label={t('Столбец правее')}
         onClick={() => apply(insertColumn(table, col + 1))}
       />
       <Action
         icon={Rows3}
-        label="Удалить строку"
+        label={t('Удалить строку')}
         disabled={table.rows <= 1}
         className="text-destructive hover:text-destructive"
         onClick={() => {
@@ -95,7 +97,7 @@ export function TableControls({ table, actions }: { table: TableElement; actions
       />
       <Action
         icon={Columns3}
-        label="Удалить столбец"
+        label={t('Удалить столбец')}
         disabled={table.cols <= 1}
         className="text-destructive hover:text-destructive"
         onClick={() => {
@@ -105,7 +107,7 @@ export function TableControls({ table, actions }: { table: TableElement; actions
       />
       <Action
         icon={Heading}
-        label="Строка-заголовок"
+        label={t('Строка-заголовок')}
         active={table.headerRow}
         onClick={() => apply({ headerRow: !table.headerRow })}
       />

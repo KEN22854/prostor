@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/native-select';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface EmailInviteFormProps {
   state: SharingStateDto;
@@ -24,6 +25,7 @@ interface EmailInviteFormProps {
 
 /** Адреса через запятую, пробел или Enter — превращаются в «чипы» */
 export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
+  const t = useT();
   const [emails, setEmails] = useState<string[]>([]);
   const [draft, setDraft] = useState('');
   const [role, setRole] = useState<AssignableRole>(state.grantableRoles[0] ?? 'VIEWER');
@@ -56,7 +58,7 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
   async function send() {
     const list = draft.trim() ? commit(draft) : emails;
     if (list.length === 0) {
-      toast.error('Добавьте хотя бы один email');
+      toast.error(t('Добавьте хотя бы один email'));
       return;
     }
     setSending(true);
@@ -69,14 +71,14 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
       const already = results.filter((r) => r.status === 'already_member').map((r) => r.email);
       const failed = results.filter((r) => r.status === 'failed').map((r) => r.email);
       if (sent > 0)
-        toast.success(sent === 1 ? 'Приглашение отправлено' : `Отправлено приглашений: ${sent}`);
+        toast.success(sent === 1 ? t('Приглашение отправлено') : `Отправлено приглашений: ${sent}`);
       if (already.length > 0) toast.info(`Уже есть доступ: ${already.join(', ')}`);
       if (failed.length > 0) toast.error(`Не удалось отправить: ${failed.join(', ')}`);
       setEmails(failed);
       setMessage('');
       await onChanged();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось отправить приглашения'));
+      toast.error(errorMessage(e, t('Не удалось отправить приглашения')));
     } finally {
       setSending(false);
     }
@@ -115,7 +117,7 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
       </div>
       <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
         <div className="space-y-1.5">
-          <Label htmlFor="invite-role">Роль</Label>
+          <Label htmlFor="invite-role">{t('Роль')}</Label>
           <NativeSelect
             id="invite-role"
             value={role}
@@ -129,13 +131,13 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
           </NativeSelect>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="invite-message">Сообщение (необязательно)</Label>
+          <Label htmlFor="invite-message">{t('Сообщение (необязательно)')}</Label>
           <Input
             id="invite-message"
             value={message}
             maxLength={500}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Посмотри, пожалуйста, до пятницы"
+            placeholder={t('Посмотри, пожалуйста, до пятницы')}
           />
         </div>
       </div>
@@ -144,7 +146,7 @@ export function EmailInviteForm({ state, onChanged }: EmailInviteFormProps) {
         disabled={sending || (emails.length === 0 && !draft.trim())}
       >
         {sending ? <Loader2 className="animate-spin" /> : <Send />}
-        Пригласить
+        {t('Пригласить')}
       </Button>
     </div>
   );

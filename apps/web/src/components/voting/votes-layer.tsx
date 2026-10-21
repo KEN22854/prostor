@@ -7,6 +7,7 @@ import { worldToScreen } from '@/lib/canvas/viewport';
 import { cn, errorMessage } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { retractVote, useVotingStore } from '@/stores/voting-store';
+import { useT } from '@/lib/i18n/client';
 
 const noop = () => () => undefined;
 const zero = () => 0;
@@ -21,6 +22,7 @@ const MEDALS = [
  * после — итоги у всех, тройка лидеров выделена.
  */
 export function VotesLayer({ store }: { store: ElementStore | null }) {
+  const t = useT();
   const camera = useCanvasStore((s) => s.camera);
   const voting = useVotingStore((s) => s.voting);
   const boardId = useVotingStore((s) => s.boardId);
@@ -58,14 +60,14 @@ export function VotesLayer({ store }: { store: ElementStore | null }) {
                 : (MEDALS[rank] ?? 'bg-background text-foreground'),
             )}
             style={{ left: p.x, top: p.y }}
-            title={mine ? 'Забрать голос' : undefined}
+            title={mine ? t('Забрать голос') : undefined}
             aria-label={mine ? `Мои голоса: ${count}. Забрать один` : `Голосов: ${count}`}
             data-testid={mine ? 'my-vote' : 'vote-result'}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => {
               if (!boardId) return;
               void retractVote(boardId, voting.id, elementId).catch((e: unknown) =>
-                toast.error(errorMessage(e, 'Не удалось забрать голос')),
+                toast.error(errorMessage(e, t('Не удалось забрать голос'))),
               );
             }}
           >

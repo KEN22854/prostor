@@ -7,14 +7,19 @@ import { Button } from '@/components/ui/button';
 import { enabledOAuthProviders } from '@/lib/auth/oauth-providers';
 import { env } from '@/lib/env';
 import { safeCallbackUrl } from '@/lib/safe-redirect';
+import { getT } from '@/lib/i18n/server';
 
-export const metadata: Metadata = { title: 'Регистрация' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t('Регистрация') };
+}
 
 interface RegisterPageProps {
   searchParams: Promise<{ callbackUrl?: string }>;
 }
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+  const t = await getT();
   const { callbackUrl: rawCallback } = await searchParams;
   const callbackUrl = safeCallbackUrl(rawCallback);
   const e = env();
@@ -22,11 +27,11 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   if (!e.ALLOW_SIGNUP) {
     return (
       <AuthCard
-        title="Регистрация закрыта"
-        description="На этом сервере аккаунты создаются только по приглашению администратора."
+        title={t('Регистрация закрыта')}
+        description={t('На этом сервере аккаунты создаются только по приглашению администратора.')}
       >
         <Button asChild className="w-full">
-          <Link href="/login">Ко входу</Link>
+          <Link href="/login">{t('Ко входу')}</Link>
         </Button>
       </AuthCard>
     );
@@ -34,8 +39,8 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
 
   return (
     <AuthCard
-      title="Регистрация"
-      description="Создайте аккаунт — это бесплатно"
+      title={t('Регистрация')}
+      description={t('Создайте аккаунт — это бесплатно')}
       footer={
         <span>
           Уже есть аккаунт?{' '}
@@ -43,7 +48,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
             href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
             className="font-medium text-primary hover:underline"
           >
-            Войти
+            {t('Войти')}
           </Link>
         </span>
       }

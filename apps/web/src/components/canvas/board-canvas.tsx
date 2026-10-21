@@ -56,6 +56,7 @@ import { fitBounds, gridStep, visibleBounds, type Camera, type Point } from '@/l
 import { resetMeasureCache } from '@/lib/canvas/measure-text';
 import { errorMessage } from '@/lib/utils';
 import { useCanvasStore, type CanvasTool } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 interface BoardCanvasProps {
   boardId: string;
@@ -116,6 +117,7 @@ export function BoardCanvas({
   ai,
   onStoreReady,
 }: BoardCanvasProps) {
+  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const presenting = useCanvasStore((s) => s.presentation !== null);
   const editingCell = useCanvasStore((s) => s.editingCell);
@@ -372,7 +374,7 @@ export function BoardCanvas({
       openImagePicker: (at) => openImagePicker(at),
       nextZIndex: () => nextZIndex(doc),
       laser: () => laserRef.current,
-      onError: (e) => toast.error(errorMessage(e, 'Не удалось выполнить действие')),
+      onError: (e) => toast.error(errorMessage(e, t('Не удалось выполнить действие'))),
     };
   }, [store, overlay, doc, openImagePicker]);
 

@@ -24,8 +24,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { BoardActions } from '@/lib/canvas/board-actions';
 import type { ElementStore } from '@/lib/canvas/element-store';
-import { plural } from '@/lib/utils';
+
 import { FILL_COLORS, STICKY_COLORS, STROKE_COLORS, useCanvasStore } from '@/stores/canvas-store';
+import { usePlural, useT } from '@/lib/i18n/client';
 
 interface SelectionToolbarProps {
   store: ElementStore;
@@ -101,6 +102,8 @@ const hasStroke = (el: BoardElement) =>
 
 /** Свойства выделения — сверху по центру холста */
 export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolbarProps) {
+  const t = useT();
+  const tp = usePlural();
   const selection = useCanvasStore((s) => s.selection);
   const editing = useCanvasStore((s) => s.editingId !== null);
   const tool = useCanvasStore((s) => s.tool);
@@ -130,12 +133,12 @@ export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolba
     <div
       className="absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border bg-background/95 p-1 shadow-md backdrop-blur"
       role="toolbar"
-      aria-label="Свойства выделения"
+      aria-label={t('Свойства выделения')}
       data-testid="selection-toolbar"
       onPointerDown={(e) => e.stopPropagation()}
     >
       <span className="px-2 text-xs text-muted-foreground" data-testid="selection-count">
-        {elements.length} {plural(elements.length, ['объект', 'объекта', 'объектов'])}
+        {elements.length} {tp(elements.length, ['объект', 'объекта', 'объектов'])}
       </span>
       {actions.canEdit ? (
         <>
@@ -143,22 +146,22 @@ export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolba
             <FrameTitleInput key={elements[0].id} frame={elements[0]} actions={actions} />
           ) : null}
           {firstFill ? (
-            <ColorButton color={firstFill} label="Цвет заливки">
+            <ColorButton color={firstFill} label={t('Цвет заливки')}>
               <ColorSwatches
                 colors={allSticky ? STICKY_COLORS : FILL_COLORS}
                 value={firstFill}
                 onChange={(fill) => actions.setStyle(ids, { fill })}
-                label="Цвет заливки"
+                label={t('Цвет заливки')}
               />
             </ColorButton>
           ) : null}
           {firstStroke ? (
-            <ColorButton color={firstStroke} label="Цвет обводки">
+            <ColorButton color={firstStroke} label={t('Цвет обводки')}>
               <ColorSwatches
                 colors={STROKE_COLORS}
                 value={firstStroke}
                 onChange={(stroke) => actions.setStyle(ids, { stroke })}
-                label="Цвет обводки"
+                label={t('Цвет обводки')}
               />
             </ColorButton>
           ) : null}
@@ -179,54 +182,58 @@ export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolba
           elements.length === 1 &&
           elements[0]?.type === 'image' &&
           !elements[0].locked ? (
-            <IconAction icon={Wand2} label="Убрать фон" onClick={() => onRemoveBg(ids[0] ?? '')} />
+            <IconAction
+              icon={Wand2}
+              label={t('Убрать фон')}
+              onClick={() => onRemoveBg(ids[0] ?? '')}
+            />
           ) : null}
           <IconAction
             icon={Copy}
-            label="Дублировать"
+            label={t('Дублировать')}
             hotkey="Ctrl+D"
             onClick={() => {
               const copies = actions.duplicate(ids);
               if (copies.length > 0) select(copies);
-              else toast.error('Копирование запрещено настройками организации');
+              else toast.error(t('Копирование запрещено настройками организации'));
             }}
           />
           {grouped ? (
             <IconAction
               icon={Ungroup}
-              label="Разгруппировать"
+              label={t('Разгруппировать')}
               hotkey="Ctrl+Shift+G"
               onClick={() => actions.ungroup(ids)}
             />
           ) : elements.length > 1 ? (
             <IconAction
               icon={Group}
-              label="Сгруппировать"
+              label={t('Сгруппировать')}
               hotkey="Ctrl+G"
               onClick={() => actions.group(ids)}
             />
           ) : null}
           <IconAction
             icon={BringToFront}
-            label="На передний план"
+            label={t('На передний план')}
             hotkey="Ctrl+]"
             onClick={() => actions.bringToFront(ids)}
           />
           <IconAction
             icon={SendToBack}
-            label="На задний план"
+            label={t('На задний план')}
             hotkey="Ctrl+["
             onClick={() => actions.sendToBack(ids)}
           />
           <IconAction
             icon={allLocked ? LockOpen : Lock}
-            label={allLocked ? 'Разблокировать' : 'Заблокировать'}
+            label={allLocked ? t('Разблокировать') : t('Заблокировать')}
             hotkey="Ctrl+Shift+L"
             onClick={() => actions.toggleLock(ids)}
           />
           <IconAction
             icon={Trash2}
-            label="Удалить"
+            label={t('Удалить')}
             hotkey="Delete"
             destructive
             onClick={() => {

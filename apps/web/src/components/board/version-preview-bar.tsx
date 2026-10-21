@@ -6,6 +6,7 @@ import { Eye, Loader2, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { SNAPSHOT_REASON_LABELS, type BoardVersionDto } from '@prostor/shared';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/lib/i18n/client';
 
 interface VersionPreviewBarProps {
   version: BoardVersionDto;
@@ -21,12 +22,13 @@ export function VersionPreviewBar({
   onRestore,
   onClose,
 }: VersionPreviewBarProps) {
+  const t = useT();
   const [pending, setPending] = useState(false);
   return (
     <div
       className="absolute left-1/2 top-3 z-20 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center gap-3 rounded-xl border border-primary/40 bg-background/95 px-4 py-2 shadow-lg backdrop-blur"
       role="status"
-      aria-label="Просмотр версии"
+      aria-label={t('Просмотр версии')}
       data-testid="version-preview-bar"
       onPointerDown={(e) => e.stopPropagation()}
     >
@@ -34,7 +36,9 @@ export function VersionPreviewBar({
       <div className="min-w-0 text-sm">
         <p className="truncate font-medium">
           Версия от {format(new Date(version.createdAt), 'd MMMM, HH:mm', { locale: ru })}
-          {version.label ? ` — ${version.label}` : ` · ${SNAPSHOT_REASON_LABELS[version.reason]}`}
+          {version.label
+            ? ` — ${t(version.label)}`
+            : ` · ${SNAPSHOT_REASON_LABELS[version.reason]}`}
         </p>
         <p className="text-xs text-muted-foreground">
           Только просмотр. Выделите объекты и нажмите Ctrl+C, чтобы перенести их в текущую доску.
@@ -54,11 +58,11 @@ export function VersionPreviewBar({
           }}
         >
           {pending ? <Loader2 className="animate-spin" /> : <RotateCcw />}
-          Восстановить
+          {t('Восстановить')}
         </Button>
       ) : null}
       <Button size="sm" variant="outline" onClick={onClose} disabled={pending}>
-        К текущей доске
+        {t('К текущей доске')}
       </Button>
     </div>
   );

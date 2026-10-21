@@ -4,6 +4,8 @@ import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from 'next-themes';
 import { useEffect, type ReactNode } from 'react';
 import { Toaster } from '@/components/ui/sonner';
+import { I18nProvider } from '@/lib/i18n/client';
+import type { Locale } from '@/lib/i18n/core';
 
 /**
  * «Простор» не регистрирует service worker. Если в браузере остался чужой
@@ -27,16 +29,23 @@ function useRemoveForeignServiceWorkers() {
 }
 
 /** Клиентские провайдеры верхнего уровня */
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, locale }: { children: ReactNode; locale: Locale }) {
   useRemoveForeignServiceWorkers();
   return (
     // refetchOnWindowFocus=false: сессия проверяется на сервере, лишние
     // запросы /api/auth/session при переключении вкладок не нужны
-    <SessionProvider refetchOnWindowFocus={false}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-        {children}
-        <Toaster />
-      </ThemeProvider>
-    </SessionProvider>
+    <I18nProvider locale={locale}>
+      <SessionProvider refetchOnWindowFocus={false}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+          <Toaster />
+        </ThemeProvider>
+      </SessionProvider>
+    </I18nProvider>
   );
 }

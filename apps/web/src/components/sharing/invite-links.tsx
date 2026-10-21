@@ -21,6 +21,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { copyText } from '@/lib/copy-text';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const MAX_USES = [
   { value: '', label: 'Без ограничений' },
@@ -41,6 +42,7 @@ interface InviteLinksProps {
  * восстановить её нельзя (это и есть защита при утечке дампа БД).
  */
 export function InviteLinks({ state, onChanged }: InviteLinksProps) {
+  const t = useT();
   const [role, setRole] = useState<AssignableRole>(
     state.grantableRoles.includes('EDITOR') ? 'EDITOR' : (state.grantableRoles[0] ?? 'VIEWER'),
   );
@@ -61,11 +63,11 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
       setCopied(false);
       if (await copyText(link.url)) {
         setCopied(true);
-        toast.success('Ссылка создана и скопирована');
+        toast.success(t('Ссылка создана и скопирована'));
       }
       await onChanged();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось создать ссылку'));
+      toast.error(errorMessage(e, t('Не удалось создать ссылку')));
     } finally {
       setCreating(false);
     }
@@ -75,10 +77,10 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
     try {
       await apiRequest(`/api/boards/${state.boardId}/invites/${id}`, { method: 'DELETE' });
       if (created?.id === id) setCreated(null);
-      toast.success('Приглашение отозвано');
+      toast.success(t('Приглашение отозвано'));
       await onChanged();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось отозвать приглашение'));
+      toast.error(errorMessage(e, t('Не удалось отозвать приглашение')));
     }
   }
 
@@ -86,7 +88,7 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor="link-role">Роль</Label>
+          <Label htmlFor="link-role">{t('Роль')}</Label>
           <NativeSelect
             id="link-role"
             value={role}
@@ -100,25 +102,25 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
           </NativeSelect>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="link-ttl">Срок действия</Label>
+          <Label htmlFor="link-ttl">{t('Срок действия')}</Label>
           <NativeSelect
             id="link-ttl"
             value={ttl}
             onChange={(e) => setTtl(e.target.value as InviteTtl)}
           >
-            {INVITE_TTLS.map((t) => (
-              <option key={t} value={t}>
-                {INVITE_TTL_LABELS[t]}
+            {INVITE_TTLS.map((ttlKey) => (
+              <option key={ttlKey} value={ttlKey}>
+                {INVITE_TTL_LABELS[ttlKey]}
               </option>
             ))}
           </NativeSelect>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="link-uses">Переходов</Label>
+          <Label htmlFor="link-uses">{t('Переходов')}</Label>
           <NativeSelect id="link-uses" value={maxUses} onChange={(e) => setMaxUses(e.target.value)}>
             {MAX_USES.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {t(o.label)}
               </option>
             ))}
           </NativeSelect>
@@ -126,7 +128,7 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
       </div>
       <Button onClick={() => void create()} disabled={creating}>
         {creating ? <Loader2 className="animate-spin" /> : <Link2 />}
-        Создать ссылку
+        {t('Создать ссылку')}
       </Button>
 
       {created ? (
@@ -145,7 +147,7 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
             <Button
               variant="outline"
               size="icon"
-              aria-label="Скопировать ссылку"
+              aria-label={t('Скопировать ссылку')}
               onClick={async () => setCopied(await copyText(created.url))}
             >
               {copied ? <Check /> : <Copy />}
@@ -155,9 +157,9 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
       ) : null}
 
       <div className="space-y-1.5">
-        <p className="text-sm font-medium">Активные приглашения</p>
+        <p className="text-sm font-medium">{t('Активные приглашения')}</p>
         {state.invites.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Нет активных приглашений</p>
+          <p className="text-sm text-muted-foreground">{t('Нет активных приглашений')}</p>
         ) : (
           <ul
             className="max-h-56 divide-y overflow-y-auto rounded-lg border"
@@ -172,7 +174,7 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate">
-                    {i.email ?? 'Ссылка-приглашение'} · {ROLE_LABELS[i.role]}
+                    {i.email ?? t('Ссылка-приглашение')} · {ROLE_LABELS[i.role]}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {i.maxUses
@@ -181,7 +183,7 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
                     {' · '}
                     {i.expiresAt
                       ? `истекает ${formatDistanceToNow(new Date(i.expiresAt), { addSuffix: true, locale: ru })}`
-                      : 'бессрочно'}
+                      : t('бессрочно')}
                     {i.createdByName ? ` · создал(а) ${i.createdByName}` : ''}
                   </p>
                 </div>
@@ -189,7 +191,7 @@ export function InviteLinks({ state, onChanged }: InviteLinksProps) {
                   variant="ghost"
                   size="icon"
                   className="size-8"
-                  aria-label="Отозвать приглашение"
+                  aria-label={t('Отозвать приглашение')}
                   onClick={() => void revoke(i.id)}
                 >
                   <Trash2 />

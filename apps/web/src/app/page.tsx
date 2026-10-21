@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LayoutGrid, Users, WifiOff, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getT } from '@/lib/i18n/server';
 
 const features = [
   {
@@ -26,17 +27,18 @@ const features = [
 ] as const;
 
 // Server Component: статичная страница без клиентского JS.
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getT();
   return (
     <main className="flex min-h-screen flex-col">
       <header className="container flex h-16 items-center justify-between">
-        <span className="text-lg font-semibold tracking-tight">Простор</span>
+        <span className="text-lg font-semibold tracking-tight">{t('Простор')}</span>
         <nav className="flex items-center gap-2">
           <Button asChild variant="ghost">
-            <Link href="/login">Войти</Link>
+            <Link href="/login">{t('Войти')}</Link>
           </Button>
           <Button asChild>
-            <Link href="/register">Начать бесплатно</Link>
+            <Link href="/register">{t('Начать бесплатно')}</Link>
           </Button>
         </nav>
       </header>
@@ -50,10 +52,10 @@ export default function HomePage() {
         </p>
         <div className="flex gap-3">
           <Button asChild size="lg">
-            <Link href="/register">Создать доску</Link>
+            <Link href="/register">{t('Создать доску')}</Link>
           </Button>
           <Button asChild size="lg" variant="outline">
-            <Link href="/login">У меня есть аккаунт</Link>
+            <Link href="/login">{t('У меня есть аккаунт')}</Link>
           </Button>
         </div>
       </section>

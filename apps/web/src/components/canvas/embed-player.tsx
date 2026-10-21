@@ -8,6 +8,7 @@ import { EMBED_CARD } from '@/lib/canvas/element-factory';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import { worldToScreen } from '@/lib/canvas/viewport';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 /**
  * Живой плеер/просмотрщик поверх карточки (iframe нельзя нарисовать в canvas).
@@ -15,6 +16,7 @@ import { useCanvasStore } from '@/stores/canvas-store';
  * Двигается и масштабируется вместе с камерой; Esc или ✕ — закрыть.
  */
 export function EmbedPlayer({ store }: { store: ElementStore }) {
+  const t = useT();
   const id = useCanvasStore((s) => s.playingEmbedId);
   const camera = useCanvasStore((s) => s.camera);
   useSyncExternalStore(store.subscribe, store.getVersion, store.getVersion);
@@ -68,7 +70,7 @@ export function EmbedPlayer({ store }: { store: ElementStore }) {
               href={el.url}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Открыть в новой вкладке"
+              aria-label={t('Открыть в новой вкладке')}
             >
               <ExternalLink />
             </a>
@@ -77,7 +79,7 @@ export function EmbedPlayer({ store }: { store: ElementStore }) {
             variant="ghost"
             size="icon"
             className="size-7"
-            aria-label="Закрыть плеер"
+            aria-label={t('Закрыть плеер')}
             onClick={() => useCanvasStore.getState().setPlayingEmbed(null)}
           >
             <X />

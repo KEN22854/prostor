@@ -30,8 +30,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
-const templateKeys = BOARD_TEMPLATES.map((t) => t.key) as [BoardTemplateKey, ...BoardTemplateKey[]];
+const templateKeys = BOARD_TEMPLATES.map((tpl) => tpl.key) as [
+  BoardTemplateKey,
+  ...BoardTemplateKey[],
+];
 const schema = z.object({
   title: z.string().trim().min(1, 'Введите название').max(LIMITS.maxBoardTitle),
   templateKey: z.enum(templateKeys),
@@ -45,6 +49,7 @@ interface CreateBoardDialogProps {
 }
 
 export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoardDialogProps) {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const form = useForm<Values>({
@@ -62,7 +67,7 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
       form.reset();
       router.push(`/board/${board.id}`);
     } catch (error: unknown) {
-      toast.error(errorMessage(error, 'Не удалось создать доску'));
+      toast.error(errorMessage(error, t('Не удалось создать доску')));
     }
   }
 
@@ -70,13 +75,13 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus /> Новая доска
+          <Plus /> {t('Новая доска')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Новая доска</DialogTitle>
-          <DialogDescription>Начните с чистого листа или выберите шаблон.</DialogDescription>
+          <DialogTitle>{t('Новая доска')}</DialogTitle>
+          <DialogDescription>{t('Начните с чистого листа или выберите шаблон.')}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5" noValidate>
@@ -85,7 +90,7 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Название</FormLabel>
+                  <FormLabel>{t('Название')}</FormLabel>
                   <FormControl>
                     <Input autoFocus {...field} onFocus={(e) => e.currentTarget.select()} />
                   </FormControl>
@@ -98,25 +103,25 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
               name="templateKey"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Шаблон</FormLabel>
+                  <FormLabel>{t('Шаблон')}</FormLabel>
                   <div role="radiogroup" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {BOARD_TEMPLATES.map((t) => (
+                    {BOARD_TEMPLATES.map((tpl) => (
                       <button
-                        key={t.key}
+                        key={tpl.key}
                         type="button"
                         role="radio"
-                        aria-checked={field.value === t.key}
-                        onClick={() => field.onChange(t.key)}
+                        aria-checked={field.value === tpl.key}
+                        onClick={() => field.onChange(tpl.key)}
                         className={cn(
                           'overflow-hidden rounded-lg border text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          field.value === t.key
+                          field.value === tpl.key
                             ? 'border-primary ring-2 ring-primary'
                             : 'hover:border-foreground/30',
                         )}
                       >
-                        <BoardThumbnail id={t.key} templateKey={t.key} thumbnailUrl={null} />
+                        <BoardThumbnail id={tpl.key} templateKey={tpl.key} thumbnailUrl={null} />
                         <span className="block truncate px-2 py-1.5 text-xs font-medium">
-                          {t.name}
+                          {tpl.name}
                         </span>
                       </button>
                     ))}
@@ -126,11 +131,11 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
             />
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-                Отмена
+                {t('Отмена')}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : null}
-                Создать
+                {t('Создать')}
               </Button>
             </DialogFooter>
           </form>

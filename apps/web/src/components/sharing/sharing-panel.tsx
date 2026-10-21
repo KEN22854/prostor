@@ -8,6 +8,7 @@ import { VisibilitySettings } from '@/components/sharing/visibility-settings';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSharingState } from '@/hooks/use-sharing-state';
+import { useT } from '@/lib/i18n/client';
 
 interface SharingPanelProps {
   boardId: string;
@@ -25,6 +26,7 @@ export function SharingPanel({
   enabled = true,
   defaultTab = 'invite',
 }: SharingPanelProps) {
+  const t = useT();
   const { state, error, refresh } = useSharingState(boardId, enabled);
 
   if (error) {
@@ -32,7 +34,7 @@ export function SharingPanel({
       <div className="space-y-2 py-6 text-center">
         <p className="text-sm text-destructive">{error}</p>
         <Button variant="outline" size="sm" onClick={() => void refresh()}>
-          Повторить
+          {t('Повторить')}
         </Button>
       </div>
     );
@@ -40,7 +42,7 @@ export function SharingPanel({
   if (!state) {
     return (
       <div className="flex justify-center py-10">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Загрузка" />
+        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label={t('Загрузка')} />
       </div>
     );
   }
@@ -54,19 +56,20 @@ export function SharingPanel({
       <TabsList className="w-full justify-start overflow-x-auto">
         {canShare ? (
           <TabsTrigger value="invite">
-            <Mail /> Пригласить
+            <Mail /> {t('Пригласить')}
           </TabsTrigger>
         ) : null}
         <TabsTrigger value="members">
-          <Users /> Участники <span className="text-xs opacity-70">{state.members.length}</span>
+          <Users /> {t('Участники')}{' '}
+          <span className="text-xs opacity-70">{state.members.length}</span>
         </TabsTrigger>
         {canShare ? (
           <TabsTrigger value="links">
-            <Link2 /> Ссылки
+            <Link2 /> {t('Ссылки')}
           </TabsTrigger>
         ) : null}
         <TabsTrigger value="access">
-          <Globe /> Доступ
+          <Globe /> {t('Доступ')}
         </TabsTrigger>
       </TabsList>
       {canShare ? (

@@ -13,6 +13,7 @@ import { fitBounds } from '@/lib/canvas/viewport';
 import { closeEnough, lerpCamera } from '@/lib/presence/follow';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 /** Слайд занимает экран почти целиком: небольшой отступ и любой нужный масштаб */
 const SLIDE_PADDING = 16;
@@ -55,6 +56,7 @@ export function PresentationMode({
   awareness,
   containerRef,
 }: PresentationModeProps) {
+  const t = useT();
   const presentation = useCanvasStore((s) => s.presentation);
   const size = useCanvasStore((s) => s.size);
   const shieldRef = useRef<HTMLDivElement>(null);
@@ -179,9 +181,9 @@ export function PresentationMode({
       if (e.type === 'wheel') e.preventDefault();
     };
     const types = ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'dblclick', 'contextmenu'];
-    for (const t of types) shield.addEventListener(t, stop, { passive: false });
+    for (const type of types) shield.addEventListener(type, stop, { passive: false });
     return () => {
-      for (const t of types) shield.removeEventListener(t, stop);
+      for (const type of types) shield.removeEventListener(type, stop);
     };
   }, [presentation]);
 
@@ -214,20 +216,20 @@ export function PresentationMode({
       <div
         className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-xl border bg-background/90 p-1 text-sm shadow-lg backdrop-blur"
         role="toolbar"
-        aria-label="Управление презентацией"
+        aria-label={t('Управление презентацией')}
       >
         <Button
           variant="ghost"
           size="icon"
           className="size-8"
-          aria-label="Предыдущий слайд"
+          aria-label={t('Предыдущий слайд')}
           disabled={index === 0}
           onClick={() => setIndex(index - 1)}
         >
           <ChevronLeft />
         </Button>
         <span className="min-w-28 px-1 text-center" data-testid="slide-counter">
-          {frames.length > 0 ? `${index + 1} / ${frames.length}` : 'Нет слайдов'}
+          {frames.length > 0 ? `${index + 1} / ${frames.length}` : t('Нет слайдов')}
           {frame?.title ? (
             <span className="ml-2 inline-block max-w-48 truncate align-bottom text-muted-foreground">
               {frame.title}
@@ -238,7 +240,7 @@ export function PresentationMode({
           variant="ghost"
           size="icon"
           className="size-8"
-          aria-label="Следующий слайд"
+          aria-label={t('Следующий слайд')}
           disabled={index >= frames.length - 1}
           onClick={() => setIndex(index + 1)}
         >
@@ -256,7 +258,7 @@ export function PresentationMode({
               .setPresentation({ ...presentation, notes: !presentation.notes })
           }
         >
-          <NotebookText /> Заметки
+          <NotebookText /> {t('Заметки')}
         </Button>
         {awareness ? (
           <Button
@@ -270,14 +272,14 @@ export function PresentationMode({
             onClick={toggleLead}
           >
             {leading ? <MegaphoneOff /> : <Megaphone />}
-            {leading ? 'Все следуют' : 'Все за мной'}
+            {leading ? t('Все следуют') : t('Все за мной')}
           </Button>
         ) : null}
         <Button
           variant="ghost"
           size="icon"
           className="size-8"
-          aria-label="Завершить показ"
+          aria-label={t('Завершить показ')}
           onClick={() => useCanvasStore.getState().setPresentation(null)}
         >
           <X />
@@ -292,6 +294,7 @@ export function PresentationMode({
  * запись в Yjs — по blur (как название фрейма), чтобы не плодить шаги отмены.
  */
 function SpeakerNotes({ frame, actions }: { frame: FrameElement; actions: BoardActions | null }) {
+  const t = useT();
   const [value, setValue] = useState(frame.speakerNotes ?? '');
   useEffect(() => setValue(frame.speakerNotes ?? ''), [frame.speakerNotes]);
   const editable = Boolean(actions?.canEdit) && !frame.locked;
@@ -306,13 +309,13 @@ function SpeakerNotes({ frame, actions }: { frame: FrameElement; actions: BoardA
   return (
     <aside
       className="absolute bottom-20 right-4 top-4 flex w-80 flex-col gap-2 rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur"
-      aria-label="Заметки докладчика"
+      aria-label={t('Заметки докладчика')}
     >
-      <h2 className="text-sm font-medium">Заметки докладчика</h2>
+      <h2 className="text-sm font-medium">{t('Заметки докладчика')}</h2>
       {editable ? (
         <textarea
           className="flex-1 resize-none rounded-md border bg-transparent p-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          placeholder="Что сказать на этом слайде…"
+          placeholder={t('Что сказать на этом слайде…')}
           value={value}
           maxLength={20_000}
           onChange={(e) => setValue(e.target.value)}

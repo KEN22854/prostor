@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { useT } from '@/lib/i18n/client';
 
 interface PromptOptions {
   title: string;
@@ -27,6 +28,7 @@ interface PromptOptions {
  * const [dialog, ask] = usePrompt(); const name = await ask({ … });
  */
 export function usePrompt(): [ReactNode, (options: PromptOptions) => Promise<string | null>] {
+  const t = useT();
   const [options, setOptions] = useState<PromptOptions | null>(null);
   const [value, setValue] = useState('');
   const resolver = useRef<((value: string | null) => void) | null>(null);
@@ -74,10 +76,10 @@ export function usePrompt(): [ReactNode, (options: PromptOptions) => Promise<str
           />
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => close(null)}>
-              Отмена
+              {t('Отмена')}
             </Button>
             <Button type="submit" disabled={!value.trim()}>
-              {options?.confirmLabel ?? 'Сохранить'}
+              {options?.confirmLabel ?? t('Сохранить')}
             </Button>
           </DialogFooter>
         </form>

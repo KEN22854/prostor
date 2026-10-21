@@ -24,6 +24,7 @@ import { ApiClientError, apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
 import { useAiStore } from '@/stores/ai-store';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 const ASPECT_LABEL: Record<ImageAspect, string> = {
   '1:1': 'Квадрат',
@@ -61,6 +62,7 @@ export function GenerateImageDialog({
   actions,
   userId,
 }: GenerateImageDialogProps) {
+  const t = useT();
   const [prompt, setPrompt] = useState('');
   const [aspect, setAspect] = useState<ImageAspect>('1:1');
   const [submitting, setSubmitting] = useState(false);
@@ -70,7 +72,7 @@ export function GenerateImageDialog({
     if (!doc || !actions?.canEdit || !userId) return;
     const text = prompt.trim();
     if (text.length < 3) {
-      toast.error('Опишите изображение подробнее');
+      toast.error(t('Опишите изображение подробнее'));
       return;
     }
     const { camera, size } = useCanvasStore.getState();
@@ -109,7 +111,7 @@ export function GenerateImageDialog({
         },
       );
       if (job.status !== 'SUCCEEDED' || !job.result) {
-        toast.error(job.error ?? 'Не удалось сгенерировать изображение');
+        toast.error(job.error ?? t('Не удалось сгенерировать изображение'));
         return;
       }
       const shown = displaySize(job.result.width, job.result.height, 480);
@@ -131,7 +133,7 @@ export function GenerateImageDialog({
       toast.error(
         error instanceof ApiClientError
           ? error.message
-          : errorMessage(error, 'Не удалось сгенерировать изображение'),
+          : errorMessage(error, t('Не удалось сгенерировать изображение')),
       );
     } finally {
       setSubmitting(false);
@@ -144,7 +146,8 @@ export function GenerateImageDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="size-5 text-primary" aria-hidden /> Сгенерировать изображение
+            <Sparkles className="size-5 text-primary" aria-hidden />{' '}
+            {t('Сгенерировать изображение')}
           </DialogTitle>
           <DialogDescription>
             Опишите, что должно быть на картинке. Она появится в центре экрана.
@@ -158,7 +161,7 @@ export function GenerateImageDialog({
           }}
         >
           <div className="space-y-2">
-            <Label htmlFor="ai-prompt">Описание</Label>
+            <Label htmlFor="ai-prompt">{t('Описание')}</Label>
             <textarea
               id="ai-prompt"
               value={prompt}
@@ -169,12 +172,12 @@ export function GenerateImageDialog({
               maxLength={1000}
               rows={4}
               autoFocus
-              placeholder="Например: уютный офис с растениями, акварель"
+              placeholder={t('Например: уютный офис с растениями, акварель')}
               className="flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
           <div className="space-y-2">
-            <Label>Формат</Label>
+            <Label>{t('Формат')}</Label>
             <div role="radiogroup" className="flex flex-wrap gap-2">
               {IMAGE_ASPECTS.map((a) => (
                 <button
@@ -197,11 +200,11 @@ export function GenerateImageDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Отмена
+              {t('Отмена')}
             </Button>
             <Button type="submit" disabled={submitting || prompt.trim().length < 3}>
               {submitting ? <Loader2 className="animate-spin" /> : <Sparkles />}
-              Сгенерировать
+              {t('Сгенерировать')}
             </Button>
           </DialogFooter>
         </form>

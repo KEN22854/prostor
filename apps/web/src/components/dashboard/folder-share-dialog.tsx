@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface FolderShareDialogProps {
   folderId: string;
@@ -33,6 +34,7 @@ export function FolderShareDialog({
   open,
   onOpenChange,
 }: FolderShareDialogProps) {
+  const t = useT();
   const [members, setMembers] = useState<FolderMemberDto[] | null>(null);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AssignableRole>('EDITOR');
@@ -45,7 +47,7 @@ export function FolderShareDialog({
       );
       setMembers(data.members);
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось загрузить участников'));
+      toast.error(errorMessage(e, t('Не удалось загрузить участников')));
     }
   }, [folderId]);
 
@@ -62,10 +64,10 @@ export function FolderShareDialog({
         body: { email: email.trim(), role },
       });
       setEmail('');
-      toast.success('Доступ открыт');
+      toast.success(t('Доступ открыт'));
       await load();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось открыть доступ'));
+      toast.error(errorMessage(e, t('Не удалось открыть доступ')));
     } finally {
       setPending(false);
     }
@@ -76,7 +78,7 @@ export function FolderShareDialog({
       await apiRequest(`/api/folders/${folderId}/members/${userId}`, { method: 'DELETE' });
       await load();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось закрыть доступ'));
+      toast.error(errorMessage(e, t('Не удалось закрыть доступ')));
     }
   }
 
@@ -86,7 +88,7 @@ export function FolderShareDialog({
         <DialogHeader>
           <DialogTitle>Доступ к папке «{folderName}»</DialogTitle>
           <DialogDescription>
-            Права действуют на все доски папки и вложенных папок.
+            {t('Права действуют на все доски папки и вложенных папок.')}
           </DialogDescription>
         </DialogHeader>
         {canManage ? (
@@ -106,7 +108,7 @@ export function FolderShareDialog({
             />
             <div className="w-36 shrink-0">
               <NativeSelect
-                aria-label="Роль"
+                aria-label={t('Роль')}
                 value={role}
                 onChange={(e) => setRole(e.target.value as AssignableRole)}
               >
@@ -117,13 +119,13 @@ export function FolderShareDialog({
             </div>
             <Button type="submit" disabled={pending}>
               {pending ? <Loader2 className="animate-spin" /> : null}
-              Открыть
+              {t('Открыть')}
             </Button>
           </form>
         ) : null}
         <ul
           className="max-h-72 divide-y overflow-y-auto rounded-lg border"
-          aria-label="Участники папки"
+          aria-label={t('Участники папки')}
         >
           {members === null ? (
             <li className="p-4 text-center">
@@ -131,7 +133,7 @@ export function FolderShareDialog({
             </li>
           ) : members.length === 0 ? (
             <li className="p-4 text-center text-sm text-muted-foreground">
-              Папка доступна только владельцу
+              {t('Папка доступна только владельцу')}
             </li>
           ) : (
             members.map((m) => (

@@ -20,12 +20,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ApiClientError, postJson } from '@/lib/fetcher';
+import { useT } from '@/lib/i18n/client';
 
 interface RegisterFormProps {
   callbackUrl: string;
 }
 
 export function RegisterForm({ callbackUrl }: RegisterFormProps) {
+  const t = useT();
   const router = useRouter();
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -44,7 +46,7 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
         if (Object.keys(error.fields).length === 0) toast.error(error.message);
         return;
       }
-      toast.error('Не удалось зарегистрироваться');
+      toast.error(t('Не удалось зарегистрироваться'));
       return;
     }
 
@@ -55,11 +57,11 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
       redirect: false,
     });
     if (!result || result.error) {
-      toast.success('Аккаунт создан. Войдите с вашим паролем');
+      toast.success(t('Аккаунт создан. Войдите с вашим паролем'));
       router.push('/login');
       return;
     }
-    toast.success('Добро пожаловать в Простор!');
+    toast.success(t('Добро пожаловать в Простор!'));
     router.push(callbackUrl);
     router.refresh();
   }
@@ -74,9 +76,9 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Имя</FormLabel>
+              <FormLabel>{t('Имя')}</FormLabel>
               <FormControl>
-                <Input autoComplete="name" placeholder="Анна Смирнова" {...field} />
+                <Input autoComplete="name" placeholder={t('Анна Смирнова')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -100,11 +102,11 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Пароль</FormLabel>
+              <FormLabel>{t('Пароль')}</FormLabel>
               <FormControl>
                 <PasswordInput autoComplete="new-password" {...field} />
               </FormControl>
-              <FormDescription>Минимум 8 символов, буквы и цифры</FormDescription>
+              <FormDescription>{t('Минимум 8 символов, буквы и цифры')}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -114,7 +116,7 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Повторите пароль</FormLabel>
+              <FormLabel>{t('Повторите пароль')}</FormLabel>
               <FormControl>
                 <PasswordInput autoComplete="new-password" {...field} />
               </FormControl>
@@ -124,7 +126,7 @@ export function RegisterForm({ callbackUrl }: RegisterFormProps) {
         />
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" /> : null}
-          Создать аккаунт
+          {t('Создать аккаунт')}
         </Button>
       </form>
     </Form>

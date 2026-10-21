@@ -27,6 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const schema = z.object({
   title: z.string().trim().min(1, 'Введите название').max(LIMITS.maxBoardTitle),
@@ -40,6 +41,7 @@ interface RenameBoardDialogProps {
 }
 
 export function RenameBoardDialog({ board, open, onOpenChange }: RenameBoardDialogProps) {
+  const t = useT();
   const router = useRouter();
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -56,7 +58,7 @@ export function RenameBoardDialog({ board, open, onOpenChange }: RenameBoardDial
       onOpenChange(false);
       router.refresh();
     } catch (error: unknown) {
-      toast.error(errorMessage(error, 'Не удалось переименовать доску'));
+      toast.error(errorMessage(error, t('Не удалось переименовать доску')));
     }
   }
 
@@ -64,7 +66,7 @@ export function RenameBoardDialog({ board, open, onOpenChange }: RenameBoardDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Переименовать доску</DialogTitle>
+          <DialogTitle>{t('Переименовать доску')}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -73,7 +75,7 @@ export function RenameBoardDialog({ board, open, onOpenChange }: RenameBoardDial
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Название</FormLabel>
+                  <FormLabel>{t('Название')}</FormLabel>
                   <FormControl>
                     <Input autoFocus {...field} />
                   </FormControl>
@@ -83,11 +85,11 @@ export function RenameBoardDialog({ board, open, onOpenChange }: RenameBoardDial
             />
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-                Отмена
+                {t('Отмена')}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : null}
-                Сохранить
+                {t('Сохранить')}
               </Button>
             </DialogFooter>
           </form>

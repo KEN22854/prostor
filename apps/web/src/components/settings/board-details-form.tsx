@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const schema = z.object({
   title: z.string().trim().min(1, 'Введите название').max(LIMITS.maxBoardTitle),
@@ -35,6 +36,7 @@ interface BoardDetailsFormProps {
 }
 
 export function BoardDetailsForm({ boardId, title, description, canEdit }: BoardDetailsFormProps) {
+  const t = useT();
   const router = useRouter();
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -48,10 +50,10 @@ export function BoardDetailsForm({ boardId, title, description, canEdit }: Board
         body: { title: values.title, description: values.description || null },
       });
       form.reset(values);
-      toast.success('Сохранено');
+      toast.success(t('Сохранено'));
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось сохранить'));
+      toast.error(errorMessage(e, t('Не удалось сохранить')));
     }
   }
 
@@ -64,7 +66,7 @@ export function BoardDetailsForm({ boardId, title, description, canEdit }: Board
             name="title"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Название</FormLabel>
+                <FormLabel>{t('Название')}</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -77,9 +79,9 @@ export function BoardDetailsForm({ boardId, title, description, canEdit }: Board
             name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Описание</FormLabel>
+                <FormLabel>{t('Описание')}</FormLabel>
                 <FormControl>
-                  <Textarea rows={3} placeholder="О чём эта доска" {...field} />
+                  <Textarea rows={3} placeholder={t('О чём эта доска')} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -89,11 +91,11 @@ export function BoardDetailsForm({ boardId, title, description, canEdit }: Board
         {canEdit ? (
           <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
             {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : null}
-            Сохранить
+            {t('Сохранить')}
           </Button>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Изменять название могут редакторы и владелец.
+            {t('Изменять название могут редакторы и владелец.')}
           </p>
         )}
       </form>

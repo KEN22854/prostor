@@ -18,6 +18,7 @@ import { fitBounds } from '@/lib/canvas/viewport';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useCommentsStore } from '@/stores/comments-store';
+import { useT } from '@/lib/i18n/client';
 
 const noop = () => () => undefined;
 const zero = () => 0;
@@ -50,6 +51,7 @@ function reveal(store: ElementStore, hit: SearchHit): void {
  * совпадению, объект выделяется.
  */
 export function BoardSearch({ store }: { store: ElementStore | null }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [current, setCurrent] = useState(0);
@@ -113,8 +115,8 @@ export function BoardSearch({ store }: { store: ElementStore | null }) {
           ref={inputRef}
           autoFocus
           value={query}
-          placeholder="Найти на доске"
-          aria-label="Найти на доске"
+          placeholder={t('Найти на доске')}
+          aria-label={t('Найти на доске')}
           className="h-8 border-0 shadow-none focus-visible:ring-0"
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -136,7 +138,7 @@ export function BoardSearch({ store }: { store: ElementStore | null }) {
           variant="ghost"
           size="icon"
           className="size-7"
-          aria-label="Предыдущее"
+          aria-label={t('Предыдущее')}
           onClick={() => go(-1)}
         >
           <ChevronUp />
@@ -145,7 +147,7 @@ export function BoardSearch({ store }: { store: ElementStore | null }) {
           variant="ghost"
           size="icon"
           className="size-7"
-          aria-label="Следующее"
+          aria-label={t('Следующее')}
           onClick={() => go(1)}
         >
           <ChevronDown />
@@ -154,14 +156,14 @@ export function BoardSearch({ store }: { store: ElementStore | null }) {
           variant="ghost"
           size="icon"
           className="size-7"
-          aria-label="Закрыть поиск"
+          aria-label={t('Закрыть поиск')}
           onClick={close}
         >
           <X />
         </Button>
       </div>
       {hits.length > 0 ? (
-        <ul className="max-h-72 overflow-y-auto border-t p-1" aria-label="Результаты поиска">
+        <ul className="max-h-72 overflow-y-auto border-t p-1" aria-label={t('Результаты поиска')}>
           {hits.slice(0, 100).map((hit, i) => (
             <li key={`${hit.kind}:${hit.id}`}>
               <button
@@ -182,7 +184,7 @@ export function BoardSearch({ store }: { store: ElementStore | null }) {
           ))}
         </ul>
       ) : deferred.trim() ? (
-        <p className="border-t px-3 py-2 text-sm text-muted-foreground">Ничего не найдено</p>
+        <p className="border-t px-3 py-2 text-sm text-muted-foreground">{t('Ничего не найдено')}</p>
       ) : null}
     </div>
   );

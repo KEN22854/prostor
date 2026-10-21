@@ -22,9 +22,10 @@ import { useUndoState } from '@/hooks/use-undo-state';
 import { useVersionHistory } from '@/hooks/use-version-history';
 import { useVotingSync } from '@/hooks/use-voting-sync';
 import { useYjs } from '@/hooks/use-yjs';
-import { plural } from '@/lib/utils';
+
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useCommentsStore } from '@/stores/comments-store';
+import { useLocale, usePlural, useT } from '@/lib/i18n/client';
 
 // Konva работает только в браузере, а это самая тяжёлая часть страницы —
 // отдельный чанк, загружается после шапки.
@@ -55,6 +56,9 @@ interface BoardRoomProps {
 
 /** Комната доски: шапка (статус, присутствие, undo/redo) + холст */
 export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: BoardRoomProps) {
+  const t = useT();
+  const tp = usePlural();
+  const locale = useLocale();
   const { connection, status, hasPendingChanges, localReady, role, policy, user, error } =
     useYjs(boardId);
   const awareness = connection?.provider?.awareness ?? null;
@@ -67,7 +71,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
   const history = useVersionHistory(boardId, connection);
   useCommentsSync(boardId, connection);
   useVotingSync(boardId, connection);
-  const openComments = useCommentsStore((s) => s.threads.filter((t) => !t.resolvedAt).length);
+  const openComments = useCommentsStore((s) => s.threads.filter((th) => !th.resolvedAt).length);
   const preview = history.preview;
 
   if (error) return <BoardAccessError error={error} />;
@@ -76,7 +80,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
     <TooltipProvider delayDuration={300}>
       <div className="flex h-dvh flex-col">
         <header className="z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-3">
-          <Button asChild variant="ghost" size="icon" aria-label="К списку досок">
+          <Button asChild variant="ghost" size="icon" aria-label={t('К списку досок')}>
             <Link href={isAuthenticated ? '/dashboard' : '/'}>
               <ArrowLeft />
             </Link>
@@ -84,7 +88,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
           <h1 className="min-w-0 truncate font-medium">{title}</h1>
           {!canEdit ? (
             <span className="flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-              <Lock className="size-3" aria-hidden /> Только просмотр
+              <Lock className="size-3" aria-hidden /> {t('Только просмотр')}
             </span>
           ) : null}
           <ConnectionStatusIndicator
@@ -96,7 +100,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
             className="hidden text-xs text-muted-foreground sm:inline"
             data-testid="element-count"
           >
-            {count.toLocaleString('ru')} {plural(count, ['объект', 'объекта', 'объектов'])}
+            {count.toLocaleString(locale)} {tp(count, ['объект', 'объекта', 'объектов'])}
           </span>
 
           <div className="ml-auto flex items-center gap-2">
@@ -115,7 +119,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Отменить"
+                      aria-label={t('Отменить')}
                       disabled={!canUndo}
                       onClick={() => connection?.undoManager.undo()}
                     >
@@ -131,7 +135,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Повторить"
+                      aria-label={t('Повторить')}
                       disabled={!canRedo}
                       onClick={() => connection?.undoManager.redo()}
                     >
@@ -150,7 +154,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="Экспорт"
+                    aria-label={t('Экспорт')}
                     onClick={() => useCanvasStore.getState().setPanel('export')}
                   >
                     <Download />
@@ -167,7 +171,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
                   variant="ghost"
                   size="icon"
                   className="relative"
-                  aria-label="Обсуждения"
+                  aria-label={t('Обсуждения')}
                   onClick={() => {
                     const s = useCanvasStore.getState();
                     s.setPanel(s.panel === 'comments' ? null : 'comments');
@@ -181,7 +185,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
                   ) : null}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Обсуждения</TooltipContent>
+              <TooltipContent>{t('Обсуждения')}</TooltipContent>
             </Tooltip>
             {canEdit && isAuthenticated ? (
               <Tooltip>
@@ -189,7 +193,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label="История версий"
+                    aria-label={t('История версий')}
                     onClick={() => {
                       const s = useCanvasStore.getState();
                       s.setPanel(s.panel === 'history' ? null : 'history');
@@ -198,7 +202,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
                     <History />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>История версий</TooltipContent>
+                <TooltipContent>{t('История версий')}</TooltipContent>
               </Tooltip>
             ) : null}
             <PresenceAvatars users={presence} awareness={preview ? null : awareness} />
@@ -253,6 +257,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
 }
 
 function BoardAccessError({ error }: { error: 'forbidden' | 'not_found' | 'unauthorized' }) {
+  const t = useT();
   const text = {
     forbidden: 'У вас больше нет доступа к этой доске.',
     not_found: 'Доска удалена или не существует.',
@@ -263,7 +268,7 @@ function BoardAccessError({ error }: { error: 'forbidden' | 'not_found' | 'unaut
       <p className="text-lg font-medium">{text}</p>
       <Button asChild>
         <Link href={error === 'unauthorized' ? '/login' : '/dashboard'}>
-          {error === 'unauthorized' ? 'Войти' : 'К списку досок'}
+          {error === 'unauthorized' ? t('Войти') : t('К списку досок')}
         </Link>
       </Button>
     </main>

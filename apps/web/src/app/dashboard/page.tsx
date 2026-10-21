@@ -15,8 +15,12 @@ import { cn } from '@/lib/utils';
 import { listBoards } from '@/services/boards';
 import { listFolders } from '@/services/folders';
 import { listMyOrgs } from '@/services/orgs';
+import { getT } from '@/lib/i18n/server';
 
-export const metadata: Metadata = { title: 'Мои доски' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t('Мои доски') };
+}
 
 interface DashboardPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -38,6 +42,7 @@ function breadcrumbs(folders: FolderDto[], folderId: string | undefined): Folder
  * Состояние — в URL (?org=&folder=&q=&sort=&filter=): ссылку можно отправить коллеге.
  */
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const t = await getT();
   const user = await getSessionUser();
   if (!user) redirect('/login?callbackUrl=/dashboard');
 
@@ -68,7 +73,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <header className="border-b bg-background">
         <div className="flex h-14 items-center justify-between px-4 sm:px-6">
           <Link href="/dashboard" className="font-semibold">
-            Простор
+            {t('Простор')}
           </Link>
           <UserMenu name={user.name} email={user.email ?? ''} />
         </div>
@@ -77,7 +82,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       <div className="flex">
         <aside
           className="hidden min-h-[calc(100dvh-3.5rem)] w-64 shrink-0 border-r bg-background p-3 md:block"
-          aria-label="Рабочие пространства"
+          aria-label={t('Рабочие пространства')}
         >
           <nav className="space-y-0.5">
             <Link
@@ -87,19 +92,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 !org && !query.folder && 'bg-accent font-medium',
               )}
             >
-              <User className="size-4" /> Все доски
+              <User className="size-4" /> {t('Все доски')}
             </Link>
           </nav>
 
           <div className="mt-4 flex items-center justify-between px-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Организации
+              {t('Организации')}
             </span>
             <CreateOrgButton />
           </div>
-          <nav className="space-y-0.5" aria-label="Организации">
+          <nav className="space-y-0.5" aria-label={t('Организации')}>
             {orgs.length === 0 ? (
-              <p className="px-2 py-1 text-xs text-muted-foreground">Нет организаций</p>
+              <p className="px-2 py-1 text-xs text-muted-foreground">{t('Нет организаций')}</p>
             ) : null}
             {orgs.map((o) => (
               <div
@@ -129,7 +134,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
           <div className="mt-4 flex items-center justify-between px-2">
             <span className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Папки{org ? ` · ${org.name}` : ''}
+              {t('Папки')}
+              {org ? ` · ${org.name}` : ''}
             </span>
             <CreateFolderButton orgId={org?.id ?? null} parentId={currentFolder?.id ?? null} />
           </div>
@@ -145,13 +151,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <div className="min-w-0">
               <nav
                 className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground"
-                aria-label="Путь"
+                aria-label={t('Путь')}
               >
                 <Link
                   href={org ? `/dashboard?org=${org.id}` : '/dashboard'}
                   className="hover:text-foreground"
                 >
-                  {org ? org.name : 'Мои доски'}
+                  {org ? org.name : t('Мои доски')}
                 </Link>
                 {trail.map((f) => (
                   <span key={f.id} className="flex items-center gap-1">
@@ -166,7 +172,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 ))}
               </nav>
               <h1 className="truncate text-2xl font-semibold">
-                {currentFolder?.name ?? (org ? org.name : 'Доски')}
+                {currentFolder?.name ?? (org ? org.name : t('Доски'))}
               </h1>
             </div>
             <CreateBoardDialog orgId={org?.id ?? null} folderId={currentFolder?.id ?? null} />
@@ -195,7 +201,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   );
 }
 
-function EmptyState({
+async function EmptyState({
   searching,
   orgId,
   folderId,
@@ -204,14 +210,15 @@ function EmptyState({
   orgId: string | null;
   folderId: string | null;
 }) {
+  const t = await getT();
   return (
     <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-background py-16 text-center">
       <LayoutGrid className="size-10 text-muted-foreground" strokeWidth={1.5} aria-hidden />
-      <p className="font-medium">{searching ? 'Ничего не найдено' : 'Здесь пока пусто'}</p>
+      <p className="font-medium">{searching ? t('Ничего не найдено') : t('Здесь пока пусто')}</p>
       <p className="max-w-sm text-sm text-muted-foreground">
         {searching
           ? 'Попробуйте изменить запрос или фильтр.'
-          : 'Создайте первую доску — пустую или из шаблона.'}
+          : t('Создайте первую доску — пустую или из шаблона.')}
       </p>
       {!searching ? <CreateBoardDialog orgId={orgId} folderId={folderId} /> : null}
     </div>

@@ -10,6 +10,7 @@ import { fitBounds } from '@/lib/canvas/viewport';
 import { cn, errorMessage, plural } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { closeVoting, endVoting, useVotingStore } from '@/stores/voting-store';
+import { useT } from '@/lib/i18n/client';
 
 function elementLabel(store: ElementStore, id: string): string {
   const el = store.get(id);
@@ -21,6 +22,7 @@ function elementLabel(store: ElementStore, id: string): string {
 
 /** Полоса голосования над холстом: сколько голосов осталось, завершение, итоги */
 export function VotingBar({ store }: { store: ElementStore | null }) {
+  const t = useT();
   const voting = useVotingStore((s) => s.voting);
   const boardId = useVotingStore((s) => s.boardId);
   const tool = useCanvasStore((s) => s.tool);
@@ -50,21 +52,21 @@ export function VotingBar({ store }: { store: ElementStore | null }) {
           variant="ghost"
           className="h-7 px-2"
           onClick={() => setTool(tool === 'vote' ? 'select' : 'vote')}
-          title={tool === 'vote' ? 'Перейти к выделению' : 'Голосовать: клик по объекту'}
+          title={tool === 'vote' ? t('Перейти к выделению') : t('Голосовать: клик по объекту')}
         >
           {tool === 'vote' ? <MousePointer2 /> : <Vote />}
-          {tool === 'vote' ? 'Выделять' : 'Голосовать'}
+          {tool === 'vote' ? t('Выделять') : t('Голосовать')}
         </Button>
       ) : null}
       {!active && voting.results && voting.results.length > 0 ? (
         <Popover>
           <PopoverTrigger asChild>
             <Button size="sm" variant="ghost" className="h-7 px-2">
-              <ListOrdered /> Рейтинг
+              <ListOrdered /> {t('Рейтинг')}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80 p-1">
-            <ol className="max-h-80 overflow-y-auto" aria-label="Итоги голосования">
+            <ol className="max-h-80 overflow-y-auto" aria-label={t('Итоги голосования')}>
               {voting.results.slice(0, 20).map((r, i) => (
                 <li key={r.elementId}>
                   <button
@@ -100,7 +102,7 @@ export function VotingBar({ store }: { store: ElementStore | null }) {
             className="h-7"
             onClick={() => void endVoting(boardId, voting.id).catch(fail('Не удалось завершить'))}
           >
-            Завершить
+            {t('Завершить')}
           </Button>
         ) : (
           <Button
@@ -111,7 +113,7 @@ export function VotingBar({ store }: { store: ElementStore | null }) {
               void closeVoting(boardId, voting.id).catch(fail('Не удалось скрыть итоги'))
             }
           >
-            Скрыть итоги
+            {t('Скрыть итоги')}
           </Button>
         )
       ) : null}

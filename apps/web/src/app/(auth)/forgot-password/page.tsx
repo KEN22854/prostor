@@ -2,17 +2,22 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthCard } from '@/components/auth/auth-card';
 import { ForgotPasswordForm } from '@/components/auth/forgot-password-form';
+import { getT } from '@/lib/i18n/server';
 
-export const metadata: Metadata = { title: 'Восстановление пароля' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t('Восстановление пароля') };
+}
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage() {
+  const t = await getT();
   return (
     <AuthCard
-      title="Восстановление пароля"
-      description="Укажите email — пришлём ссылку для создания нового пароля"
+      title={t('Восстановление пароля')}
+      description={t('Укажите email — пришлём ссылку для создания нового пароля')}
       footer={
         <Link href="/login" className="font-medium text-primary hover:underline">
-          Вернуться ко входу
+          {t('Вернуться ко входу')}
         </Link>
       }
     >

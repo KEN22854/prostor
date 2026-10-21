@@ -16,6 +16,7 @@ import type { PresenceUser } from '@/hooks/use-presence';
 import { countFollowers } from '@/lib/presence/follow';
 import { cn, plural } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 const MAX_VISIBLE = 5;
 
@@ -29,6 +30,7 @@ interface PresenceAvatarsProps {
  * аватар — «следовать», на свой — «позвать всех за собой» (показ).
  */
 export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
+  const t = useT();
   const follow = useCanvasStore((s) => s.follow);
   const setFollow = useCanvasStore((s) => s.setFollow);
   const [presenting, setPresenting] = useState(false);
@@ -73,7 +75,7 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
                 backgroundColor: u.color,
                 ...(follow?.userId === u.id ? { ['--tw-ring-color' as string]: u.color } : {}),
               }}
-              aria-label={`${u.name}${u.isSelf ? ' (вы)' : ''}`}
+              aria-label={`${u.name}${u.isSelf ? t(' (вы)') : ''}`}
               data-testid="presence-avatar"
             >
               {initials(u.name)}
@@ -90,7 +92,7 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
               {u.name}
-              {u.isSelf ? ' (вы)' : ''}
+              {u.isSelf ? t(' (вы)') : ''}
               {u.connections > 1 ? (
                 <span className="block text-xs font-normal text-muted-foreground">
                   {u.connections} вкладки
@@ -102,7 +104,7 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
               <>
                 <DropdownMenuItem onSelect={togglePresenting}>
                   {presenting ? <MegaphoneOff /> : <Megaphone />}
-                  {presenting ? 'Остановить показ' : 'Позвать всех за мной'}
+                  {presenting ? t('Остановить показ') : t('Позвать всех за мной')}
                 </DropdownMenuItem>
                 {followers > 0 ? (
                   <p className="px-2 py-1 text-xs text-muted-foreground">
@@ -113,7 +115,7 @@ export function PresenceAvatars({ users, awareness }: PresenceAvatarsProps) {
               </>
             ) : follow?.userId === u.id ? (
               <DropdownMenuItem onSelect={() => setFollow(null)}>
-                <Eye /> Перестать следовать
+                <Eye /> {t('Перестать следовать')}
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem

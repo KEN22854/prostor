@@ -9,6 +9,7 @@ import {
   type HTMLAttributes,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
@@ -29,6 +30,12 @@ export const DialogOverlay = forwardRef<
 ));
 DialogOverlay.displayName = 'DialogOverlay';
 
+/** Подпись кнопки закрытия для скринридеров (перевод через хук — DialogContent без тела функции) */
+function CloseLabel() {
+  const t = useT();
+  return <span className="sr-only">{t('Закрыть')}</span>;
+}
+
 export const DialogContent = forwardRef<
   ElementRef<typeof DialogPrimitive.Content>,
   ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
@@ -46,7 +53,7 @@ export const DialogContent = forwardRef<
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring">
         <X className="size-4" />
-        <span className="sr-only">Закрыть</span>
+        <CloseLabel />
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPrimitive.Portal>

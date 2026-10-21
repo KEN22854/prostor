@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { usePrompt } from '@/components/ui/prompt-dialog';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 /** Создать организацию — пространство команды с общими досками, папками и политиками */
 export function CreateOrgButton() {
+  const t = useT();
   const router = useRouter();
   const [dialog, ask] = usePrompt();
 
@@ -23,11 +25,11 @@ export function CreateOrgButton() {
     if (!name) return;
     try {
       const org = await apiRequest<{ id: string }>('/api/orgs', { method: 'POST', body: { name } });
-      toast.success('Организация создана');
+      toast.success(t('Организация создана'));
       router.push(`/dashboard?org=${org.id}`);
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось создать организацию'));
+      toast.error(errorMessage(e, t('Не удалось создать организацию')));
     }
   }
 
@@ -38,8 +40,8 @@ export function CreateOrgButton() {
         variant="ghost"
         size="icon"
         className="size-7"
-        aria-label="Новая организация"
-        title="Новая организация"
+        aria-label={t('Новая организация')}
+        title={t('Новая организация')}
         onClick={() => void create()}
       >
         <Plus className="size-4" />

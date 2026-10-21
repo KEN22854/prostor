@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { authErrorMessage } from '@/lib/auth/messages';
+import { useT } from '@/lib/i18n/client';
 
 // Клиентская схема мягче серверной: правила сложности пароля
 // проверяются при регистрации, а не при входе.
@@ -36,6 +37,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ callbackUrl }: LoginFormProps) {
+  const t = useT();
   const router = useRouter();
   const [formError, setFormError] = useState<string | null>(null);
   // Второй шаг: пароль верный, нужен код 2FA
@@ -68,7 +70,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
       router.refresh();
     } catch (error: unknown) {
       console.error(error);
-      toast.error('Не удалось войти. Проверьте соединение и попробуйте ещё раз');
+      toast.error(t('Не удалось войти. Проверьте соединение и попробуйте ещё раз'));
     }
   }
 
@@ -96,9 +98,9 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
           render={({ field }) => (
             <FormItem>
               <div className="flex items-center justify-between">
-                <FormLabel>Пароль</FormLabel>
+                <FormLabel>{t('Пароль')}</FormLabel>
                 <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-                  Забыли пароль?
+                  {t('Забыли пароль?')}
                 </Link>
               </div>
               <FormControl>
@@ -112,19 +114,19 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         {needCode ? (
           <div className="space-y-2">
             <label htmlFor="totp" className="text-sm font-medium">
-              Код из приложения-аутентификатора
+              {t('Код из приложения-аутентификатора')}
             </label>
             <Input
               id="totp"
               autoFocus
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="123456 или резервный код"
+              placeholder={t('123456 или резервный код')}
               value={code}
               onChange={(e) => setCode(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Нет доступа к телефону — введите один из резервных кодов.
+              {t('Нет доступа к телефону — введите один из резервных кодов.')}
             </p>
           </div>
         ) : null}
@@ -140,7 +142,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
 
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" /> : null}
-          {needCode ? 'Подтвердить' : 'Войти'}
+          {needCode ? t('Подтвердить') : t('Войти')}
         </Button>
       </form>
     </Form>

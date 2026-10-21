@@ -4,6 +4,7 @@ import { CloudOff, Loader2, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ConnectionStatus } from '@/lib/yjs/board-connection';
 import { cn } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface ConnectionStatusProps {
   status: ConnectionStatus;
@@ -53,6 +54,7 @@ export function ConnectionStatusIndicator({
   hasPendingChanges,
   localReady,
 }: ConnectionStatusProps) {
+  const t = useT();
   const view = VIEW[status];
   const pending = status === 'offline' && hasPendingChanges;
   return (
@@ -68,12 +70,12 @@ export function ConnectionStatusIndicator({
           )}
         >
           <StatusIcon status={status} />
-          <span>{pending ? 'Офлайн · есть несохранённое' : view.label}</span>
+          <span>{pending ? t('Офлайн · есть несохранённое') : t(view.label)}</span>
         </div>
       </TooltipTrigger>
       <TooltipContent side="bottom">
         {view.hint}
-        {!localReady ? ' Загружаем локальную копию…' : null}
+        {!localReady ? t(' Загружаем локальную копию…') : null}
       </TooltipContent>
     </Tooltip>
   );

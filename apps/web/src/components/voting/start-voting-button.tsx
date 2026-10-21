@@ -10,9 +10,11 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { errorMessage } from '@/lib/utils';
 import { startVoting, useVotingStore } from '@/stores/voting-store';
+import { useT } from '@/lib/i18n/client';
 
 /** Запуск голосования (редакторы): тема и число голосов на человека */
 export function StartVotingButton({ boardId }: { boardId: string }) {
+  const t = useT();
   const active = useVotingStore((s) => s.voting?.status === 'active');
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('Что делаем первым?');
@@ -25,9 +27,9 @@ export function StartVotingButton({ boardId }: { boardId: string }) {
     try {
       await startVoting(boardId, title.trim() || 'Голосование', Number(votes));
       setOpen(false);
-      toast.success('Голосование началось: кликайте по объектам, чтобы отдать голос');
+      toast.success(t('Голосование началось: кликайте по объектам, чтобы отдать голос'));
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось начать голосование'));
+      toast.error(errorMessage(e, t('Не удалось начать голосование')));
     } finally {
       setPending(false);
     }
@@ -36,7 +38,7 @@ export function StartVotingButton({ boardId }: { boardId: string }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Голосование">
+        <Button variant="ghost" size="icon" aria-label={t('Голосование')}>
           <Vote />
         </Button>
       </PopoverTrigger>
@@ -48,9 +50,9 @@ export function StartVotingButton({ boardId }: { boardId: string }) {
             void start();
           }}
         >
-          <p className="text-sm font-medium">Новое голосование</p>
+          <p className="text-sm font-medium">{t('Новое голосование')}</p>
           <div className="space-y-1.5">
-            <Label htmlFor="voting-title">Вопрос</Label>
+            <Label htmlFor="voting-title">{t('Вопрос')}</Label>
             <Input
               id="voting-title"
               value={title}
@@ -60,7 +62,7 @@ export function StartVotingButton({ boardId }: { boardId: string }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="voting-votes">Голосов у каждого</Label>
+            <Label htmlFor="voting-votes">{t('Голосов у каждого')}</Label>
             <NativeSelect
               id="voting-votes"
               value={votes}
@@ -74,11 +76,11 @@ export function StartVotingButton({ boardId }: { boardId: string }) {
             </NativeSelect>
           </div>
           <p className="text-xs text-muted-foreground">
-            Чужие голоса скрыты до завершения — так меньше эффекта «голосую за лидера».
+            {t('Чужие голоса скрыты до завершения — так меньше эффекта «голосую за лидера».')}
           </p>
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? <Loader2 className="animate-spin" /> : <Vote />}
-            Начать
+            {t('Начать')}
           </Button>
         </form>
       </PopoverContent>

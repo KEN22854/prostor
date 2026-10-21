@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface MoveBoardDialogProps {
   board: BoardListItem;
@@ -25,6 +26,7 @@ interface MoveBoardDialogProps {
 
 /** Перенос доски в папку своего рабочего пространства (права доски наследуются от папки) */
 export function MoveBoardDialog({ board, open, onOpenChange }: MoveBoardDialogProps) {
+  const t = useT();
   const router = useRouter();
   const [folders, setFolders] = useState<FolderDto[] | null>(null);
   const [target, setTarget] = useState<string | null>(board.folderId);
@@ -46,11 +48,11 @@ export function MoveBoardDialog({ board, open, onOpenChange }: MoveBoardDialogPr
         method: 'PATCH',
         body: { folderId: target },
       });
-      toast.success('Доска перемещена');
+      toast.success(t('Доска перемещена'));
       onOpenChange(false);
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось переместить доску'));
+      toast.error(errorMessage(e, t('Не удалось переместить доску')));
     } finally {
       setPending(false);
     }
@@ -65,13 +67,13 @@ export function MoveBoardDialog({ board, open, onOpenChange }: MoveBoardDialogPr
         <DialogHeader>
           <DialogTitle>Переместить «{board.title}»</DialogTitle>
           <DialogDescription>
-            Участники папки получат доступ к доске по наследованию.
+            {t('Участники папки получат доступ к доске по наследованию.')}
           </DialogDescription>
         </DialogHeader>
         <ul
           className="max-h-72 overflow-y-auto rounded-lg border p-1"
           role="listbox"
-          aria-label="Папка назначения"
+          aria-label={t('Папка назначения')}
         >
           <li>
             <button
@@ -84,7 +86,7 @@ export function MoveBoardDialog({ board, open, onOpenChange }: MoveBoardDialogPr
               )}
               onClick={() => setTarget(null)}
             >
-              <Home className="size-4" /> Без папки
+              <Home className="size-4" /> {t('Без папки')}
             </button>
           </li>
           {folders === null ? (
@@ -113,11 +115,11 @@ export function MoveBoardDialog({ board, open, onOpenChange }: MoveBoardDialogPr
         </ul>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Отмена
+            {t('Отмена')}
           </Button>
           <Button onClick={() => void move()} disabled={pending || target === board.folderId}>
             {pending ? <Loader2 className="animate-spin" /> : null}
-            Переместить
+            {t('Переместить')}
           </Button>
         </DialogFooter>
       </DialogContent>

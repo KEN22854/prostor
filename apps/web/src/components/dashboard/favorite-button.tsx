@@ -7,8 +7,10 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 export function FavoriteButton({ boardId, isFavorite }: { boardId: string; isFavorite: boolean }) {
+  const t = useT();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   // Звёздочка переключается мгновенно, сервер подтверждает в фоне
@@ -22,7 +24,7 @@ export function FavoriteButton({ boardId, isFavorite }: { boardId: string; isFav
         await apiRequest(`/api/boards/${boardId}/favorite`, { method: next ? 'PUT' : 'DELETE' });
         router.refresh();
       } catch (error: unknown) {
-        toast.error(errorMessage(error, 'Не удалось обновить избранное'));
+        toast.error(errorMessage(error, t('Не удалось обновить избранное')));
       }
     });
   }
@@ -35,7 +37,7 @@ export function FavoriteButton({ boardId, isFavorite }: { boardId: string; isFav
       onClick={toggle}
       disabled={pending}
       aria-pressed={optimistic}
-      aria-label={optimistic ? 'Убрать из избранного' : 'В избранное'}
+      aria-label={optimistic ? t('Убрать из избранного') : t('В избранное')}
     >
       <Star className={cn(optimistic && 'fill-amber-400 text-amber-500')} />
     </Button>

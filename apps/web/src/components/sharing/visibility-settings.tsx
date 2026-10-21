@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { copyText } from '@/lib/copy-text';
 import { apiRequest } from '@/lib/fetcher';
 import { cn, errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const OPTIONS: Array<{
   value: BoardVisibilityValue;
@@ -38,6 +39,7 @@ interface VisibilitySettingsProps {
 
 /** Видимость доски — меняет только владелец */
 export function VisibilitySettings({ state, onChanged }: VisibilitySettingsProps) {
+  const t = useT();
   const [saving, setSaving] = useState<BoardVisibilityValue | null>(null);
   const [copied, setCopied] = useState(false);
   const publicUrl =
@@ -56,7 +58,7 @@ export function VisibilitySettings({ state, onChanged }: VisibilitySettingsProps
       );
       await onChanged();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось изменить доступ'));
+      toast.error(errorMessage(e, t('Не удалось изменить доступ')));
     } finally {
       setSaving(null);
     }
@@ -64,7 +66,7 @@ export function VisibilitySettings({ state, onChanged }: VisibilitySettingsProps
 
   return (
     <div className="space-y-3">
-      <div role="radiogroup" aria-label="Видимость доски" className="space-y-2">
+      <div role="radiogroup" aria-label={t('Видимость доски')} className="space-y-2">
         {OPTIONS.map(({ value, icon: Icon, title, text }) => {
           const disabled =
             !state.canManage ||
@@ -102,7 +104,7 @@ export function VisibilitySettings({ state, onChanged }: VisibilitySettingsProps
       </div>
       {!state.canManage ? (
         <p className="text-xs text-muted-foreground">
-          Изменить доступ может только владелец доски.
+          {t('Изменить доступ может только владелец доски.')}
         </p>
       ) : null}
       {state.visibility === 'PUBLIC_READ' ? (
@@ -110,13 +112,13 @@ export function VisibilitySettings({ state, onChanged }: VisibilitySettingsProps
           <Input
             readOnly
             value={publicUrl}
-            aria-label="Публичная ссылка"
+            aria-label={t('Публичная ссылка')}
             onFocus={(e) => e.currentTarget.select()}
           />
           <Button
             variant="outline"
             size="icon"
-            aria-label="Скопировать публичную ссылку"
+            aria-label={t('Скопировать публичную ссылку')}
             onClick={async () => setCopied(await copyText(publicUrl))}
           >
             {copied ? <Check /> : <Copy />}

@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const POLICIES: Array<{
   key: keyof Omit<OrgPolicyUpdate, 'allowedEmailDomains' | 'require2fa'>;
@@ -55,6 +56,7 @@ const POLICIES: Array<{
 
 /** Настройки организации: общие, участники, политики, безопасность, журнал */
 export function OrgSettings({ org }: { org: OrgDetailsDto }) {
+  const t = useT();
   const router = useRouter();
   const [name, setName] = useState(org.name);
   const [policies, setPolicies] = useState<OrgPolicyUpdate>({
@@ -79,7 +81,7 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
       toast.success(done);
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось сохранить'));
+      toast.error(errorMessage(e, t('Не удалось сохранить')));
     } finally {
       setBusy(false);
     }
@@ -101,7 +103,7 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
       }
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось выполнить действие'));
+      toast.error(errorMessage(e, t('Не удалось выполнить действие')));
     }
   }
 
@@ -110,11 +112,11 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
   return (
     <Tabs defaultValue={org.canManage ? 'members' : 'general'}>
       <TabsList className="w-full justify-start overflow-x-auto">
-        <TabsTrigger value="general">Общие</TabsTrigger>
+        <TabsTrigger value="general">{t('Общие')}</TabsTrigger>
         <TabsTrigger value="members">Участники {org.memberCount}</TabsTrigger>
-        {org.canManage ? <TabsTrigger value="policies">Политики</TabsTrigger> : null}
-        {org.canManage ? <TabsTrigger value="security">Безопасность</TabsTrigger> : null}
-        {org.canManage ? <TabsTrigger value="audit">Журнал</TabsTrigger> : null}
+        {org.canManage ? <TabsTrigger value="policies">{t('Политики')}</TabsTrigger> : null}
+        {org.canManage ? <TabsTrigger value="security">{t('Безопасность')}</TabsTrigger> : null}
+        {org.canManage ? <TabsTrigger value="audit">{t('Журнал')}</TabsTrigger> : null}
       </TabsList>
 
       <TabsContent value="general" className="space-y-4">
@@ -126,7 +128,7 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
           }}
         >
           <div className="flex-1 space-y-1.5">
-            <Label htmlFor="org-name">Название</Label>
+            <Label htmlFor="org-name">{t('Название')}</Label>
             <Input
               id="org-name"
               value={name}
@@ -136,7 +138,7 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
           </div>
           {org.canManage ? (
             <Button type="submit" disabled={busy || name.trim() === org.name}>
-              Сохранить
+              {t('Сохранить')}
             </Button>
           ) : null}
         </form>
@@ -147,7 +149,7 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
           variant="outline"
           onClick={() => void member('DELETE', org.members.find((m) => m.isYou)?.userId ?? null)}
         >
-          Покинуть организацию
+          {t('Покинуть организацию')}
         </Button>
       </TabsContent>
 
@@ -164,14 +166,14 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
             <Input
               type="email"
               className="min-w-56 flex-1"
-              placeholder="email зарегистрированного пользователя"
-              aria-label="Email участника"
+              placeholder={t('email зарегистрированного пользователя')}
+              aria-label={t('Email участника')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
             <div className="w-44">
               <NativeSelect
-                aria-label="Роль в организации"
+                aria-label={t('Роль в организации')}
                 value={role}
                 onChange={(e) => setRole(e.target.value as OrgRole)}
               >
@@ -180,10 +182,10 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
                 {org.isOwner ? <option value="OWNER">{ORG_ROLE_LABELS.OWNER}</option> : null}
               </NativeSelect>
             </div>
-            <Button type="submit">Добавить</Button>
+            <Button type="submit">{t('Добавить')}</Button>
           </form>
         ) : null}
-        <ul className="divide-y rounded-lg border" aria-label="Участники организации">
+        <ul className="divide-y rounded-lg border" aria-label={t('Участники организации')}>
           {org.members.map((m) => (
             <li
               key={m.userId}
@@ -193,11 +195,11 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
                   {m.name ?? m.email}{' '}
-                  {m.isYou ? <span className="text-muted-foreground">(вы)</span> : null}
+                  {m.isYou ? <span className="text-muted-foreground">{t('(вы)')}</span> : null}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">{m.email}</p>
               </div>
-              <span title={m.twoFactorEnabled ? '2FA включена' : '2FA не включена'}>
+              <span title={m.twoFactorEnabled ? t('2FA включена') : t('2FA не включена')}>
                 {m.twoFactorEnabled ? (
                   <ShieldCheck className="size-4 text-green-600" />
                 ) : (
@@ -262,7 +264,7 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
             }}
           >
             {busy ? <Loader2 className="animate-spin" /> : null}
-            Сохранить политики
+            {t('Сохранить политики')}
           </Button>
         </TabsContent>
       ) : null}
@@ -277,14 +279,16 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
               onChange={(e) => setPolicies({ ...policies, require2fa: e.target.checked })}
             />
             <span>
-              <span className="block font-medium">Обязательная двухфакторная аутентификация</span>
+              <span className="block font-medium">
+                {t('Обязательная двухфакторная аутентификация')}
+              </span>
               <span className="block text-muted-foreground">
                 Без 2FA участник не откроет доски организации. Сейчас без 2FA: {without2fa}
               </span>
             </span>
           </label>
           <div className="space-y-1.5">
-            <Label htmlFor="org-domains">Автоприсоединение по домену почты</Label>
+            <Label htmlFor="org-domains">{t('Автоприсоединение по домену почты')}</Label>
             <Textarea
               id="org-domains"
               rows={3}
@@ -293,8 +297,9 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
               onChange={(e) => setDomains(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              По одному домену в строке. Новые пользователи с такой почтой сразу становятся
-              участниками.
+              {t(
+                'По одному домену в строке. Новые пользователи с такой почтой сразу становятся участниками.',
+              )}
             </p>
           </div>
           <Button
@@ -312,7 +317,7 @@ export function OrgSettings({ org }: { org: OrgDetailsDto }) {
               )
             }
           >
-            Сохранить
+            {t('Сохранить')}
           </Button>
         </TabsContent>
       ) : null}

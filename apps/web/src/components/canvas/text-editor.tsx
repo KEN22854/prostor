@@ -25,6 +25,7 @@ import { textCursorAwareness } from '@/lib/rich-text/cursor-awareness';
 import { fragmentToRich } from '@/lib/rich-text/yjs-convert';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { useT } from '@/lib/i18n/client';
 
 type Editable = StickyElement | TextElement | ShapeElement;
 const isEditable = (el: BoardElement | undefined): el is Editable =>
@@ -145,6 +146,7 @@ function EditorBox({
   undoManager,
   onDone,
 }: EditorBoxProps) {
+  const t = useT();
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const fragmentRef = useRef<Y.XmlFragment | null>(null);
@@ -355,7 +357,7 @@ function EditorBox({
       <div
         className="absolute -top-11 left-0 flex items-center gap-0.5 rounded-lg border bg-background/95 p-0.5 shadow-md backdrop-blur"
         role="toolbar"
-        aria-label="Форматирование текста"
+        aria-label={t('Форматирование текста')}
         // Кнопки не забирают фокус у редактора
         onMouseDown={(e) => e.preventDefault()}
       >
@@ -377,8 +379,8 @@ function EditorBox({
         ))}
         <button
           type="button"
-          title="Список (Ctrl+Shift+8, или «- » в начале строки)"
-          aria-label="Список"
+          title={t('Список (Ctrl+Shift+8, или «- » в начале строки)')}
+          aria-label={t('Список')}
           className="rounded p-1.5 text-foreground hover:bg-muted"
           onClick={() => run(toggleBullet)}
         >

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { oauthSignInAction } from '@/lib/auth/actions';
 import type { OAuthProviderInfo } from '@/lib/auth/oauth-providers';
+import { getT } from '@/lib/i18n/server';
 
 /** Цветные монограммы вместо логотипов брендов (без лицензионных вопросов) */
 const BADGE: Record<OAuthProviderInfo['id'], { letter: string; className: string }> = {
@@ -20,7 +21,8 @@ interface OAuthButtonsProps {
  * Server Component: каждая кнопка — отдельная <form> с Server Action,
  * поэтому вход через OAuth работает даже до гидрации и без JS.
  */
-export function OAuthButtons({ providers, callbackUrl }: OAuthButtonsProps) {
+export async function OAuthButtons({ providers, callbackUrl }: OAuthButtonsProps) {
+  const t = await getT();
   if (providers.length === 0) return null;
 
   return (
@@ -47,7 +49,7 @@ export function OAuthButtons({ providers, callbackUrl }: OAuthButtonsProps) {
       </div>
       <div className="relative text-center text-xs uppercase text-muted-foreground">
         <span className="absolute inset-x-0 top-1/2 h-px bg-border" aria-hidden />
-        <span className="relative bg-card px-2">или по email</span>
+        <span className="relative bg-card px-2">{t('или по email')}</span>
       </div>
     </div>
   );

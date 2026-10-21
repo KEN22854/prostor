@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { signOutAction } from '@/lib/auth/actions';
 import { getSessionUser } from '@/lib/session';
 import { previewInvite } from '@/services/invites';
+import { getT } from '@/lib/i18n/server';
 
 export const metadata: Metadata = {
   title: 'Приглашение на доску',
@@ -29,12 +30,13 @@ interface JoinPageProps {
   searchParams: Promise<{ token?: string }>;
 }
 
-function Shell({ children }: { children: ReactNode }) {
+async function Shell({ children }: { children: ReactNode }) {
+  const t = await getT();
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
       <header className="container flex h-16 items-center">
         <Link href="/" className="text-lg font-semibold tracking-tight">
-          Простор
+          {t('Простор')}
         </Link>
       </header>
       <main className="flex flex-1 items-start justify-center px-4 pb-16 pt-6 sm:items-center sm:pt-0">
@@ -50,6 +52,7 @@ function Shell({ children }: { children: ReactNode }) {
  * «использовать» одноразовое приглашение.
  */
 export default async function JoinPage({ params, searchParams }: JoinPageProps) {
+  const t = await getT();
   const { id } = await params;
   const { token } = await searchParams;
   const user = await getSessionUser();
@@ -63,8 +66,8 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
     return (
       <Shell>
         <AuthCard
-          title="Приглашение не найдено"
-          description="Ссылка повреждена или приглашение удалено. Попросите прислать новое."
+          title={t('Приглашение не найдено')}
+          description={t('Ссылка повреждена или приглашение удалено. Попросите прислать новое.')}
         >
           <ShieldX className="mx-auto size-10 text-muted-foreground" aria-hidden />
         </AuthCard>
@@ -89,13 +92,13 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
               </p>
               <form action={signOutAction}>
                 <Button type="submit" variant="outline" className="w-full">
-                  Выйти и войти другим аккаунтом
+                  {t('Выйти и войти другим аккаунтом')}
                 </Button>
               </form>
             </div>
           ) : (
             <p className="text-center text-sm text-muted-foreground">
-              Попросите автора приглашения прислать новую ссылку.
+              {t('Попросите автора приглашения прислать новую ссылку.')}
             </p>
           )}
         </AuthCard>
@@ -113,11 +116,11 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
           <div className="space-y-2">
             <Button asChild className="w-full">
               <Link href={`/register?callbackUrl=${callback}`}>
-                Зарегистрироваться и присоединиться
+                {t('Зарегистрироваться и присоединиться')}
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link href={`/login?callbackUrl=${callback}`}>У меня есть аккаунт</Link>
+              <Link href={`/login?callbackUrl=${callback}`}>{t('У меня есть аккаунт')}</Link>
             </Button>
           </div>
           {preview.email ? (
@@ -141,7 +144,7 @@ export default async function JoinPage({ params, searchParams }: JoinPageProps) 
         >
           <Button asChild className="w-full">
             <Link href={`/board/${id}`}>
-              <LayoutGrid /> Открыть доску
+              <LayoutGrid /> {t('Открыть доску')}
             </Link>
           </Button>
         </AuthCard>

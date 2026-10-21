@@ -18,12 +18,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { ApiClientError, postJson } from '@/lib/fetcher';
+import { useT } from '@/lib/i18n/client';
 
 interface ResetPasswordFormProps {
   token: string;
 }
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
+  const t = useT();
   const router = useRouter();
   const form = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
@@ -33,10 +35,12 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   async function onSubmit(values: ResetPasswordInput) {
     try {
       await postJson('/api/account/reset-password', values);
-      toast.success('Пароль изменён. Войдите с новым паролем');
+      toast.success(t('Пароль изменён. Войдите с новым паролем'));
       router.push('/login');
     } catch (error: unknown) {
-      toast.error(error instanceof ApiClientError ? error.message : 'Не удалось изменить пароль');
+      toast.error(
+        error instanceof ApiClientError ? error.message : t('Не удалось изменить пароль'),
+      );
     }
   }
 
@@ -50,11 +54,11 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Новый пароль</FormLabel>
+              <FormLabel>{t('Новый пароль')}</FormLabel>
               <FormControl>
                 <PasswordInput autoComplete="new-password" {...field} />
               </FormControl>
-              <FormDescription>Минимум 8 символов, буквы и цифры</FormDescription>
+              <FormDescription>{t('Минимум 8 символов, буквы и цифры')}</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -64,7 +68,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Повторите пароль</FormLabel>
+              <FormLabel>{t('Повторите пароль')}</FormLabel>
               <FormControl>
                 <PasswordInput autoComplete="new-password" {...field} />
               </FormControl>
@@ -74,7 +78,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         />
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" /> : null}
-          Сохранить пароль
+          {t('Сохранить пароль')}
         </Button>
       </form>
     </Form>

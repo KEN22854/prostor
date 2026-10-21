@@ -6,6 +6,7 @@ import useImage from 'use-image';
 import { assetUrl, type ImageElement } from '@prostor/shared';
 import type { DetailLevel } from '@/lib/canvas/constants';
 import { PreloadedImagesContext } from '@/lib/export/preloaded-images';
+import { useT } from '@/lib/i18n/client';
 
 /**
  * Изображение. Файл отдаёт web (/api/assets/:id) с проверкой прав —
@@ -19,6 +20,7 @@ export function ImageShape({
   element: ImageElement;
   detail: DetailLevel;
 }) {
+  const t = useT();
   // При экспорте картинка уже загружена — офлайн-Stage рисуется сразу
   const preloaded = useContext(PreloadedImagesContext).get(el.assetId);
   const [loaded, loadStatus] = useImage(preloaded ? '' : assetUrl(el.assetId));
@@ -45,7 +47,7 @@ export function ImageShape({
             <Text
               width={el.width}
               height={el.height}
-              text={status === 'failed' ? 'Не удалось загрузить изображение' : 'Загрузка…'}
+              text={status === 'failed' ? t('Не удалось загрузить изображение') : t('Загрузка…')}
               fontSize={14}
               fill="#64748b"
               align="center"

@@ -11,6 +11,7 @@ import { SharingPanel } from '@/components/sharing/sharing-panel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getSessionUser } from '@/lib/session';
+import { getT } from '@/lib/i18n/server';
 
 interface BoardSettingsPageProps {
   params: Promise<{ id: string }>;
@@ -20,6 +21,7 @@ export const metadata: Metadata = { title: 'Настройки доски', robo
 
 /** Настройки доски: описание, участники и доступ, удаление/выход */
 export default async function BoardSettingsPage({ params }: BoardSettingsPageProps) {
+  const t = await getT();
   const { id } = await params;
   const user = await getSessionUser();
   if (!user) redirect(`/login?callbackUrl=${encodeURIComponent(`/board/${id}/settings`)}`);
@@ -40,7 +42,7 @@ export default async function BoardSettingsPage({ params }: BoardSettingsPagePro
     <div className="min-h-screen bg-muted/30">
       <header className="border-b bg-background">
         <div className="container flex h-14 items-center gap-2">
-          <Button asChild variant="ghost" size="icon" aria-label="Вернуться к доске">
+          <Button asChild variant="ghost" size="icon" aria-label={t('Вернуться к доске')}>
             <Link href={`/board/${id}`}>
               <ArrowLeft />
             </Link>
@@ -52,7 +54,7 @@ export default async function BoardSettingsPage({ params }: BoardSettingsPagePro
       <main className="container max-w-2xl space-y-6 py-8">
         <Card>
           <CardHeader>
-            <CardTitle>Основное</CardTitle>
+            <CardTitle>{t('Основное')}</CardTitle>
           </CardHeader>
           <CardContent>
             <BoardDetailsForm
@@ -66,8 +68,10 @@ export default async function BoardSettingsPage({ params }: BoardSettingsPagePro
 
         <Card>
           <CardHeader>
-            <CardTitle>Участники и доступ</CardTitle>
-            <CardDescription>Приглашения по ссылке и email, роли и видимость доски</CardDescription>
+            <CardTitle>{t('Участники и доступ')}</CardTitle>
+            <CardDescription>
+              {t('Приглашения по ссылке и email, роли и видимость доски')}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <SharingPanel boardId={id} defaultTab="members" />
@@ -77,7 +81,7 @@ export default async function BoardSettingsPage({ params }: BoardSettingsPagePro
         {isOwner ? (
           <Card>
             <CardHeader>
-              <CardTitle>Журнал действий</CardTitle>
+              <CardTitle>{t('Журнал действий')}</CardTitle>
               <CardDescription>
                 Кто менял доступ, экспортировал, восстанавливал версии
               </CardDescription>
@@ -91,7 +95,7 @@ export default async function BoardSettingsPage({ params }: BoardSettingsPagePro
         <Card className="border-destructive/40">
           <CardHeader>
             <CardTitle className="text-destructive">
-              {isOwner ? 'Удаление доски' : 'Покинуть доску'}
+              {isOwner ? t('Удаление доски') : t('Покинуть доску')}
             </CardTitle>
           </CardHeader>
           <CardContent>

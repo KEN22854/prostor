@@ -8,6 +8,7 @@ import type { DetailLevel } from '@/lib/canvas/constants';
 import { EMBED_CARD } from '@/lib/canvas/element-factory';
 import { canvasFont } from '@/lib/canvas/fonts';
 import { PreloadedImagesContext } from '@/lib/export/preloaded-images';
+import { useT } from '@/lib/i18n/client';
 
 const PROVIDER_COLOR: Record<string, string> = {
   youtube: '#ff0033',
@@ -31,6 +32,7 @@ export function EmbedShape({
   element: EmbedElement;
   detail: DetailLevel;
 }) {
+  const t = useT();
   const preloaded = useContext(PreloadedImagesContext).get(el.imageAssetId ?? '');
   const [loaded, status] = useImage(preloaded || !el.imageAssetId ? '' : assetUrl(el.imageAssetId));
   const image = preloaded ?? (status === 'loaded' ? loaded : undefined);
@@ -125,7 +127,7 @@ export function EmbedShape({
             x={16}
             y={mediaHeight + EMBED_CARD.textHeight - 22}
             width={el.width - 28}
-            text={`${el.siteName}${playable ? ' · двойной клик — открыть' : ' · двойной клик — перейти'}`}
+            text={`${el.siteName}${playable ? t(' · двойной клик — открыть') : t(' · двойной клик — перейти')}`}
             fontFamily={font}
             fontSize={12}
             fill="#64748b"

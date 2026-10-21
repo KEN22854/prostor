@@ -19,8 +19,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 export function ProfileForm({ name, email }: { name: string | null; email: string }) {
+  const t = useT();
   const router = useRouter();
   const form = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
@@ -31,10 +33,10 @@ export function ProfileForm({ name, email }: { name: string | null; email: strin
     try {
       await apiRequest('/api/account/profile', { method: 'PATCH', body: values });
       form.reset(values);
-      toast.success('Профиль сохранён');
+      toast.success(t('Профиль сохранён'));
       router.refresh();
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось сохранить профиль'));
+      toast.error(errorMessage(e, t('Не удалось сохранить профиль')));
     }
   }
 
@@ -46,7 +48,7 @@ export function ProfileForm({ name, email }: { name: string | null; email: strin
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Имя</FormLabel>
+              <FormLabel>{t('Имя')}</FormLabel>
               <FormControl>
                 <Input autoComplete="name" {...field} />
               </FormControl>
@@ -60,7 +62,7 @@ export function ProfileForm({ name, email }: { name: string | null; email: strin
         </div>
         <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
           {form.formState.isSubmitting ? <Loader2 className="animate-spin" /> : null}
-          Сохранить
+          {t('Сохранить')}
         </Button>
       </form>
     </Form>

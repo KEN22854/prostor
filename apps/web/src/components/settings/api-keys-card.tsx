@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 const dateFmt = new Intl.DateTimeFormat('ru', { dateStyle: 'medium' });
 
@@ -16,6 +17,7 @@ const dateFmt = new Intl.DateTimeFormat('ru', { dateStyle: 'medium' });
  * отзыв. Ключ действует от вашего имени с вашими правами на доски.
  */
 export function ApiKeysCard() {
+  const t = useT();
   const [keys, setKeys] = useState<ApiKeyDto[] | null>(null);
   const [name, setName] = useState('');
   const [write, setWrite] = useState(false);
@@ -25,7 +27,7 @@ export function ApiKeysCard() {
   useEffect(() => {
     apiRequest<{ keys: ApiKeyDto[] }>('/api/account/api-keys')
       .then((r) => setKeys(r.keys))
-      .catch((e: unknown) => toast.error(errorMessage(e, 'Не удалось загрузить ключи')));
+      .catch((e: unknown) => toast.error(errorMessage(e, t('Не удалось загрузить ключи'))));
   }, []);
 
   async function create() {
@@ -40,7 +42,7 @@ export function ApiKeysCard() {
       setKeys((list) => [key, ...(list ?? [])]);
       setName('');
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось создать ключ'));
+      toast.error(errorMessage(e, t('Не удалось создать ключ')));
     } finally {
       setBusy(false);
     }
@@ -54,7 +56,7 @@ export function ApiKeysCard() {
       setKeys((list) => list?.filter((k) => k.id !== id) ?? null);
       if (created?.id === id) setCreated(null);
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось отозвать ключ'));
+      toast.error(errorMessage(e, t('Не удалось отозвать ключ')));
     }
   }
 
@@ -78,11 +80,11 @@ export function ApiKeysCard() {
             <Button
               variant="outline"
               size="icon"
-              aria-label="Скопировать ключ"
+              aria-label={t('Скопировать ключ')}
               onClick={() => {
                 void navigator.clipboard
                   .writeText(created.key)
-                  .then(() => toast.success('Ключ скопирован'));
+                  .then(() => toast.success(t('Ключ скопирован')));
               }}
             >
               <Copy />
@@ -108,8 +110,8 @@ export function ApiKeysCard() {
         <Input
           value={name}
           maxLength={80}
-          placeholder="Название, например «Jira-интеграция»"
-          aria-label="Название ключа"
+          placeholder={t('Название, например «Jira-интеграция»')}
+          aria-label={t('Название ключа')}
           className="min-w-52 flex-1"
           onChange={(e) => setName(e.target.value)}
         />
@@ -120,30 +122,30 @@ export function ApiKeysCard() {
             checked={write}
             onChange={(e) => setWrite(e.target.checked)}
           />
-          Разрешить изменения
+          {t('Разрешить изменения')}
         </label>
         <Button type="submit" disabled={busy || !name.trim()}>
-          <KeyRound /> Создать ключ
+          <KeyRound /> {t('Создать ключ')}
         </Button>
       </form>
 
       {keys === null ? (
-        <p className="text-muted-foreground">Загрузка…</p>
+        <p className="text-muted-foreground">{t('Загрузка…')}</p>
       ) : keys.length === 0 ? (
-        <p className="text-muted-foreground">Ключей пока нет</p>
+        <p className="text-muted-foreground">{t('Ключей пока нет')}</p>
       ) : (
-        <ul className="divide-y rounded-md border" aria-label="API-ключи">
+        <ul className="divide-y rounded-md border" aria-label={t('API-ключи')}>
           {keys.map((k) => (
             <li key={k.id} className="flex items-center gap-3 px-3 py-2">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{k.name}</p>
                 <p className="text-xs text-muted-foreground">
                   <code>{k.prefix}…</code> ·{' '}
-                  {k.scopes.includes('write') ? 'чтение и изменения' : 'только чтение'} · создан{' '}
-                  {dateFmt.format(new Date(k.createdAt))}
+                  {k.scopes.includes('write') ? t('чтение и изменения') : t('только чтение')} ·
+                  создан {dateFmt.format(new Date(k.createdAt))}
                   {k.lastUsedAt
                     ? ` · использован ${dateFmt.format(new Date(k.lastUsedAt))}`
-                    : ' · не использовался'}
+                    : t(' · не использовался')}
                 </p>
               </div>
               <Button

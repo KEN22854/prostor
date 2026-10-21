@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { signOutAction } from '@/lib/auth/actions';
 import { apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 /** Инвалидирует все JWT пользователя, затем чистит cookie на этом устройстве */
 export function SignOutEverywhere() {
+  const t = useT();
   const [pending, setPending] = useState(false);
 
   async function run() {
@@ -18,7 +20,7 @@ export function SignOutEverywhere() {
     try {
       await apiRequest('/api/account/sessions', { method: 'DELETE' });
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось завершить сессии'));
+      toast.error(errorMessage(e, t('Не удалось завершить сессии')));
       setPending(false);
       return;
     }
@@ -29,7 +31,7 @@ export function SignOutEverywhere() {
   return (
     <Button variant="outline" onClick={() => void run()} disabled={pending}>
       {pending ? <Loader2 className="animate-spin" /> : <MonitorX />}
-      Выйти на всех устройствах
+      {t('Выйти на всех устройствах')}
     </Button>
   );
 }

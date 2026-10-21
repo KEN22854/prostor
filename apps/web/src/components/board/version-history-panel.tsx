@@ -9,8 +9,9 @@ import { SNAPSHOT_REASON_LABELS, type BoardVersionDto } from '@prostor/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/fetcher';
-import { cn, errorMessage, plural } from '@/lib/utils';
+import { cn, errorMessage } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { usePlural, useT } from '@/lib/i18n/client';
 
 interface VersionHistoryPanelProps {
   boardId: string;
@@ -37,6 +38,8 @@ export function VersionHistoryPanel({
   onSave,
   refreshKey,
 }: VersionHistoryPanelProps) {
+  const t = useT();
+  const tp = usePlural();
   const open = useCanvasStore((s) => s.panel === 'history');
   const setPanel = useCanvasStore((s) => s.setPanel);
   const [versions, setVersions] = useState<BoardVersionDto[] | null>(null);
@@ -50,7 +53,7 @@ export function VersionHistoryPanel({
       );
       setVersions(data.versions);
     } catch (e: unknown) {
-      toast.error(errorMessage(e, 'Не удалось загрузить историю'));
+      toast.error(errorMessage(e, t('Не удалось загрузить историю')));
     }
   }, [boardId]);
 
@@ -80,18 +83,18 @@ export function VersionHistoryPanel({
   return (
     <aside
       className="absolute bottom-0 right-0 top-0 z-20 flex w-80 max-w-full flex-col border-l bg-background shadow-xl"
-      aria-label="История версий"
+      aria-label={t('История версий')}
       onPointerDown={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between border-b px-4 py-3">
         <h2 className="flex items-center gap-2 font-medium">
-          <History className="size-4" /> История версий
+          <History className="size-4" /> {t('История версий')}
         </h2>
         <Button
           variant="ghost"
           size="icon"
           className="size-8"
-          aria-label="Закрыть историю"
+          aria-label={t('Закрыть историю')}
           onClick={() => setPanel(null)}
         >
           <X />
@@ -106,14 +109,14 @@ export function VersionHistoryPanel({
         }}
       >
         <Input
-          aria-label="Название версии"
-          placeholder="Название версии (необязательно)"
+          aria-label={t('Название версии')}
+          placeholder={t('Название версии (необязательно)')}
           value={label}
           maxLength={120}
           onChange={(e) => setLabel(e.target.value)}
           onKeyDown={(e) => e.stopPropagation()}
         />
-        <Button type="submit" size="icon" aria-label="Сохранить версию" disabled={saving}>
+        <Button type="submit" size="icon" aria-label={t('Сохранить версию')} disabled={saving}>
           {saving ? <Loader2 className="animate-spin" /> : <Save />}
         </Button>
       </form>
@@ -121,12 +124,16 @@ export function VersionHistoryPanel({
       <div className="min-h-0 flex-1 overflow-y-auto p-2" data-testid="version-list">
         {versions === null ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Загрузка" />
+            <Loader2
+              className="size-5 animate-spin text-muted-foreground"
+              aria-label={t('Загрузка')}
+            />
           </div>
         ) : versions.length === 0 ? (
           <p className="p-4 text-center text-sm text-muted-foreground">
-            Версий пока нет. Они создаются автоматически во время работы, или сохраните текущую
-            вручную.
+            {t(
+              'Версий пока нет. Они создаются автоматически во время работы, или сохраните текущую вручную.',
+            )}
           </p>
         ) : (
           Array.from(groups.entries()).map(([day, items]) => (
@@ -154,7 +161,7 @@ export function VersionHistoryPanel({
                       </span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {v.label ? `${SNAPSHOT_REASON_LABELS[v.reason]} · ` : ''}
-                        {v.objectCount} {plural(v.objectCount, ['объект', 'объекта', 'объектов'])}
+                        {v.objectCount} {tp(v.objectCount, ['объект', 'объекта', 'объектов'])}
                         {v.createdByName
                           ? ` · ${v.createdByName}`
                           : v.authorNames.length

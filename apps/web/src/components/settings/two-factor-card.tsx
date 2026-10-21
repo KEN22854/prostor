@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { copyText } from '@/lib/copy-text';
 import { ApiClientError, apiRequest } from '@/lib/fetcher';
 import { errorMessage } from '@/lib/utils';
+import { useT } from '@/lib/i18n/client';
 
 interface Setup {
   secret: string;
@@ -24,6 +25,7 @@ interface TwoFactorCardProps {
 
 /** Включение / отключение 2FA: QR → код из приложения → резервные коды (показываются один раз) */
 export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) {
+  const t = useT();
   const router = useRouter();
   const [setup, setSetup] = useState<Setup | null>(null);
   const [code, setCode] = useState('');
@@ -39,7 +41,7 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
       toast.error(
         e instanceof ApiClientError && e.fields.code
           ? e.fields.code
-          : errorMessage(e, 'Не удалось выполнить действие'),
+          : errorMessage(e, t('Не удалось выполнить действие')),
       );
       return null;
     } finally {
@@ -51,7 +53,7 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
     return (
       <div className="space-y-3" data-testid="backup-codes">
         <p className="flex items-center gap-2 text-sm font-medium text-green-700 dark:text-green-400">
-          <ShieldCheck className="size-4" /> Двухфакторная аутентификация включена
+          <ShieldCheck className="size-4" /> {t('Двухфакторная аутентификация включена')}
         </p>
         <p className="text-sm text-muted-foreground">
           Сохраните резервные коды — они понадобятся, если телефон потеряется. Каждый код
@@ -66,10 +68,10 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
           <Button
             variant="outline"
             onClick={() =>
-              void copyText(codes.join('\n')).then((ok) => ok && toast.success('Скопировано'))
+              void copyText(codes.join('\n')).then((ok) => ok && toast.success(t('Скопировано')))
             }
           >
-            <Copy /> Скопировать
+            <Copy /> {t('Скопировать')}
           </Button>
           <Button
             onClick={() => {
@@ -97,7 +99,7 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
               e.preventDefault();
               void call<{ ok: true }>({ action: 'disable', code }).then((r) => {
                 if (!r) return;
-                toast.success('Двухфакторная аутентификация отключена');
+                toast.success(t('Двухфакторная аутентификация отключена'));
                 setDisabling(false);
                 setCode('');
                 router.refresh();
@@ -105,8 +107,8 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
             }}
           >
             <Input
-              aria-label="Код для отключения"
-              placeholder="Код или резервный код"
+              aria-label={t('Код для отключения')}
+              placeholder={t('Код или резервный код')}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               autoComplete="one-time-code"
@@ -116,12 +118,12 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
               variant="destructive"
               disabled={pending || code.trim().length < 6}
             >
-              Отключить
+              {t('Отключить')}
             </Button>
           </form>
         ) : (
           <Button variant="outline" onClick={() => setDisabling(true)}>
-            Отключить 2FA
+            {t('Отключить 2FA')}
           </Button>
         )}
       </div>
@@ -140,7 +142,7 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
           onClick={() => void call<Setup>({ action: 'setup' }).then((s) => s && setSetup(s))}
         >
           {pending ? <Loader2 className="animate-spin" /> : <ShieldCheck />}
-          Включить 2FA
+          {t('Включить 2FA')}
         </Button>
       </div>
     );
@@ -148,16 +150,16 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
 
   return (
     <div className="space-y-4">
-      <p className="text-sm">1. Отсканируйте QR-код в приложении-аутентификаторе:</p>
+      <p className="text-sm">{t('1. Отсканируйте QR-код в приложении-аутентификаторе:')}</p>
       <div className="flex flex-wrap items-center gap-4">
         {/* SVG сгенерирован на нашем сервере из otpauth-URL — не пользовательский ввод */}
         <div
           className="rounded-lg border bg-white p-2"
-          aria-label="QR-код для приложения"
+          aria-label={t('QR-код для приложения')}
           dangerouslySetInnerHTML={{ __html: setup.qrSvg }}
         />
         <div className="space-y-1 text-sm">
-          <p className="text-muted-foreground">или введите ключ вручную:</p>
+          <p className="text-muted-foreground">{t('или введите ключ вручную:')}</p>
           <code
             className="block break-all rounded bg-muted px-2 py-1 font-mono text-xs"
             data-testid="totp-secret"
@@ -178,7 +180,7 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
           });
         }}
       >
-        <Label htmlFor="totp-confirm">2. Введите код из приложения</Label>
+        <Label htmlFor="totp-confirm">{t('2. Введите код из приложения')}</Label>
         <div className="flex max-w-xs gap-2">
           <Input
             id="totp-confirm"
@@ -190,7 +192,7 @@ export function TwoFactorCard({ enabled, backupCodesLeft }: TwoFactorCardProps) 
           />
           <Button type="submit" disabled={pending || code.trim().length !== 6}>
             {pending ? <Loader2 className="animate-spin" /> : null}
-            Подтвердить
+            {t('Подтвердить')}
           </Button>
         </div>
       </form>
