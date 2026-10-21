@@ -1,5 +1,6 @@
 'use client';
 
+import type * as Y from 'yjs';
 import {
   BringToFront,
   Copy,
@@ -17,6 +18,7 @@ import { toast } from 'sonner';
 import type { BoardElement, LineElement, TableElement } from '@prostor/shared';
 import { ColorSwatches } from '@/components/canvas/color-swatches';
 import { FrameTitleInput } from '@/components/canvas/frame-title-input';
+import { FontPicker } from '@/components/canvas/font-picker';
 import { LineControls } from '@/components/canvas/line-controls';
 import { TableControls } from '@/components/canvas/table-controls';
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,9 @@ interface SelectionToolbarProps {
   actions: BoardActions;
   /** Удаление фона у одиночного изображения (undefined — выключено на сервере) */
   onRemoveBg?: (elementId: string) => void;
+  /** Для меню шрифтов: загрузка своего шрифта и шрифты доски */
+  boardId: string;
+  doc: Y.Doc | null;
 }
 
 function IconAction({
@@ -101,7 +106,13 @@ const hasStroke = (el: BoardElement) =>
   el.type === 'shape' || el.type === 'line' || el.type === 'arrow' || el.type === 'path';
 
 /** Свойства выделения — сверху по центру холста */
-export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolbarProps) {
+export function SelectionToolbar({
+  store,
+  actions,
+  onRemoveBg,
+  boardId,
+  doc,
+}: SelectionToolbarProps) {
   const t = useT();
   const tp = usePlural();
   const selection = useCanvasStore((s) => s.selection);
@@ -125,6 +136,8 @@ export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolba
   const grouped = elements.some((el) => el.groupId);
   const allLocked = elements.every((el) => el.locked);
   const ids = elements.map((el) => el.id);
+  // Объекты с текстом и своим шрифтом (стикеры, текст, фигуры)
+  const texty = elements.filter((el) => 'fontFamily' in el && !el.locked);
   const lines = elements.filter(
     (el): el is LineElement => (el.type === 'line' || el.type === 'arrow') && !el.locked,
   );
@@ -170,6 +183,15 @@ export function SelectionToolbar({ store, actions, onRemoveBg }: SelectionToolba
               <span className="mx-1 h-5 w-px bg-border" aria-hidden />
               <TableControls table={elements[0] as TableElement} actions={actions} />
             </>
+          ) : null}
+          {texty.length > 0 ? (
+            <FontPicker
+              ids={texty.map((el) => el.id)}
+              value={String((texty[0] as { fontFamily?: string }).fontFamily ?? 'Inter')}
+              boardId={boardId}
+              doc={doc}
+              actions={actions}
+            />
           ) : null}
           {lines.length > 0 && lines.length === elements.length ? (
             <>

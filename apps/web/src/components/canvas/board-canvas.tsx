@@ -35,6 +35,7 @@ import { useCanvasInteractions } from '@/hooks/use-canvas-interactions';
 import { useCanvasNavigation } from '@/hooks/use-canvas-navigation';
 import { useElementStore } from '@/hooks/use-element-store';
 import { useFollow } from '@/hooks/use-follow';
+import { useBoardFonts } from '@/hooks/use-board-fonts';
 import { useEmbedInsert } from '@/hooks/use-embed-insert';
 import { usePrompt } from '@/components/ui/prompt-dialog';
 import { useImageInsert } from '@/hooks/use-image-insert';
@@ -53,7 +54,6 @@ import type { ControllerDeps } from '@/lib/canvas/interaction-controller';
 import { OverlayRenderer } from '@/lib/canvas/overlay-renderer';
 import { RemoteSelectionsRenderer } from '@/lib/canvas/remote-selections-renderer';
 import { fitBounds, gridStep, visibleBounds, type Camera, type Point } from '@/lib/canvas/viewport';
-import { resetMeasureCache } from '@/lib/canvas/measure-text';
 import { errorMessage } from '@/lib/utils';
 import { useCanvasStore, type CanvasTool } from '@/stores/canvas-store';
 import { useT } from '@/lib/i18n/client';
@@ -143,18 +143,7 @@ export function BoardCanvas({
   const [overlay, setOverlay] = useState<OverlayRenderer | null>(null);
   // Konva измеряет текст при создании ноды: после загрузки веб-шрифта (display: swap)
   // слой пересоздаётся, иначе переносы строк остались бы посчитаны по запасному шрифту
-  const [fontEpoch, setFontEpoch] = useState(0);
-  useEffect(() => {
-    let cancelled = false;
-    void document.fonts?.ready.then(() => {
-      if (cancelled) return;
-      resetMeasureCache();
-      setFontEpoch(1);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const fontEpoch = useBoardFonts(store, doc);
 
   const actions = useMemo(
     () =>
@@ -465,6 +454,8 @@ export function BoardCanvas({
       {store && actions && !presenting ? (
         <SelectionToolbar
           store={store}
+          boardId={boardId}
+          doc={doc}
           actions={actions}
           onRemoveBg={ai.removeBg ? (id) => void removeBg(id) : undefined}
         />

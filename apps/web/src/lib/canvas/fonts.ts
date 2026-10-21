@@ -14,5 +14,6 @@ export function canvasFont(family: string | undefined): string {
     bodyFont ??= getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif';
     return bodyFont;
   }
-  return `${family}, system-ui, sans-serif`;
+  // Кавычки: семейства из нескольких слов и с цифрами («Exo 2») иначе не разбираются в CSS/canvas
+  return `"${family.replace(/"/g, '')}", system-ui, sans-serif`;
 }

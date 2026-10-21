@@ -104,7 +104,7 @@ export interface SafeResponse {
 /** GET с проверкой каждого шага редиректа; тело — не больше maxBytes (дальше обрезается) */
 export async function safeFetch(
   raw: string,
-  opts: { maxBytes: number; timeoutMs: number; accept?: string },
+  opts: { maxBytes: number; timeoutMs: number; accept?: string; userAgent?: string },
 ): Promise<SafeResponse> {
   let url = await assertPublicUrl(raw);
   // Таймаут — на сами запросы, после проверки адреса
@@ -116,7 +116,7 @@ export async function safeFetch(
       signal: deadline,
       ...(dispatcher ? { dispatcher } : {}),
       headers: {
-        'user-agent': 'Mozilla/5.0 (compatible; ProstorLinkPreview/1.0)',
+        'user-agent': opts.userAgent ?? 'Mozilla/5.0 (compatible; ProstorLinkPreview/1.0)',
         accept: opts.accept ?? 'text/html,application/xhtml+xml,image/*;q=0.8,*/*;q=0.5',
         'accept-language': 'ru,en;q=0.8',
       },
