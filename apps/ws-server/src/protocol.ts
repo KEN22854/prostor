@@ -17,8 +17,7 @@ export interface ConnIdentity {
 }
 
 export type SanitizeResult =
-  | { ok: true; update: Uint8Array | null; claimed: number[] }
-  | { ok: false; reason: string };
+  { ok: true; update: Uint8Array | null; claimed: number[] } | { ok: false; reason: string };
 
 /**
  * Проверяет и переписывает awareness-апдейт от клиента.
@@ -62,7 +61,8 @@ export function sanitizeAwarenessUpdate(
         }
       }
       if (!accept) continue;
-      if (json.length > MAX_AWARENESS_STATE_BYTES) return { ok: false, reason: 'awareness state too large' };
+      if (json.length > MAX_AWARENESS_STATE_BYTES)
+        return { ok: false, reason: 'awareness state too large' };
 
       let state: unknown = JSON.parse(json);
       if (state !== null) {
@@ -71,7 +71,12 @@ export function sanitizeAwarenessUpdate(
         }
         state = {
           ...(state as Record<string, unknown>),
-          user: { ...readUser(state), id: identity.userId, name: identity.name, color: identity.color },
+          user: {
+            ...readUser(state),
+            id: identity.userId,
+            name: identity.name,
+            color: identity.color,
+          },
         };
       }
       entries.push({ clientId, clock, json: JSON.stringify(state) });

@@ -7,6 +7,8 @@ const MESSAGES: Record<string, string> = {
   rate_limited: 'Слишком много попыток. Попробуйте через несколько минут',
   account_disabled: 'Учётная запись заблокирована. Обратитесь к администратору',
   two_factor_required: 'Введите код из приложения-аутентификатора',
+  service_unavailable:
+    'Сервер временно недоступен: нет связи с базой данных. Если это ваш компьютер — запустите Docker и выполните npm run infra:up',
   invalid_2fa: 'Неверный код. Попробуйте ещё раз или используйте резервный код',
   CredentialsSignin: 'Неверный email или пароль',
   OAuthAccountNotLinked:

@@ -14,6 +14,7 @@
   "dependencies": {
     "@prostor/db": "*",
     "@prostor/shared": "*",
+    "bullmq": "^5.34.8",
     "ioredis": "^5.4.2",
     "jose": "^5.9.6",
     "lib0": "^0.2.99",

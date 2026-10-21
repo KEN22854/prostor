@@ -49,5 +49,6 @@ export const QUEUES = {
   export: 'prostor-export',
   email: 'prostor-email',
   thumbnails: 'prostor-thumbnails',
+  webhooks: 'prostor-webhooks',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];

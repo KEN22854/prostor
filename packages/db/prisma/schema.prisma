@@ -148,6 +148,8 @@ model User {
   voteSessions        VoteSession[]
   votes               Vote[]
   favorites           BoardFavorite[]
+  apiKeys             ApiKey[]
+  webhooks            Webhook[]
 }
 
 model Account {
@@ -348,6 +350,7 @@ model Board {
   voteSessions VoteSession[]
   auditLogs AuditLog[]
   favorites BoardFavorite[]
+  webhooks  Webhook[]
 
   @@index([ownerId, deletedAt])
   @@index([orgId, deletedAt])
@@ -646,4 +649,52 @@ model AuditLog {
   @@index([orgId, createdAt(sort: Desc)])
   @@index([boardId, createdAt(sort: Desc)])
   @@index([actorId, createdAt(sort: Desc)])
+}
+
+/// Персональный API-ключ (Authorization: Bearer pst_…): действует от имени
+/// владельца и с его правами на доски. Сам ключ показывается один раз —
+/// в базе только SHA-256 и префикс для узнавания в списке.
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  prefix     String
+  hash       String    @unique
+  /// read — чтение; write — создание досок и объектов
+  scopes     String[]  @default(["read"])
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Вебхук: POST на url при событиях досок, подпись HMAC-SHA256 секретом.
+/// Секрет хранится как есть — он нужен серверу для подписи каждой доставки.
+model Webhook {
+  id             String    @id @default(cuid())
+  userId         String
+  /// null — события всех досок, к которым у владельца есть доступ
+  boardId        String?
+  url            String
+  secret         String
+  events         String[]
+  description    String?
+  active         Boolean   @default(true)
+  lastStatus     Int?
+  lastError      String?
+  lastDeliveryAt DateTime?
+  /// Подряд неудачных доставок; после WEBHOOK_MAX_FAILURES вебхук выключается
+  failureCount   Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  board Board? @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([boardId])
 }

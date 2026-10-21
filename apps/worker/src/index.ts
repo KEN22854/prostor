@@ -1,11 +1,12 @@
-import { Worker, type Job } from 'bullmq';
+import { Queue, Worker, type Job } from 'bullmq';
 import { Redis } from 'ioredis';
 import nodemailer from 'nodemailer';
 import { prisma } from '@prostor/db';
-import { QUEUES, type QueueName } from '@prostor/shared';
+import { QUEUES, type QueueName, type WebhookQueuePayload } from '@prostor/shared';
 import { loadEnv } from './env';
 import { processAiJob } from './processors/ai';
 import { processEmailJob, type EmailDeps } from './processors/email';
+import { processWebhookJob, type WebhookDeps } from './processors/webhooks';
 import { createImageGenerator } from './providers/image-gen';
 import { createRemoveBgProvider } from './providers/remove-bg';
 import { Storage } from './storage';
@@ -14,6 +15,7 @@ import { Storage } from './storage';
  * Фоновые задачи (BullMQ):
  *  - prostor-ai: удаление фона, генерация изображений (итерация 5);
  *  - prostor-email: письма-уведомления о комментариях (итерация 7);
+ *  - prostor-webhooks: рассылка событий досок подписчикам и доставка с повторами;
  *  - prostor-export, prostor-thumbnails — зарезервированы (экспорт пока в браузере).
  */
 const env = loadEnv();
@@ -39,6 +41,10 @@ const emailDeps: EmailDeps = {
     : null,
 };
 
+// Рассылка события порождает задачи доставки в ту же очередь
+const webhookQueue = new Queue<WebhookQueuePayload>(QUEUES.webhooks, { connection });
+const webhookDeps: WebhookDeps = { prisma, queue: webhookQueue, appUrl: env.APP_URL };
+
 async function notImplemented(job: Job): Promise<never> {
   throw new Error(`Обработчик для ${job.queueName}/${job.name} ещё не реализован`);
 }
@@ -48,6 +54,7 @@ const processors: Record<QueueName, (job: Job) => Promise<unknown>> = {
   [QUEUES.export]: notImplemented,
   [QUEUES.email]: (job) => processEmailJob(job, emailDeps),
   [QUEUES.thumbnails]: notImplemented,
+  [QUEUES.webhooks]: (job) => processWebhookJob(job as Job<WebhookQueuePayload>, webhookDeps),
 };
 
 const concurrency: Record<QueueName, number> = {
@@ -55,6 +62,7 @@ const concurrency: Record<QueueName, number> = {
   [QUEUES.export]: env.WORKER_CONCURRENCY_DEFAULT,
   [QUEUES.email]: env.WORKER_CONCURRENCY_DEFAULT,
   [QUEUES.thumbnails]: env.WORKER_CONCURRENCY_DEFAULT,
+  [QUEUES.webhooks]: env.WORKER_CONCURRENCY_DEFAULT,
 };
 
 const workers = (Object.values(QUEUES) as QueueName[]).map(
@@ -85,6 +93,7 @@ async function shutdown(signal: string): Promise<void> {
   console.log(`[worker] ${signal}, draining...`);
   // close() дожидается завершения активных задач — не теряем прогресс ИИ-джобов
   await Promise.all(workers.map((w) => w.close()));
+  await webhookQueue.close();
   await connection.quit();
   await prisma.$disconnect();
   process.exit(0);

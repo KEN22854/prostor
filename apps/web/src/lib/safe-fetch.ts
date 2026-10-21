@@ -1,6 +1,7 @@
 import 'server-only';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
+import { isInternalHostname, isPrivateIp } from '@prostor/shared';
 import { ProxyAgent, fetch as undiciFetch, type Dispatcher } from 'undici';
 
 /**
@@ -43,35 +44,8 @@ export class UnreachableError extends Error {}
 
 const MAX_REDIRECTS = 4;
 
-function ipv4Private(ip: string): boolean {
-  const [a = 0, b = 0] = ip.split('.').map(Number);
-  return (
-    a === 0 ||
-    a === 10 ||
-    a === 127 ||
-    (a === 100 && b >= 64 && b <= 127) || // CGNAT
-    (a === 169 && b === 254) || // link-local, метаданные облаков
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 192 && b === 0) ||
-    (a === 198 && (b === 18 || b === 19)) ||
-    a >= 224 // multicast и зарезервированные
-  );
-}
-
-function ipv6Private(ip: string): boolean {
-  const v = ip.toLowerCase();
-  if (v === '::' || v === '::1') return true;
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(v)?.[1];
-  if (mapped) return ipv4Private(mapped);
-  return /^(fc|fd|fe8|fe9|fea|feb|ff)/.test(v);
-}
-
 export function isPrivateAddress(ip: string): boolean {
-  const kind = isIP(ip);
-  if (kind === 4) return ipv4Private(ip);
-  if (kind === 6) return ipv6Private(ip);
-  return true;
+  return isIP(ip) === 0 || isPrivateIp(ip);
 }
 
 export async function assertPublicUrl(raw: string | URL): Promise<URL> {
@@ -82,12 +56,7 @@ export async function assertPublicUrl(raw: string | URL): Promise<URL> {
   if (url.port && url.port !== '80' && url.port !== '443')
     throw new UnsafeUrlError('Нестандартный порт');
   const host = url.hostname.replace(/^\[|\]$/g, '');
-  if (
-    host === 'localhost' ||
-    host.endsWith('.localhost') ||
-    host.endsWith('.internal') ||
-    host.endsWith('.local')
-  ) {
+  if (isInternalHostname(host)) {
     throw new UnsafeUrlError('Внутренний адрес');
   }
   let addresses: Array<{ address: string }>;

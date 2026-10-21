@@ -25,3 +25,8 @@ export class TwoFactorRequiredError extends CredentialsSignin {
 export class InvalidTwoFactorError extends CredentialsSignin {
   override code = 'invalid_2fa';
 }
+
+/** База данных недоступна (не запущен Postgres) — не «неверный пароль» и не «ошибка конфигурации» */
+export class ServiceUnavailableError extends CredentialsSignin {
+  override code = 'service_unavailable';
+}

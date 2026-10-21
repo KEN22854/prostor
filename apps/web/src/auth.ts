@@ -9,6 +9,7 @@ import {
   InvalidCredentialsError,
   InvalidTwoFactorError,
   RateLimitedError,
+  ServiceUnavailableError,
   TwoFactorRequiredError,
 } from '@/lib/auth/errors';
 import { oauthProviders } from '@/lib/auth/oauth-providers';
@@ -54,18 +55,24 @@ function credentialsProvider() {
       ]);
       if (!byIp.ok || !byEmail.ok) throw new RateLimitedError();
 
-      const user = await prisma.user.findUnique({
-        where: { email },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          passwordHash: true,
-          disabledAt: true,
-          twoFactorEnabled: true,
-        },
-      });
+      const user = await prisma.user
+        .findUnique({
+          where: { email },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            passwordHash: true,
+            disabledAt: true,
+            twoFactorEnabled: true,
+          },
+        })
+        .catch((error: unknown) => {
+          // Postgres не запущен / недоступен — понятное сообщение вместо «ошибки конфигурации»
+          console.error('[auth] database unavailable', error);
+          throw new ServiceUnavailableError();
+        });
 
       const passwordOk = await verifyPassword(
         password,

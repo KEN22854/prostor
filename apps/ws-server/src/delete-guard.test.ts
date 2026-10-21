@@ -41,7 +41,10 @@ describe('защита от удаления чужих объектов', () =>
   it('при запрете политики чужие и заблокированные объекты возвращаются, свои — удаляются', () => {
     const { server, elements, deleteOnClient } = setup();
     const update = deleteOnClient(['mine', 'foreign', 'locked', 'rich']);
-    const guarded = findForbiddenDeletions(server, update, { userId: 'u1', canDeleteOthers: false });
+    const guarded = findForbiddenDeletions(server, update, {
+      userId: 'u1',
+      canDeleteOthers: false,
+    });
     expect(guarded.map((g) => g.key).sort()).toEqual(['foreign', 'locked', 'rich']);
 
     Y.applyUpdate(server, update, 'client');
@@ -67,15 +70,22 @@ describe('защита от удаления чужих объектов', () =>
     const before = Y.encodeStateVector(client);
     (client.getMap(Y_KEYS.elements).get('foreign') as Y.Map<unknown>).set('text', 'изменено');
     const edit = Y.encodeStateAsUpdate(client, before);
-    expect(findForbiddenDeletions(server, edit, { userId: 'u1', canDeleteOthers: false })).toEqual([]);
+    expect(findForbiddenDeletions(server, edit, { userId: 'u1', canDeleteOthers: false })).toEqual(
+      [],
+    );
 
     const update = deleteOnClient(['foreign']);
-    const guarded = findForbiddenDeletions(server, update, { userId: 'u1', canDeleteOthers: false });
+    const guarded = findForbiddenDeletions(server, update, {
+      userId: 'u1',
+      canDeleteOthers: false,
+    });
     Y.applyUpdate(server, edit, 'client');
     Y.applyUpdate(server, update, 'client');
     restoreElements(server, guarded, 'server');
     Y.applyUpdate(client, Y.encodeStateAsUpdate(server, Y.encodeStateVector(client)));
     expect(client.getMap(Y_KEYS.elements).has('foreign')).toBe(true);
-    expect(client.getMap(Y_KEYS.elements).toJSON()).toEqual(server.getMap(Y_KEYS.elements).toJSON());
+    expect(client.getMap(Y_KEYS.elements).toJSON()).toEqual(
+      server.getMap(Y_KEYS.elements).toJSON(),
+    );
   });
 });

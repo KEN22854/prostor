@@ -39,7 +39,10 @@ export class WsAuthError extends Error {
  * Роль из токена НЕ используется для решения о доступе — она перепроверяется
  * по БД: токен живёт 5 минут, а доступ могли отозвать раньше.
  */
-export async function authenticate(req: IncomingMessage, secret: Uint8Array): Promise<AuthenticatedConn> {
+export async function authenticate(
+  req: IncomingMessage,
+  secret: Uint8Array,
+): Promise<AuthenticatedConn> {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const room = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
   const boardId = parseBoardRoomName(room);
@@ -62,7 +65,8 @@ export async function authenticate(req: IncomingMessage, secret: Uint8Array): Pr
   const parsed = wsTokenPayloadSchema.safeParse(payload);
   if (!parsed.success) throw new WsAuthError(WS_CLOSE.unauthorized, 'malformed token payload');
   const claims = parsed.data;
-  if (claims.boardId !== boardId) throw new WsAuthError(WS_CLOSE.forbidden, 'token issued for another board');
+  if (claims.boardId !== boardId)
+    throw new WsAuthError(WS_CLOSE.forbidden, 'token issued for another board');
 
   const access = await resolveBoardAccess(prisma, boardId, claims.anonymous ? null : claims.sub);
   if (!access) throw new WsAuthError(WS_CLOSE.forbidden, 'no access to board');

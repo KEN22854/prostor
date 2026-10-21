@@ -1,6 +1,7 @@
 import { prisma, resolveBoardAccess } from '@prostor/db';
 import { WS_CLOSE, type ControlEvent } from '@prostor/shared';
 import type { WsEnv } from './env';
+import type { BoardEvents } from './board-events';
 import type { PubSub } from './pubsub';
 import { Room } from './room';
 
@@ -15,6 +16,7 @@ export class RoomManager {
   constructor(
     private readonly env: WsEnv,
     private readonly pubsub: PubSub,
+    private readonly events?: BoardEvents,
   ) {}
 
   async get(boardId: string): Promise<Room> {
@@ -41,6 +43,7 @@ export class RoomManager {
     const room = new Room(boardId, {
       env: this.env,
       pubsub: this.pubsub,
+      onSnapshot: (id, authors, count) => void this.events?.boardUpdated(id, authors, count),
       onClosed: (closed) => {
         void this.rooms.get(boardId)?.then((current) => {
           if (current === closed) this.rooms.delete(boardId);

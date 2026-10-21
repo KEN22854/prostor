@@ -145,15 +145,29 @@ export async function resolveFolderAccess(
 ): Promise<FolderAccess | null> {
   const folder = await prisma.folder.findUnique({
     where: { id: folderId },
-    select: { id: true, name: true, orgId: true, ownerId: true, parentId: true, path: true, deletedAt: true },
+    select: {
+      id: true,
+      name: true,
+      orgId: true,
+      ownerId: true,
+      parentId: true,
+      path: true,
+      deletedAt: true,
+    },
   });
   if (!folder || folder.deletedAt) return null;
   const ids = folderPathIds(folder.path);
   const [ancestors, members, orgMember] = await Promise.all([
     prisma.folder.findMany({ where: { id: { in: ids } }, select: { ownerId: true } }),
-    prisma.folderMember.findMany({ where: { userId, folderId: { in: ids } }, select: { role: true } }),
+    prisma.folderMember.findMany({
+      where: { userId, folderId: { in: ids } },
+      select: { role: true },
+    }),
     folder.orgId
-      ? prisma.orgMember.findUnique({ where: { orgId_userId: { orgId: folder.orgId, userId } }, select: { role: true } })
+      ? prisma.orgMember.findUnique({
+          where: { orgId_userId: { orgId: folder.orgId, userId } },
+          select: { role: true },
+        })
       : Promise.resolve(null),
   ]);
   const roles: Array<BoardRole | null> = members.map((m) => m.role);

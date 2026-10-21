@@ -5,7 +5,10 @@ import { RELAY, decodeRelay, encodeRelay, sanitizeAwarenessUpdate } from './prot
 
 const me = { userId: 'u1', name: 'Анна', color: '#e5484d' };
 
-function awarenessUpdateFor(state: Record<string, unknown>): { update: Uint8Array; clientId: number } {
+function awarenessUpdateFor(state: Record<string, unknown>): {
+  update: Uint8Array;
+  clientId: number;
+} {
   const doc = new Y.Doc();
   const awareness = new awarenessProtocol.Awareness(doc);
   awareness.setLocalState(state);
@@ -35,7 +38,12 @@ describe('sanitizeAwarenessUpdate', () => {
     expect(result.claimed).toEqual([clientId]);
 
     const state = decodeStates(result.update).get(clientId) as { user: unknown; cursor: unknown };
-    expect(state.user).toEqual({ id: 'u1', name: 'Анна', color: '#e5484d', avatar: 'https://a/b.png' });
+    expect(state.user).toEqual({
+      id: 'u1',
+      name: 'Анна',
+      color: '#e5484d',
+      avatar: 'https://a/b.png',
+    });
     expect(state.cursor).toEqual({ x: 1, y: 2 });
   });
 
@@ -53,7 +61,9 @@ describe('sanitizeAwarenessUpdate', () => {
   });
 
   it('отклоняет мусор', () => {
-    expect(sanitizeAwarenessUpdate(new Uint8Array([1, 2]), me, new Set(), () => undefined).ok).toBe(false);
+    expect(sanitizeAwarenessUpdate(new Uint8Array([1, 2]), me, new Set(), () => undefined).ok).toBe(
+      false,
+    );
   });
 });
 

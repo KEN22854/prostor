@@ -1,7 +1,12 @@
 import 'server-only';
 import { Queue } from 'bullmq';
 import { Redis } from 'ioredis';
-import { QUEUES, type AiQueuePayload, type EmailQueuePayload } from '@prostor/shared';
+import {
+  QUEUES,
+  type AiQueuePayload,
+  type EmailQueuePayload,
+  type WebhookQueuePayload,
+} from '@prostor/shared';
 import { env } from '@/lib/env';
 
 /**
@@ -47,4 +52,26 @@ export function emailQueue(): Queue<EmailQueuePayload> {
     });
   }
   return globalForEmail.__emailQueue;
+}
+
+const globalForWebhooks = globalThis as unknown as {
+  __webhookQueue?: Queue<WebhookQueuePayload>;
+};
+
+/** Очередь вебхуков: события досок (worker рассылает подписчикам и доставляет с повторами) */
+export function webhookQueue(): Queue<WebhookQueuePayload> {
+  if (!globalForWebhooks.__webhookQueue) {
+    const connection = new Redis(env().REDIS_URL, { maxRetriesPerRequest: null });
+    connection.on('error', (error: Error) => console.error('[queue]', error.message));
+    globalForWebhooks.__webhookQueue = new Queue<WebhookQueuePayload>(QUEUES.webhooks, {
+      connection,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 5_000 },
+        removeOnComplete: { age: 24 * 3600, count: 5_000 },
+        removeOnFail: { age: 7 * 24 * 3600 },
+      },
+    });
+  }
+  return globalForWebhooks.__webhookQueue;
 }

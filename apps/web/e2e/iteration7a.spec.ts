@@ -8,7 +8,9 @@ async function expectCount(page: Page, n: number) {
 }
 
 test.describe('фреймы, шаблоны, экспорт, версии', () => {
-  test('фрейм: создание инструментом, содержимое двигается вместе с ним, список фреймов', async ({ page }) => {
+  test('фрейм: создание инструментом, содержимое двигается вместе с ним, список фреймов', async ({
+    page,
+  }) => {
     await openNewBoard(page, 'Фреймы');
     const c = await canvasCenter(page);
 
@@ -25,7 +27,13 @@ test.describe('фреймы, шаблоны, экспорт, версии', () =
     await page.keyboard.press('Escape');
     await expectCount(page, 2);
     const frameId = await page.evaluate(() => {
-      const api = (window as unknown as { __prostorCanvas: { elementStore: { values(): Iterable<{ type: string; frameId?: string }> } } }).__prostorCanvas;
+      const api = (
+        window as unknown as {
+          __prostorCanvas: {
+            elementStore: { values(): Iterable<{ type: string; frameId?: string }> };
+          };
+        }
+      ).__prostorCanvas;
       return [...api.elementStore.values()].find((e) => e.type === 'sticky')?.frameId ?? null;
     });
     expect(frameId).toBe(frame?.id);
@@ -47,23 +55,41 @@ test.describe('фреймы, шаблоны, экспорт, версии', () =
   });
 
   test('шаблон канбана создаёт колонки-фреймы со стикерами', async ({ page }) => {
-    const res = await page.request.post('/api/boards', { data: { title: 'Канбан', templateKey: 'kanban' } });
+    const res = await page.request.post('/api/boards', {
+      data: { title: 'Канбан', templateKey: 'kanban' },
+    });
     expect(res.status()).toBe(201);
     const { id } = (await res.json()) as { id: string };
     await page.goto(`/board/${id}`);
-    await page.waitForFunction(() => Boolean((window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions));
-    await expect.poll(async () => (await elements(page)).filter((e) => e.type === 'frame').length, { timeout: 15_000 }).toBe(4);
+    await page.waitForFunction(() =>
+      Boolean(
+        (window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions,
+      ),
+    );
+    await expect
+      .poll(async () => (await elements(page)).filter((e) => e.type === 'frame').length, {
+        timeout: 15_000,
+      })
+      .toBe(4);
     expect((await elements(page)).filter((e) => e.type === 'sticky').length).toBeGreaterThan(3);
     await page.getByRole('button', { name: /Фреймы/ }).click();
     await expect(page.getByRole('list', { name: 'Фреймы доски' })).toContainText('В работе');
   });
 
   test('экспорт PNG, SVG со слоями и PDF по фреймам', async ({ page }) => {
-    const res = await page.request.post('/api/boards', { data: { title: 'Ретро на экспорт', templateKey: 'retro' } });
+    const res = await page.request.post('/api/boards', {
+      data: { title: 'Ретро на экспорт', templateKey: 'retro' },
+    });
     const { id } = (await res.json()) as { id: string };
     await page.goto(`/board/${id}`);
-    await page.waitForFunction(() => Boolean((window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions));
-    await expect.poll(async () => (await elements(page)).length, { timeout: 15_000 }).toBeGreaterThan(3);
+    await page.waitForFunction(() =>
+      Boolean(
+        (window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions,
+      ),
+    );
+    await expect
+      .poll(async () => (await elements(page)).length, { timeout: 15_000 })
+      .toBeGreaterThan(3);
 
     const download = async (format: 'PNG' | 'SVG' | 'PDF', scope?: string) => {
       await page.getByRole('button', { name: 'Экспорт' }).click();

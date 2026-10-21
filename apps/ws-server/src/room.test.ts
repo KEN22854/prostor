@@ -108,7 +108,11 @@ function updateMessage(id: string): Uint8Array {
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
 async function makeRoom(bus: FakeBus, instance: string): Promise<Room> {
-  const room = new Room('board1234', { env: env(instance), pubsub: bus.client(), onClosed: () => undefined });
+  const room = new Room('board1234', {
+    env: env(instance),
+    pubsub: bus.client(),
+    onClosed: () => undefined,
+  });
   await room.init();
   await flush();
   return room;

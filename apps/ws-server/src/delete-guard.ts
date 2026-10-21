@@ -26,7 +26,11 @@ export interface GuardRules {
  * Какие элементы доски удалит update (по его delete set) и какие из них
  * удалять нельзя. Вызывается ДО применения апдейта — пока элементы живы.
  */
-export function findForbiddenDeletions(doc: Y.Doc, update: Uint8Array, rules: GuardRules): GuardedElement[] {
+export function findForbiddenDeletions(
+  doc: Y.Doc,
+  update: Uint8Array,
+  rules: GuardRules,
+): GuardedElement[] {
   let ds: { clients: Map<number, Array<{ clock: number; len: number }>> };
   try {
     ds = Y.decodeUpdate(update).ds as unknown as typeof ds;
@@ -72,7 +76,11 @@ export function findForbiddenDeletions(doc: Y.Doc, update: Uint8Array, rules: Gu
 }
 
 /** Вернуть защищённые элементы (после применения апдейта), одной транзакцией */
-export function restoreElements(doc: Y.Doc, guarded: readonly GuardedElement[], origin: unknown): number {
+export function restoreElements(
+  doc: Y.Doc,
+  guarded: readonly GuardedElement[],
+  origin: unknown,
+): number {
   if (guarded.length === 0) return 0;
   const elements = doc.getMap<unknown>(Y_KEYS.elements);
   let restored = 0;

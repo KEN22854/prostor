@@ -14,12 +14,20 @@ function uniqueEmail(prefix: string): string {
 
 /** Контекст без сессии общего пользователя */
 async function freshPage(browser: Browser): Promise<Page> {
-  const context = await browser.newContext({ storageState: { cookies: [], origins: [] }, locale: 'ru-RU' });
+  const context = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+    locale: 'ru-RU',
+  });
   return context.newPage();
 }
 
 /** Регистрация через API + вход через форму (cookie сессии в контексте страницы) */
-async function signUp(page: Page, email: string, name: string, callbackUrl = '/dashboard'): Promise<void> {
+async function signUp(
+  page: Page,
+  email: string,
+  name: string,
+  callbackUrl = '/dashboard',
+): Promise<void> {
   const res = await page.request.post('/api/account/register', {
     data: { name, email, password: PASSWORD, confirmPassword: PASSWORD },
   });
@@ -37,8 +45,14 @@ function joinPath(url: string): string {
   return u.pathname + u.search;
 }
 
-async function createLink(page: Page, boardId: string, role: 'EDITOR' | 'VIEWER'): Promise<{ id: string; url: string }> {
-  const res = await page.request.post(`/api/boards/${boardId}/invites`, { data: { role, ttl: '1d' } });
+async function createLink(
+  page: Page,
+  boardId: string,
+  role: 'EDITOR' | 'VIEWER',
+): Promise<{ id: string; url: string }> {
+  const res = await page.request.post(`/api/boards/${boardId}/invites`, {
+    data: { role, ttl: '1d' },
+  });
   expect(res.status()).toBe(201);
   return (await res.json()) as { id: string; url: string };
 }
@@ -48,7 +62,10 @@ async function waitSynced(page: Page): Promise<void> {
 }
 
 test.describe('совместный доступ', () => {
-  test('ссылка-приглашение: создание в диалоге, принятие, понижение роли в реальном времени', async ({ page, browser }) => {
+  test('ссылка-приглашение: создание в диалоге, принятие, понижение роли в реальном времени', async ({
+    page,
+    browser,
+  }) => {
     const boardId = await openNewBoard(page, 'Шаринг по ссылке');
 
     // Владелец создаёт ссылку через ShareDialog
@@ -104,16 +121,23 @@ test.describe('совместный доступ', () => {
 
     let inviteUrl: string | undefined;
     await expect
-      .poll(async () => {
-        const res = await page.request.get(`${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`);
-        const data = (await res.json()) as { messages?: Array<{ ID: string }> };
-        const id = data.messages?.[0]?.ID;
-        if (!id) return false;
-        const msg = (await (await page.request.get(`${MAILPIT_URL}/api/v1/message/${id}`)).json()) as { Text: string };
-        expect(msg.Text).toContain('Посмотри до пятницы');
-        inviteUrl = /https?:\/\/\S+\/join\?token=[\w-]+/.exec(msg.Text)?.[0];
-        return Boolean(inviteUrl);
-      }, { timeout: 15_000 })
+      .poll(
+        async () => {
+          const res = await page.request.get(
+            `${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+          );
+          const data = (await res.json()) as { messages?: Array<{ ID: string }> };
+          const id = data.messages?.[0]?.ID;
+          if (!id) return false;
+          const msg = (await (
+            await page.request.get(`${MAILPIT_URL}/api/v1/message/${id}`)
+          ).json()) as { Text: string };
+          expect(msg.Text).toContain('Посмотри до пятницы');
+          inviteUrl = /https?:\/\/\S+\/join\?token=[\w-]+/.exec(msg.Text)?.[0];
+          return Boolean(inviteUrl);
+        },
+        { timeout: 15_000 },
+      )
       .toBe(true);
 
     // Чужой аккаунт приглашение по email принять не может
@@ -132,7 +156,9 @@ test.describe('совместный доступ', () => {
     await expect(invitee.getByText('Только просмотр')).toBeVisible();
 
     // Читатель не может приглашать других
-    const forbidden = await invitee.request.post(`/api/boards/${boardId}/invites`, { data: { role: 'VIEWER' } });
+    const forbidden = await invitee.request.post(`/api/boards/${boardId}/invites`, {
+      data: { role: 'VIEWER' },
+    });
     expect(forbidden.status()).toBe(403);
 
     await invitee.context().close();
@@ -157,7 +183,9 @@ test.describe('совместный доступ', () => {
 
   test('публичная доска открывается без входа, после закрытия — нет', async ({ page, browser }) => {
     const boardId = await openNewBoard(page, 'Публичная доска');
-    const pub = await page.request.patch(`/api/boards/${boardId}/visibility`, { data: { visibility: 'PUBLIC_READ' } });
+    const pub = await page.request.patch(`/api/boards/${boardId}/visibility`, {
+      data: { visibility: 'PUBLIC_READ' },
+    });
     expect(pub.ok()).toBe(true);
 
     const anon = await freshPage(browser);
@@ -167,7 +195,9 @@ test.describe('совместный доступ', () => {
     await expect(anon.getByRole('button', { name: 'Поделиться' })).toHaveCount(0);
 
     // Закрыли доступ — анонимное подключение разорвано
-    const priv = await page.request.patch(`/api/boards/${boardId}/visibility`, { data: { visibility: 'PRIVATE' } });
+    const priv = await page.request.patch(`/api/boards/${boardId}/visibility`, {
+      data: { visibility: 'PRIVATE' },
+    });
     expect(priv.ok()).toBe(true);
     await expect(anon.getByText(/нет доступа|не найдена/i)).toBeVisible({ timeout: 10_000 });
     await anon.goto(`/board/${boardId}`);

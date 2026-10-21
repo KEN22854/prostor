@@ -6,11 +6,13 @@ import { WsAuthError, authenticate } from './auth';
 import { loadEnv } from './env';
 import { PubSub } from './pubsub';
 import { RoomManager } from './room-manager';
+import { BoardEvents } from './board-events';
 
 const env = loadEnv();
 const secret = new TextEncoder().encode(env.WS_JWT_SECRET);
 const pubsub = new PubSub(env.REDIS_URL);
-const rooms = new RoomManager(env, pubsub);
+const boardEvents = new BoardEvents(env.REDIS_URL);
+const rooms = new RoomManager(env, pubsub, boardEvents);
 
 const server = createServer((req, res) => {
   if (req.url === '/health') {

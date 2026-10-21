@@ -41,6 +41,10 @@ export const AUDIT_ACTIONS = [
   'org.member_add',
   'org.member_remove',
   'ai.job_create',
+  'api_key.create',
+  'api_key.revoke',
+  'webhook.create',
+  'webhook.delete',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -86,6 +90,10 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   'board.move': 'Доска перемещена',
   'element.delete_blocked': 'Заблокировано удаление чужих объектов',
   'ai.job_create': 'ИИ-задача',
+  'api_key.create': 'Создан API-ключ',
+  'api_key.revoke': 'Отозван API-ключ',
+  'webhook.create': 'Создан вебхук',
+  'webhook.delete': 'Удалён вебхук',
 };
 
 export interface AuditEntryDto {

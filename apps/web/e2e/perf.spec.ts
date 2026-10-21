@@ -19,7 +19,12 @@ type CanvasApi = {
   __prostorCanvas: {
     generate(count: number): void;
     elementStore: { size: number };
-    canvasStore: { getState(): { camera: { x: number; y: number; zoom: number }; setCamera(c: { x: number; y: number; zoom: number }): void } };
+    canvasStore: {
+      getState(): {
+        camera: { x: number; y: number; zoom: number };
+        setCamera(c: { x: number; y: number; zoom: number }): void;
+      };
+    };
   };
 };
 
@@ -43,7 +48,8 @@ function panFrames(page: Page, zoom: number, frames = 120): Promise<FrameStats> 
           if (++i < frames) requestAnimationFrame(tick);
           else {
             const sorted = deltas.slice(5).sort((a, b) => a - b);
-            const at = (q: number) => Math.round((sorted[Math.floor(sorted.length * q)] ?? 0) * 10) / 10;
+            const at = (q: number) =>
+              Math.round((sorted[Math.floor(sorted.length * q)] ?? 0) * 10) / 10;
             resolve({ p50: at(0.5), p95: at(0.95), max: at(0.999), frames: sorted.length });
           }
         };
@@ -56,12 +62,17 @@ function panFrames(page: Page, zoom: number, frames = 120): Promise<FrameStats> 
 test.describe('производительность', () => {
   test.describe.configure({ mode: 'serial', timeout: 120_000 });
 
-  test(`${N.toLocaleString('ru')} объектов: генерация, панорамирование, LOD, повторное открытие`, async ({ page }, testInfo) => {
+  test(`${N.toLocaleString('ru')} объектов: генерация, панорамирование, LOD, повторное открытие`, async ({
+    page,
+  }, testInfo) => {
     const boardId = await openNewBoard(page, 'Нагрузка 10k');
 
     const genStart = Date.now();
     await page.evaluate((n) => (window as unknown as CanvasApi).__prostorCanvas.generate(n), N);
-    await page.waitForFunction((n) => (window as unknown as CanvasApi).__prostorCanvas.elementStore.size === n, N);
+    await page.waitForFunction(
+      (n) => (window as unknown as CanvasApi).__prostorCanvas.elementStore.size === n,
+      N,
+    );
     const generateMs = Date.now() - genStart;
     // Документ уходит на сервер и сохраняется
     await expect(page.getByRole('status')).toContainText('Сохранено', { timeout: 60_000 });
@@ -71,7 +82,11 @@ test.describe('производительность', () => {
 
     const reloadStart = Date.now();
     await page.goto(`/board/${boardId}`);
-    await page.waitForFunction((n) => (window as unknown as CanvasApi).__prostorCanvas?.elementStore?.size === n, N, { timeout: 60_000 });
+    await page.waitForFunction(
+      (n) => (window as unknown as CanvasApi).__prostorCanvas?.elementStore?.size === n,
+      N,
+      { timeout: 60_000 },
+    );
     const reopenMs = Date.now() - reloadStart;
 
     const report = { generateMs, reopenMs, detail, lod };

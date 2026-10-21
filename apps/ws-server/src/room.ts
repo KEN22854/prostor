@@ -5,13 +5,33 @@ import * as awarenessProtocol from 'y-protocols/awareness';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
 import type { SnapshotReason } from '@prostor/db';
-import { REDIS_CHANNELS, WS_MESSAGE, can, type BoardRole, type WsServerEvent } from '@prostor/shared';
+import {
+  REDIS_CHANNELS,
+  WS_MESSAGE,
+  can,
+  type BoardRole,
+  type WsServerEvent,
+} from '@prostor/shared';
 import type { AuthenticatedConn } from './auth';
 import { DebouncedTask } from './debounce';
 import type { WsEnv } from './env';
 import { findForbiddenDeletions, restoreElements } from './delete-guard';
-import { DB_ORIGIN, createSnapshot, loadDocument, logBlockedDeletion, storeDocument } from './persistence';
-import { RELAY, SYNC_STEP1, decodeRelay, encodeRelay, encodeServerEvent, sanitizeAwarenessUpdate, type RelayKind } from './protocol';
+import {
+  DB_ORIGIN,
+  createSnapshot,
+  loadDocument,
+  logBlockedDeletion,
+  storeDocument,
+} from './persistence';
+import {
+  RELAY,
+  SYNC_STEP1,
+  decodeRelay,
+  encodeRelay,
+  encodeServerEvent,
+  sanitizeAwarenessUpdate,
+  type RelayKind,
+} from './protocol';
 import type { PubSub } from './pubsub';
 
 /** Origin апдейтов, пришедших от других инстансов через Redis — их не ретранслируем обратно */
@@ -35,6 +55,8 @@ export interface RoomDeps {
   pubsub: PubSub;
   /** Вызывается, когда комната полностью закрыта и выгружена из памяти */
   onClosed: (room: Room) => void;
+  /** Автоснимок версии сохранён — событие «доска изменена» для вебхуков */
+  onSnapshot?: (boardId: string, authorIds: string[], objectCount: number) => void;
 }
 
 /**
@@ -68,7 +90,11 @@ export class Room {
     this.awareness.setLocalState(null);
     this.channel = REDIS_CHANNELS.room(boardId);
     const { env } = deps;
-    this.persistTask = new DebouncedTask(() => this.persist(), env.WS_PERSIST_DEBOUNCE_MS, env.WS_PERSIST_MAX_WAIT_MS);
+    this.persistTask = new DebouncedTask(
+      () => this.persist(),
+      env.WS_PERSIST_DEBOUNCE_MS,
+      env.WS_PERSIST_MAX_WAIT_MS,
+    );
     this.snapshotTask = new DebouncedTask(
       () => this.snapshot('AUTO'),
       env.WS_SNAPSHOT_DEBOUNCE_MS,
@@ -178,7 +204,11 @@ export class Room {
           console.warn(
             `[room ${this.boardId}] restored ${restored} element(s) deleted by ${conn.auth.userId} without permission`,
           );
-          void logBlockedDeletion(this.boardId, conn.auth.userId, guarded.map((g) => g.key));
+          void logBlockedDeletion(
+            this.boardId,
+            conn.auth.userId,
+            guarded.map((g) => g.key),
+          );
         }
         return;
       }
@@ -191,11 +221,14 @@ export class Room {
           (id) => this.ownerOf(id),
         );
         if (!result.ok) {
-          console.warn(`[room ${this.boardId}] rejected awareness from ${conn.auth.userId}: ${result.reason}`);
+          console.warn(
+            `[room ${this.boardId}] rejected awareness from ${conn.auth.userId}: ${result.reason}`,
+          );
           return;
         }
         for (const id of result.claimed) conn.clientIds.add(id);
-        if (result.update) awarenessProtocol.applyAwarenessUpdate(this.awareness, result.update, conn);
+        if (result.update)
+          awarenessProtocol.applyAwarenessUpdate(this.awareness, result.update, conn);
         return;
       }
       case WS_MESSAGE.queryAwareness: {
@@ -203,7 +236,10 @@ export class Room {
         encoding.writeVarUint(encoder, WS_MESSAGE.awareness);
         encoding.writeVarUint8Array(
           encoder,
-          awarenessProtocol.encodeAwarenessUpdate(this.awareness, Array.from(this.awareness.getStates().keys())),
+          awarenessProtocol.encodeAwarenessUpdate(
+            this.awareness,
+            Array.from(this.awareness.getStates().keys()),
+          ),
         );
         this.send(conn, encoding.toUint8Array(encoder));
         return;
@@ -234,7 +270,8 @@ export class Room {
     for (const conn of this.conns.values()) {
       if (conn.clientIds.has(clientId)) return conn.auth.userId;
     }
-    const state = this.awareness.getStates().get(clientId) as { user?: { id?: unknown } } | undefined;
+    const state = this.awareness.getStates().get(clientId) as
+      { user?: { id?: unknown } } | undefined;
     return typeof state?.user?.id === 'string' ? state.user.id : undefined;
   }
 
@@ -258,9 +295,14 @@ export class Room {
    * актуальную роль; одинаковые пользователи (несколько вкладок) — один запрос.
    */
   async revalidate(
-    resolve: (userId: string | null) => Promise<{ role: BoardRole; policy: Conn['auth']['policy'] } | null>,
+    resolve: (
+      userId: string | null,
+    ) => Promise<{ role: BoardRole; policy: Conn['auth']['policy'] } | null>,
   ): Promise<void> {
-    const cache = new Map<string, Promise<{ role: BoardRole; policy: Conn['auth']['policy'] } | null>>();
+    const cache = new Map<
+      string,
+      Promise<{ role: BoardRole; policy: Conn['auth']['policy'] } | null>
+    >();
     for (const conn of Array.from(this.conns.values())) {
       const key = conn.auth.anonymous ? '__anonymous__' : conn.auth.userId;
       let pending = cache.get(key);
@@ -314,7 +356,10 @@ export class Room {
   }
 
   private relay(kind: RelayKind, payload: Uint8Array): void {
-    this.deps.pubsub.publish(this.channel, encodeRelay({ instanceId: this.deps.env.WS_INSTANCE_ID, kind, payload }));
+    this.deps.pubsub.publish(
+      this.channel,
+      encodeRelay({ instanceId: this.deps.env.WS_INSTANCE_ID, kind, payload }),
+    );
   }
 
   private readonly onDocUpdate = (update: Uint8Array, origin: unknown): void => {
@@ -331,7 +376,12 @@ export class Room {
 
     this.persistTask.schedule();
     this.changedSinceSnapshot = true;
-    if (origin !== REDIS_ORIGIN && typeof origin === 'object' && origin !== null && 'auth' in origin) {
+    if (
+      origin !== REDIS_ORIGIN &&
+      typeof origin === 'object' &&
+      origin !== null &&
+      'auth' in origin
+    ) {
       this.editorsSinceSnapshot.add((origin as Conn).auth.userId);
     }
     this.snapshotTask.schedule();
@@ -368,7 +418,10 @@ export class Room {
         case RELAY.awarenessRequest: {
           const local = Array.from(this.conns.values()).flatMap((c) => Array.from(c.clientIds));
           if (local.length > 0) {
-            this.relay(RELAY.awareness, awarenessProtocol.encodeAwarenessUpdate(this.awareness, local));
+            this.relay(
+              RELAY.awareness,
+              awarenessProtocol.encodeAwarenessUpdate(this.awareness, local),
+            );
           }
           break;
         }
@@ -392,7 +445,8 @@ export class Room {
   private async snapshot(reason: SnapshotReason): Promise<void> {
     if (!this.changedSinceSnapshot) return;
     // Окно блокировки ~ debounce: два инстанса одной комнаты не создадут дубликаты версий
-    const lockMs = reason === 'AUTO' ? Math.max(5_000, this.deps.env.WS_SNAPSHOT_DEBOUNCE_MS - 1_000) : 5_000;
+    const lockMs =
+      reason === 'AUTO' ? Math.max(5_000, this.deps.env.WS_SNAPSHOT_DEBOUNCE_MS - 1_000) : 5_000;
     const locked = await this.deps.pubsub.tryLock(`prostor:snaplock:${this.boardId}`, lockMs);
 
     const authors = Array.from(this.editorsSinceSnapshot);
@@ -401,8 +455,14 @@ export class Room {
     if (!locked) return;
 
     try {
-      const snapshotId = await createSnapshot({ boardId: this.boardId, doc: this.doc, reason, authorIds: authors });
+      const snapshotId = await createSnapshot({
+        boardId: this.boardId,
+        doc: this.doc,
+        reason,
+        authorIds: authors,
+      });
       this.broadcastEvent({ type: 'snapshot-saved', snapshotId, at: Date.now() });
+      this.deps.onSnapshot?.(this.boardId, authors, this.doc.getMap('elements').size);
     } catch (error: unknown) {
       console.error(`[room ${this.boardId}] snapshot failed`, error);
       this.changedSinceSnapshot = true;

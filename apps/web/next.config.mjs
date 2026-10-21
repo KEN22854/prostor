@@ -61,7 +61,13 @@ const nextConfig = {
       // скриншот/трейс запускал пересборку и HMR-перезагрузку открытых страниц.
       config.watchOptions = {
         ...config.watchOptions,
-        ignored: ['**/node_modules/**', '**/.git/**', '**/test-results/**', '**/playwright-report/**', '**/e2e/**'],
+        ignored: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/test-results/**',
+          '**/playwright-report/**',
+          '**/e2e/**',
+        ],
       };
     }
     return config;

@@ -54,7 +54,12 @@ export interface SnapshotInput {
 }
 
 /** Снапшот в историю версий + обновление статистики доски для дашборда/поиска */
-export async function createSnapshot({ boardId, doc, reason, authorIds }: SnapshotInput): Promise<string> {
+export async function createSnapshot({
+  boardId,
+  doc,
+  reason,
+  authorIds,
+}: SnapshotInput): Promise<string> {
   const state = toBytes(Y.encodeStateAsUpdate(doc));
   const stats = computeDocStats(doc);
 
@@ -102,7 +107,11 @@ async function pruneAutoSnapshots(boardId: string): Promise<void> {
 }
 
 /** Аудит: сервер вернул объекты, которые пользователь удалил без права */
-export async function logBlockedDeletion(boardId: string, userId: string, keys: string[]): Promise<void> {
+export async function logBlockedDeletion(
+  boardId: string,
+  userId: string,
+  keys: string[],
+): Promise<void> {
   await prisma.auditLog
     .create({
       data: {

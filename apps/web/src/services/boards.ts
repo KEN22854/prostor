@@ -32,6 +32,7 @@ import type { SessionUser } from '@/lib/session';
 import { signWsToken } from '@/lib/ws-token';
 import { audit } from '@/services/audit';
 import { orgRequires2faFor, requireOrgRole } from '@/services/orgs';
+import { emitWebhookEvent } from '@/services/webhooks';
 
 const MAX_LIST = 200;
 
@@ -198,6 +199,7 @@ export async function createBoard(
     boardId: board.id,
     metadata: { templateKey: data.templateKey },
   });
+  await emitWebhookEvent('board.created', board.id, user.id, { title: data.title });
   return board;
 }
 
@@ -252,6 +254,7 @@ export async function deleteBoard(user: SessionUser, boardId: string): Promise<v
   await prisma.board.update({ where: { id: boardId }, data: { deletedAt: new Date() } });
   await publishControl({ type: 'board-deleted', boardId });
   await audit({ action: 'board.delete', actorId: user.id, boardId });
+  await emitWebhookEvent('board.deleted', boardId, user.id);
 }
 
 /**

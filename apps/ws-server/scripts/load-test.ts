@@ -45,9 +45,15 @@ async function main(): Promise<void> {
   if (!SECRET) throw new Error('WS_JWT_SECRET не задан');
   const secret = new TextEncoder().encode(SECRET);
   const tag = randomUUID().slice(0, 8);
-  const owner = await prisma.user.create({ data: { email: `load-${tag}@prostor.invalid`, name: 'Load test' } });
+  const owner = await prisma.user.create({
+    data: { email: `load-${tag}@prostor.invalid`, name: 'Load test' },
+  });
   const board = await prisma.board.create({
-    data: { title: `Load test ${tag}`, ownerId: owner.id, members: { create: { userId: owner.id, role: 'OWNER' } } },
+    data: {
+      title: `Load test ${tag}`,
+      ownerId: owner.id,
+      members: { create: { userId: owner.id, role: 'OWNER' } },
+    },
   });
 
   const latencies: number[] = [];
@@ -57,7 +63,13 @@ async function main(): Promise<void> {
 
   try {
     for (let i = 0; i < CLIENTS; i++) {
-      const token = await new SignJWT({ boardId: board.id, role: 'OWNER', name: `Клиент ${i}`, color: '#4f46e5', anonymous: false })
+      const token = await new SignJWT({
+        boardId: board.id,
+        role: 'OWNER',
+        name: `Клиент ${i}`,
+        color: '#4f46e5',
+        anonymous: false,
+      })
         .setProtectedHeader({ alg: 'HS256' })
         .setSubject(owner.id)
         .setIssuer(WS_TOKEN_ISSUER)
@@ -88,19 +100,23 @@ async function main(): Promise<void> {
 
     await Promise.all(
       providers.map(
-        (p) => new Promise<void>((resolve, reject) => {
-          if (p.synced) {
-            resolve();
-            return;
-          }
-          const timer = setTimeout(() => reject(new Error('Клиент не синхронизировался за 15 с')), 15_000);
-          p.once('sync', (synced: boolean) => {
-            if (synced) {
-              clearTimeout(timer);
+        (p) =>
+          new Promise<void>((resolve, reject) => {
+            if (p.synced) {
               resolve();
+              return;
             }
-          });
-        }),
+            const timer = setTimeout(
+              () => reject(new Error('Клиент не синхронизировался за 15 с')),
+              15_000,
+            );
+            p.once('sync', (synced: boolean) => {
+              if (synced) {
+                clearTimeout(timer);
+                resolve();
+              }
+            });
+          }),
       ),
     );
     console.log(`[load] подключено и синхронизировано клиентов: ${CLIENTS}`);
@@ -122,7 +138,8 @@ async function main(): Promise<void> {
     const started = Date.now();
     const timers = docs.map((doc, i) =>
       setInterval(() => {
-        const el = doc.getMap<unknown>(Y_KEYS.elements).get(`load-${i}`) as Y.Map<unknown> | undefined;
+        const el = doc.getMap<unknown>(Y_KEYS.elements).get(`load-${i}`) as
+          Y.Map<unknown> | undefined;
         if (!el) return;
         doc.transact(() => {
           el.set('x', (el.get('x') as number) + 1);

@@ -44,7 +44,8 @@ export function computeDocStats(doc: Y.Doc): DocStats {
     if (!(el instanceof Y.Map) || length >= MAX_CONTENT_TEXT) continue;
     // Форматированный текст (content, Y.XmlFragment) главнее плоской копии text
     const content = el.get('content');
-    const fields = content instanceof Y.XmlFragment ? ['content', ...TEXT_FIELDS.slice(1)] : TEXT_FIELDS;
+    const fields =
+      content instanceof Y.XmlFragment ? ['content', ...TEXT_FIELDS.slice(1)] : TEXT_FIELDS;
     for (const field of fields) {
       const text = asText(el.get(field))?.trim();
       if (text) {

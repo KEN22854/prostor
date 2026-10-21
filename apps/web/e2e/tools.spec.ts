@@ -167,7 +167,9 @@ test.describe('инструменты холста', () => {
     await openNewBoard(page);
     // Файл — прямо в input: нативный диалог выбора под нагрузкой открывается нестабильно,
     // а проверяем здесь загрузку и права доступа (горячая клавиша I — в ai.spec)
-    await page.getByTestId('image-input').setInputFiles({ name: 'dot.png', mimeType: 'image/png', buffer: TINY_PNG });
+    await page
+      .getByTestId('image-input')
+      .setInputFiles({ name: 'dot.png', mimeType: 'image/png', buffer: TINY_PNG });
 
     await expect.poll(async () => (await elements(page)).map((e) => e.type)).toEqual(['image']);
     const [image] = await elements(page);

@@ -2,11 +2,13 @@ import { ArrowLeft } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { ApiKeysCard } from '@/components/settings/api-keys-card';
 import { ChangePasswordForm } from '@/components/settings/change-password-form';
 import { EmailNotificationsToggle } from '@/components/settings/email-notifications-toggle';
 import { ProfileForm } from '@/components/settings/profile-form';
 import { SignOutEverywhere } from '@/components/settings/sign-out-everywhere';
 import { TwoFactorCard } from '@/components/settings/two-factor-card';
+import { WebhooksCard } from '@/components/settings/webhooks-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getSessionUser } from '@/lib/session';
@@ -90,6 +92,32 @@ export default async function AccountSettingsPage() {
           </CardHeader>
           <CardContent>
             <EmailNotificationsToggle initial={account.emailNotifications} />
+          </CardContent>
+        </Card>
+
+        <Card id="api">
+          <CardHeader>
+            <CardTitle>API-ключи</CardTitle>
+            <CardDescription>
+              Доступ к доскам из своих программ и интеграций: REST API /api/v1 (документация — в
+              README). Ключ действует от вашего имени и с вашими правами
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ApiKeysCard />
+          </CardContent>
+        </Card>
+
+        <Card id="webhooks">
+          <CardHeader>
+            <CardTitle>Вебхуки</CardTitle>
+            <CardDescription>
+              Простор отправит POST на ваш адрес при событиях досок: Slack, Telegram-бот, Jira,
+              Zapier/Make
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <WebhooksCard />
           </CardContent>
         </Card>
 

@@ -5,6 +5,7 @@ import { ApiError } from '@/lib/api';
 import { publishControl } from '@/lib/realtime';
 import type { SessionUser } from '@/lib/session';
 import { requireBoardAccess } from '@/services/boards';
+import { emitWebhookEvent } from '@/services/webhooks';
 
 async function changed(boardId: string): Promise<void> {
   await publishControl({ type: 'voting-changed', boardId });
@@ -171,6 +172,26 @@ export async function endVoting(user: SessionUser, sessionId: string): Promise<v
     data: { endedAt: session.endedAt ?? new Date() },
   });
   await changed(session.boardId);
+  if (!session.endedAt) await emitVotingResults(session.boardId, sessionId, user.id);
+}
+
+/** Итоги голосования для вебхука: объекты и число голосов */
+async function emitVotingResults(
+  boardId: string,
+  sessionId: string,
+  actorId: string,
+): Promise<void> {
+  const votes = await prisma.vote.groupBy({
+    by: ['elementId'],
+    where: { sessionId },
+    _count: { _all: true },
+  });
+  await emitWebhookEvent('voting.closed', boardId, actorId, {
+    sessionId,
+    results: votes
+      .map((v) => ({ elementId: v.elementId, votes: v._count._all }))
+      .sort((a, b) => b.votes - a.votes),
+  });
 }
 
 /** Скрыть итоги (голосование исчезает с доски) */

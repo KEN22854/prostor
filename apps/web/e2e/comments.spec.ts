@@ -9,27 +9,52 @@ import { canvasCenter, openNewBoard } from './helpers';
 const MAILPIT_URL = process.env.MAILPIT_URL ?? 'http://localhost:8025';
 const PASSWORD = 'e2e-pass-123';
 
-async function inviteSecondUser(owner: Page, browser: Browser, boardId: string, name: string): Promise<Page> {
-  const link = await owner.request.post(`/api/boards/${boardId}/invites`, { data: { role: 'EDITOR', ttl: '1d' } });
+async function inviteSecondUser(
+  owner: Page,
+  browser: Browser,
+  boardId: string,
+  name: string,
+): Promise<Page> {
+  const link = await owner.request.post(`/api/boards/${boardId}/invites`, {
+    data: { role: 'EDITOR', ttl: '1d' },
+  });
   const { url } = (await link.json()) as { url: string };
-  const context = await browser.newContext({ storageState: { cookies: [], origins: [] }, locale: 'ru-RU' });
+  const context = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+    locale: 'ru-RU',
+  });
   const page = await context.newPage();
   const email = `e2e-comments-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@prostor.test`;
-  expect((await page.request.post('/api/account/register', { data: { name, email, password: PASSWORD, confirmPassword: PASSWORD } })).status()).toBe(201);
+  expect(
+    (
+      await page.request.post('/api/account/register', {
+        data: { name, email, password: PASSWORD, confirmPassword: PASSWORD },
+      })
+    ).status(),
+  ).toBe(201);
   await page.goto('/login');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Пароль', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Войти' }).click();
   await page.waitForURL(/\/dashboard$/);
-  const join = await page.request.post(`/api/boards/${boardId}/join`, { data: { token: new URL(url).searchParams.get('token') } });
+  const join = await page.request.post(`/api/boards/${boardId}/join`, {
+    data: { token: new URL(url).searchParams.get('token') },
+  });
   expect(join.ok()).toBe(true);
   await page.goto(`/board/${boardId}`);
-  await page.waitForFunction(() => Boolean((window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions));
+  await page.waitForFunction(() =>
+    Boolean(
+      (window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions,
+    ),
+  );
   return page;
 }
 
 test.describe('комментарии', () => {
-  test('упоминание, пин в реальном времени, уведомление, ответ, письмо и «решено»', async ({ page, browser }) => {
+  test('упоминание, пин в реальном времени, уведомление, ответ, письмо и «решено»', async ({
+    page,
+    browser,
+  }) => {
     const title = `Обсуждение ${Date.now()}`;
     const boardId = await openNewBoard(page, title);
     const guest = await inviteSecondUser(page, browser, boardId, 'Иван Коллегин');
@@ -63,10 +88,16 @@ test.describe('комментарии', () => {
     await guestCard.getByRole('textbox', { name: 'Ответить…' }).press('Enter');
 
     // Ответ приходит автору в открытый тред и в уведомления
-    await expect(page.getByTestId('thread-card')).toContainText('Готово, посмотрел', { timeout: 10_000 });
+    await expect(page.getByTestId('thread-card')).toContainText('Готово, посмотрел', {
+      timeout: 10_000,
+    });
     await expect(page.getByTestId('comment-pin')).toContainText('2');
     await page.reload();
-    await page.waitForFunction(() => Boolean((window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions));
+    await page.waitForFunction(() =>
+      Boolean(
+        (window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions,
+      ),
+    );
     await expect(page.getByTestId('unread-count')).toHaveText('1', { timeout: 10_000 });
 
     // Автор не прочитал ответ — уходит письмо (если dev-сервер запущен с короткой задержкой)
@@ -76,7 +107,9 @@ test.describe('комментарии', () => {
       await expect
         .poll(
           async () => {
-            const res = await page.request.get(`${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`subject:"${title}"`)}`);
+            const res = await page.request.get(
+              `${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`subject:"${title}"`)}`,
+            );
             const data = (await res.json()) as { messages?: Array<{ Subject: string }> };
             return data.messages?.map((m) => m.Subject) ?? [];
           },
@@ -95,33 +128,50 @@ test.describe('комментарии', () => {
     await guest.context().close();
   });
 
-  test('читатель комментирует, но не правит доску; аноним не может комментировать', async ({ page, browser }) => {
+  test('читатель комментирует, но не правит доску; аноним не может комментировать', async ({
+    page,
+    browser,
+  }) => {
     const boardId = await openNewBoard(page, 'Комментарии читателя');
-    const link = await page.request.post(`/api/boards/${boardId}/invites`, { data: { role: 'VIEWER', ttl: '1d' } });
+    const link = await page.request.post(`/api/boards/${boardId}/invites`, {
+      data: { role: 'VIEWER', ttl: '1d' },
+    });
     const { url } = (await link.json()) as { url: string };
     const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const viewer = await ctx.newPage();
     const email = `e2e-viewer-${Date.now()}@prostor.test`;
-    await viewer.request.post('/api/account/register', { data: { name: 'Читатель', email, password: PASSWORD, confirmPassword: PASSWORD } });
+    await viewer.request.post('/api/account/register', {
+      data: { name: 'Читатель', email, password: PASSWORD, confirmPassword: PASSWORD },
+    });
     await viewer.goto('/login');
     await viewer.getByLabel('Email').fill(email);
     await viewer.getByLabel('Пароль', { exact: true }).fill(PASSWORD);
     await viewer.getByRole('button', { name: 'Войти' }).click();
     await viewer.waitForURL(/\/dashboard$/);
-    await viewer.request.post(`/api/boards/${boardId}/join`, { data: { token: new URL(url).searchParams.get('token') } });
+    await viewer.request.post(`/api/boards/${boardId}/join`, {
+      data: { token: new URL(url).searchParams.get('token') },
+    });
 
-    const created = await viewer.request.post(`/api/boards/${boardId}/comments`, { data: { body: 'Вопрос читателя', x: 10, y: 20 } });
+    const created = await viewer.request.post(`/api/boards/${boardId}/comments`, {
+      data: { body: 'Вопрос читателя', x: 10, y: 20 },
+    });
     expect(created.status()).toBe(201);
     await viewer.goto(`/board/${boardId}`);
     await expect(viewer.getByRole('button', { name: 'Комментарий' })).toBeVisible();
     await expect(viewer.getByTestId('comment-pin')).toHaveCount(1);
 
     // Публичная доска: аноним видит обсуждения, но писать не может
-    await page.request.patch(`/api/boards/${boardId}/visibility`, { data: { visibility: 'PUBLIC_READ' } });
-    const anon = await (await browser.newContext({ storageState: { cookies: [], origins: [] } })).newPage();
+    await page.request.patch(`/api/boards/${boardId}/visibility`, {
+      data: { visibility: 'PUBLIC_READ' },
+    });
+    const anon = await (
+      await browser.newContext({ storageState: { cookies: [], origins: [] } })
+    ).newPage();
     const list = await anon.request.get(`/api/boards/${boardId}/comments`);
     expect(((await list.json()) as { threads: unknown[] }).threads).toHaveLength(1);
-    const denied = await anon.request.post(`/api/boards/${boardId}/comments`, { data: { body: 'спам', x: 0, y: 0 } });
+    const denied = await anon.request.post(`/api/boards/${boardId}/comments`, {
+      data: { body: 'спам', x: 0, y: 0 },
+    });
     expect(denied.status()).toBe(401);
     await ctx.close();
     await anon.context().close();

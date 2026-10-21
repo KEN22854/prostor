@@ -1,6 +1,6 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
-import type { ZodType, ZodTypeDef } from 'zod';
+import { ZodError, type ZodType, type ZodTypeDef } from 'zod';
 
 /**
  * Единый формат ошибок REST API:
@@ -34,15 +34,17 @@ export async function parseJson<T>(
     throw new ApiError(400, 'invalid_json', 'Некорректное тело запроса');
   }
   const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    const fields: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const key = issue.path.join('.') || '_';
-      fields[key] ??= issue.message;
-    }
-    throw new ApiError(422, 'validation_error', 'Проверьте правильность заполнения полей', fields);
-  }
+  if (!parsed.success) throw validationError(parsed.error);
   return parsed.data;
+}
+
+function validationError(error: ZodError): ApiError {
+  const fields: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const key = issue.path.join('.') || '_';
+    fields[key] ??= issue.message;
+  }
+  return new ApiError(422, 'validation_error', 'Проверьте правильность заполнения полей', fields);
 }
 
 /** Обёртка роута: ApiError → JSON с нужным статусом, прочее → 500 без деталей */
@@ -52,11 +54,26 @@ export function withErrorHandling<Args extends unknown[]>(
   return async (...args: Args) => {
     try {
       return await handler(...args);
-    } catch (error: unknown) {
+    } catch (caught: unknown) {
+      // schema.parse в сервисах — та же 422, что и parseJson
+      const error = caught instanceof ZodError ? validationError(caught) : caught;
       if (error instanceof ApiError) {
         return NextResponse.json<ApiErrorBody>(
           { error: { code: error.code, message: error.message, fields: error.fields } },
           { status: error.status, headers: error.headers },
+        );
+      }
+      // Postgres не запущен или недоступен — понятная причина вместо «внутренней ошибки»
+      if (error instanceof Error && error.name === 'PrismaClientInitializationError') {
+        console.error('[api] database unavailable', error.message);
+        return NextResponse.json<ApiErrorBody>(
+          {
+            error: {
+              code: 'database_unavailable',
+              message: 'Нет связи с базой данных. Запустите Docker и выполните npm run infra:up',
+            },
+          },
+          { status: 503 },
         );
       }
       console.error('[api] unhandled error', error);

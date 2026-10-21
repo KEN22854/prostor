@@ -14,6 +14,7 @@ import { publishControl } from '@/lib/realtime';
 import type { SessionUser } from '@/lib/session';
 import { requireBoardAccess } from '@/services/boards';
 import { notifyAboutComment } from '@/services/notifications';
+import { emitWebhookEvent } from '@/services/webhooks';
 
 const MAX_THREADS = 500;
 const MAX_MENTIONS = 20;
@@ -167,6 +168,13 @@ export async function createComment(
     excerpt: commentPlainText(input.body).slice(0, 300),
     isReply: Boolean(threadId),
   }).catch((error: unknown) => console.error('[comments] notify failed', error));
+  await emitWebhookEvent('comment.created', boardId, user.id, {
+    commentId: comment.id,
+    threadId: root,
+    isReply: Boolean(threadId),
+    elementId: threadId ? null : (input.elementId ?? null),
+    text: commentPlainText(input.body).slice(0, 2000),
+  });
   return { id: comment.id, threadId: root };
 }
 
@@ -218,6 +226,8 @@ export async function resolveThread(
     data: { resolvedAt: resolved ? new Date() : null },
   });
   await changed(row.boardId, row.id);
+  if (resolved)
+    await emitWebhookEvent('comment.resolved', row.boardId, user.id, { threadId: row.id });
 }
 
 export async function toggleReaction(

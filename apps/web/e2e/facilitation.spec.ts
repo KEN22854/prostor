@@ -5,50 +5,91 @@ import { canvasCenter, elements, openNewBoard, toPage } from './helpers';
 async function secondTab(page: Page, boardId: string): Promise<Page> {
   const tab = await page.context().newPage();
   await tab.goto(`/board/${boardId}`);
-  await tab.waitForFunction(() => Boolean((window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions));
+  await tab.waitForFunction(() =>
+    Boolean(
+      (window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions,
+    ),
+  );
   return tab;
 }
 
 async function camera(page: Page): Promise<{ x: number; y: number; zoom: number }> {
-  return page.evaluate(() =>
-    (window as unknown as { __prostorCanvas: { canvasStore: { getState(): { camera: { x: number; y: number; zoom: number } } } } }).__prostorCanvas.canvasStore.getState().camera,
+  return page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          __prostorCanvas: {
+            canvasStore: { getState(): { camera: { x: number; y: number; zoom: number } } };
+          };
+        }
+      ).__prostorCanvas.canvasStore.getState().camera,
   );
 }
 
-async function newUser(browser: Browser, boardId: string, owner: Page, role: 'EDITOR' | 'VIEWER', name: string): Promise<Page> {
-  const link = await owner.request.post(`/api/boards/${boardId}/invites`, { data: { role, ttl: '1d' } });
+async function newUser(
+  browser: Browser,
+  boardId: string,
+  owner: Page,
+  role: 'EDITOR' | 'VIEWER',
+  name: string,
+): Promise<Page> {
+  const link = await owner.request.post(`/api/boards/${boardId}/invites`, {
+    data: { role, ttl: '1d' },
+  });
   const { url } = (await link.json()) as { url: string };
-  const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] }, locale: 'ru-RU' });
+  const ctx = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+    locale: 'ru-RU',
+  });
   const page = await ctx.newPage();
   const email = `e2e-fac-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@prostor.test`;
-  await page.request.post('/api/account/register', { data: { name, email, password: 'e2e-pass-123', confirmPassword: 'e2e-pass-123' } });
+  await page.request.post('/api/account/register', {
+    data: { name, email, password: 'e2e-pass-123', confirmPassword: 'e2e-pass-123' },
+  });
   await page.goto('/login');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Пароль', { exact: true }).fill('e2e-pass-123');
   await page.getByRole('button', { name: 'Войти' }).click();
   await page.waitForURL(/\/dashboard$/);
-  await page.request.post(`/api/boards/${boardId}/join`, { data: { token: new URL(url).searchParams.get('token') } });
+  await page.request.post(`/api/boards/${boardId}/join`, {
+    data: { token: new URL(url).searchParams.get('token') },
+  });
   await page.goto(`/board/${boardId}`);
-  await page.waitForFunction(() => Boolean((window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions));
+  await page.waitForFunction(() =>
+    Boolean(
+      (window as unknown as { __prostorCanvas?: { actions?: unknown } }).__prostorCanvas?.actions,
+    ),
+  );
   return page;
 }
 
 test.describe('фасилитация', () => {
-  test('«позвать всех за мной»: камера участника следует за ведущим, ручное движение отключает', async ({ page, browser }) => {
+  test('«позвать всех за мной»: камера участника следует за ведущим, ручное движение отключает', async ({
+    page,
+    browser,
+  }) => {
     const boardId = await openNewBoard(page, 'Показ');
     const viewer = await newUser(browser, boardId, page, 'VIEWER', 'Зритель Показов');
 
     await page.getByTestId('presence-avatar').first().click();
     await page.getByRole('menuitem', { name: 'Позвать всех за мной' }).click();
-    await expect(viewer.getByTestId('follow-banner')).toContainText('показывает доску', { timeout: 10_000 });
+    await expect(viewer.getByTestId('follow-banner')).toContainText('показывает доску', {
+      timeout: 10_000,
+    });
 
     // Ведущий уезжает далеко — камера зрителя следом
     await page.evaluate(() =>
-      (window as unknown as { __prostorCanvas: { canvasStore: { getState(): { setCamera(c: unknown): void } } } }).__prostorCanvas.canvasStore
+      (
+        window as unknown as {
+          __prostorCanvas: { canvasStore: { getState(): { setCamera(c: unknown): void } } };
+        }
+      ).__prostorCanvas.canvasStore
         .getState()
         .setCamera({ x: 5000, y: 3000, zoom: 1 }),
     );
-    await expect.poll(async () => (await camera(viewer)).x, { timeout: 10_000 }).toBeGreaterThan(4500);
+    await expect
+      .poll(async () => (await camera(viewer)).x, { timeout: 10_000 })
+      .toBeGreaterThan(4500);
 
     // Зритель сам двигает холст — следование выключается и больше не включается для этого показа
     const c = await canvasCenter(viewer);
@@ -90,7 +131,9 @@ test.describe('фасилитация', () => {
     await page.getByLabel('Голосов у каждого').selectOption('2');
     await page.getByRole('button', { name: 'Начать' }).click();
     await expect(page.getByTestId('voting-bar')).toContainText('осталось 2 из 2');
-    await expect(viewer.getByTestId('voting-bar')).toContainText('осталось 2 из 2', { timeout: 10_000 });
+    await expect(viewer.getByTestId('voting-bar')).toContainText('осталось 2 из 2', {
+      timeout: 10_000,
+    });
 
     // Читатель голосует дважды за одну идею, третий голос не принимается
     const [left, middle] = (await elements(viewer)).sort((a, b) => a.x - b.x);
@@ -127,11 +170,15 @@ test.describe('фасилитация', () => {
         // Состояния коллег — в awareness WebSocket-провайдера; ищем непустой след лазера
         const awareness = (
           window as unknown as {
-            __prostorCanvas?: { awareness?: { getStates(): Map<number, { laser?: unknown[] }> } | null };
+            __prostorCanvas?: {
+              awareness?: { getStates(): Map<number, { laser?: unknown[] }> } | null;
+            };
           }
         ).__prostorCanvas?.awareness;
         if (!awareness) return false;
-        return [...awareness.getStates().values()].some((s) => Array.isArray(s.laser) && s.laser.length > 2);
+        return [...awareness.getStates().values()].some(
+          (s) => Array.isArray(s.laser) && s.laser.length > 2,
+        );
       },
       undefined,
       { timeout: 10_000 },
