@@ -40,8 +40,10 @@ export async function processEmailJob(job: Job, deps: EmailDeps): Promise<EmailR
   if (!notification) return { sent: false, reason: 'not_found' };
   if (notification.readAt) return { sent: false, reason: 'already_read' };
   if (notification.emailedAt) return { sent: false, reason: 'already_sent' };
-  if (!notification.user.emailNotifications || notification.user.disabledAt) return { sent: false, reason: 'opted_out' };
-  if (notification.type !== 'MENTION' && notification.type !== 'COMMENT_REPLY') return { sent: false, reason: 'unsupported_type' };
+  if (!notification.user.emailNotifications || notification.user.disabledAt)
+    return { sent: false, reason: 'opted_out' };
+  if (notification.type !== 'MENTION' && notification.type !== 'COMMENT_REPLY')
+    return { sent: false, reason: 'unsupported_type' };
   if (!deps.send) return { sent: false, reason: 'smtp_disabled' };
 
   const payload = commentNotificationPayloadSchema.safeParse(notification.payload);
@@ -61,6 +63,9 @@ export async function processEmailJob(job: Job, deps: EmailDeps): Promise<EmailR
       settingsUrl: `${base}/settings`,
     }),
   );
-  await deps.prisma.notification.update({ where: { id: notification.id }, data: { emailedAt: new Date() } });
+  await deps.prisma.notification.update({
+    where: { id: notification.id },
+    data: { emailedAt: new Date() },
+  });
   return { sent: true };
 }

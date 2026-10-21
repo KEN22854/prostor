@@ -22,7 +22,13 @@ const envSchema = z.object({
     .transform((v) => v === 'true'),
 
   AI_PROVIDER_REMOVE_BG: z.enum(['local', 'replicate', 'disabled']).default('local'),
-  AI_PROVIDER_IMAGE: z.enum(['replicate', 'mock', 'disabled']).default('disabled'),
+  AI_PROVIDER_IMAGE: z.enum(['pollinations', 'replicate', 'mock', 'disabled']).default('disabled'),
+  /** Pollinations.ai: бесплатно без ключа (лимит и логотип); ключ снимает оба ограничения */
+  POLLINATIONS_URL: z.string().url().default('https://image.pollinations.ai'),
+  POLLINATIONS_MODEL: z.string().default('flux'),
+  /** Текстовая модель того же сервиса — перевод промптов на английский */
+  POLLINATIONS_TEXT_URL: z.string().url().default('https://text.pollinations.ai'),
+  POLLINATIONS_TOKEN: optional(z.string().min(1)),
   REMBG_URL: optional(z.string().url()),
   /** Модель rembg: u2net (универсальная), isnet-general-use (точнее), u2net_human_seg (люди) */
   REMBG_MODEL: z.string().default('isnet-general-use'),

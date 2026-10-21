@@ -39,6 +39,6 @@ export default auth((req) => {
 export const config = {
   // API-роуты проверяют авторизацию сами и должны отвечать 401 JSON, а не редиректом.
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|sw.js|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)',
   ],
 };

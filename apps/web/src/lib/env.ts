@@ -75,8 +75,8 @@ const serverEnvSchema = z.object({
 
   /** local — контейнер rembg; replicate — облако; disabled — функция скрыта */
   AI_PROVIDER_REMOVE_BG: z.enum(['local', 'replicate', 'disabled']).default('local'),
-  /** replicate — Flux/SDXL; mock — локальная заглушка-градиент (dev, e2e, демо без ИИ); disabled */
-  AI_PROVIDER_IMAGE: z.enum(['replicate', 'mock', 'disabled']).default('disabled'),
+  /** pollinations — бесплатно без ключа; replicate — Flux/SDXL; mock — локальная заглушка-градиент (dev, e2e, демо без ИИ); disabled */
+  AI_PROVIDER_IMAGE: z.enum(['pollinations', 'replicate', 'mock', 'disabled']).default('disabled'),
   REMBG_URL: optional(z.string().url()),
   REPLICATE_API_TOKEN: optionalSecret,
   OPENAI_API_KEY: optionalSecret,

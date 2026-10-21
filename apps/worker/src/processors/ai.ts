@@ -7,6 +7,7 @@ import { PermanentProviderError } from '../providers/http';
 import type { ImageGenerator } from '../providers/image-gen';
 import type { RemoveBgProvider } from '../providers/remove-bg';
 import type { Storage } from '../storage';
+import { trimTransparent } from '../trim';
 
 export interface AiDeps {
   prisma: PrismaClient;
@@ -130,7 +131,10 @@ async function removeBackground(
   await progress(25);
   const output = await deps.removeBg.remove(input, source.mimeType);
   await progress(80);
-  return storeResult(output, payload, deps, payload.assetId);
+  // Убираем прозрачные поля вокруг объекта; crop — где он был на исходном фото
+  const trimmed = trimTransparent(output);
+  const result = await storeResult(trimmed?.png ?? output, payload, deps, payload.assetId);
+  return trimmed ? { ...result, crop: trimmed.crop } : result;
 }
 
 async function generate(

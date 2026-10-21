@@ -4,7 +4,7 @@ import { TINY_PNG, canvasCenter, elements, openNewBoard, toPage } from './helper
 
 /**
  * ИИ-конвейер целиком: web → BullMQ → worker → провайдер → S3 → доска.
- * Требует запущенный worker. Генерация — mock-провайдер (AI_PROVIDER_IMAGE=mock).
+ * Требует запущенный worker с AI_PROVIDER_IMAGE=mock (в .env по умолчанию — pollinations, ходит в интернет).
  * Удаление фона — настоящий rembg на :7000, а если его нет — заглушка с тем же
  * HTTP API (POST /api/remove, multipart file+model → PNG), поднятая тестом.
  */

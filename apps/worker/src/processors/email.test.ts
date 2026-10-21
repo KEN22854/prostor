@@ -71,7 +71,10 @@ describe('processEmailJob', () => {
     for (const [overrides, reason] of [
       [{ readAt: new Date() }, 'already_read'],
       [{ emailedAt: new Date() }, 'already_sent'],
-      [{ user: { id: 'u1', email: 'x@y.z', emailNotifications: false, disabledAt: null } }, 'opted_out'],
+      [
+        { user: { id: 'u1', email: 'x@y.z', emailNotifications: false, disabledAt: null } },
+        'opted_out',
+      ],
     ] as const) {
       const { sent, deps, job } = setup(overrides as Partial<Row>);
       expect(await processEmailJob(job, deps)).toEqual({ sent: false, reason });
@@ -86,6 +89,8 @@ describe('processEmailJob', () => {
   it('без SMTP письма пропускаются, некорректная задача — без повторов', async () => {
     const { deps, job } = setup({}, { smtp: false });
     expect(await processEmailJob(job, deps)).toEqual({ sent: false, reason: 'smtp_disabled' });
-    await expect(processEmailJob({ data: { kind: 'x' } } as Job, deps)).rejects.toThrow('Некорректная задача');
+    await expect(processEmailJob({ data: { kind: 'x' } } as Job, deps)).rejects.toThrow(
+      'Некорректная задача',
+    );
   });
 });

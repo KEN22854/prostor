@@ -21,6 +21,32 @@ interface RemoveBgDeps {
   userId: string | null;
 }
 
+/**
+ * Результат удаления фона обрезан до объекта: crop — его прямоугольник в
+ * пикселях исходника. Сдвигаем и уменьшаем элемент так, чтобы объект остался
+ * на том же месте доски (сдвиг поворачиваем вместе с элементом — Konva
+ * вращает его вокруг (x, y)).
+ */
+export function croppedPlacement(
+  el: Pick<
+    ImageElement,
+    'x' | 'y' | 'width' | 'height' | 'rotation' | 'naturalWidth' | 'naturalHeight'
+  >,
+  crop: { x: number; y: number; width: number; height: number },
+): { x: number; y: number; width: number; height: number } {
+  const sx = el.width / el.naturalWidth;
+  const sy = el.height / el.naturalHeight;
+  const dx = crop.x * sx;
+  const dy = crop.y * sy;
+  const rad = ((el.rotation ?? 0) * Math.PI) / 180;
+  return {
+    x: el.x + dx * Math.cos(rad) - dy * Math.sin(rad),
+    y: el.y + dx * Math.sin(rad) + dy * Math.cos(rad),
+    width: crop.width * sx,
+    height: crop.height * sy,
+  };
+}
+
 const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortError';
 
 /**
@@ -57,19 +83,31 @@ export function useRemoveBg({ boardId, doc, store, actions, userId }: RemoveBgDe
           toast.error(job.error ?? 'Не удалось удалить фон');
           return;
         }
-        const { assetId, width, height } = job.result;
+        const { assetId, width, height, crop } = job.result;
         const current = store?.get(elementId);
         if (current?.type === 'image' && (current as ImageElement).assetId === image.assetId) {
+          const el = current as ImageElement;
           actions.update(
-            new Map([[elementId, { assetId, naturalWidth: width, naturalHeight: height }]]),
+            new Map([
+              [
+                elementId,
+                {
+                  assetId,
+                  naturalWidth: width,
+                  naturalHeight: height,
+                  ...(crop ? croppedPlacement(el, crop) : {}),
+                },
+              ],
+            ]),
           );
           toast.success('Фон удалён');
         } else {
+          const size = crop ? croppedPlacement(image, crop) : image;
           const copy = buildImage({
             x: image.x + image.width + 24,
             y: image.y,
-            width: image.width,
-            height: image.height,
+            width: size.width,
+            height: size.height,
             naturalWidth: width,
             naturalHeight: height,
             assetId,

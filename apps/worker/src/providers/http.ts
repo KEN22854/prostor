@@ -23,6 +23,11 @@ export async function fetchBytes(
     }
     throw new Error(message);
   }
+  return readLimited(res);
+}
+
+/** Тело ответа целиком, с обрывом при превышении MAX_RESULT_BYTES */
+export async function readLimited(res: Response): Promise<Uint8Array> {
   if (!res.body) throw new Error('Пустой ответ провайдера');
 
   const chunks: Uint8Array[] = [];

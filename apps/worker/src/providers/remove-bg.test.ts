@@ -8,7 +8,13 @@ import { LocalRembg, firstUrl } from './remove-bg';
 let server: Server | null = null;
 
 /** Поднимает HTTP-сервер, имитирующий `rembg s`, и возвращает его адрес */
-async function startStub(handler: (body: Buffer, contentType: string, url: string) => { status: number; body: Uint8Array | string }) {
+async function startStub(
+  handler: (
+    body: Buffer,
+    contentType: string,
+    url: string,
+  ) => { status: number; body: Uint8Array | string },
+) {
   server = createServer((req, res) => {
     const chunks: Buffer[] = [];
     req.on('data', (c: Buffer) => chunks.push(c));
@@ -36,7 +42,10 @@ describe('LocalRembg', () => {
       return { status: 200, body: png };
     });
 
-    const result = await new LocalRembg(url, 'isnet-general-use', 5_000).remove(new Uint8Array([1, 2, 3]), 'image/jpeg');
+    const result = await new LocalRembg(url, 'isnet-general-use', 5_000).remove(
+      new Uint8Array([1, 2, 3]),
+      'image/jpeg',
+    );
 
     expect(Buffer.from(result).equals(Buffer.from(png))).toBe(true);
     expect(seen).not.toBeNull();
@@ -50,14 +59,16 @@ describe('LocalRembg', () => {
 
   it('4xx от rembg — постоянная ошибка (без повторов)', async () => {
     const url = await startStub(() => ({ status: 422, body: 'bad image' }));
-    await expect(new LocalRembg(url, 'u2net', 5_000).remove(new Uint8Array([1]), 'image/png')).rejects.toBeInstanceOf(
-      PermanentProviderError,
-    );
+    await expect(
+      new LocalRembg(url, 'u2net', 5_000).remove(new Uint8Array([1]), 'image/png'),
+    ).rejects.toBeInstanceOf(PermanentProviderError);
   });
 
   it('5xx — временная ошибка (будет повтор)', async () => {
     const url = await startStub(() => ({ status: 503, body: 'busy' }));
-    const error = await new LocalRembg(url, 'u2net', 5_000).remove(new Uint8Array([1]), 'image/png').catch((e: unknown) => e);
+    const error = await new LocalRembg(url, 'u2net', 5_000)
+      .remove(new Uint8Array([1]), 'image/png')
+      .catch((e: unknown) => e);
     expect(error).toBeInstanceOf(Error);
     expect(error).not.toBeInstanceOf(PermanentProviderError);
   });

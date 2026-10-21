@@ -13,6 +13,7 @@ export function aiCapabilities(): AiCapabilities {
     (e.AI_PROVIDER_REMOVE_BG === 'replicate' && Boolean(e.REPLICATE_API_TOKEN));
   const generateImage =
     e.AI_PROVIDER_IMAGE === 'mock' ||
+    e.AI_PROVIDER_IMAGE === 'pollinations' ||
     (e.AI_PROVIDER_IMAGE === 'replicate' && Boolean(e.REPLICATE_API_TOKEN));
   return { removeBg, generateImage };
 }

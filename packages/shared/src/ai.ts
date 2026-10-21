@@ -63,6 +63,18 @@ export const aiImageResultSchema = z.object({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   mimeType: z.string(),
+  /**
+   * Удаление фона: результат обрезан до объекта — это прямоугольник
+   * в пикселях исходного изображения, который он занимает.
+   */
+  crop: z
+    .object({
+      x: z.number().int().nonnegative(),
+      y: z.number().int().nonnegative(),
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+    })
+    .optional(),
 });
 export type AiImageResult = z.infer<typeof aiImageResultSchema>;
 
