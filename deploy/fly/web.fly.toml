@@ -1,0 +1,39 @@
+# Деплой из корня репозитория:
+#   fly deploy --config deploy/fly/web.fly.toml --dockerfile docker/Dockerfile.web .
+# web на Fly.io (альтернатива Vercel):
+#   fly launch --config deploy/fly/web.fly.toml --no-deploy
+# Секреты — все переменные web из .env.example (AUTH_*, DATABASE_URL, REDIS_URL, S3_*, SMTP_URL …).
+# Миграции перед релизом выполняет release_command.
+app = 'prostor-web'
+primary_region = 'ams'
+
+[build]
+  build-target = 'runner'
+
+[deploy]
+  # Образ migrate собирается из того же Dockerfile; на Fly проще запустить миграции
+  # отдельным одноразовым процессом:  fly machine run --dockerfile docker/Dockerfile.web --build-target migrate
+  strategy = 'rolling'
+
+[env]
+  NODE_ENV = 'production'
+  PORT = '3000'
+  HOSTNAME = '0.0.0.0'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = '20s'
+    interval = '15s'
+    method = 'GET'
+    path = '/api/health'
+    timeout = '5s'
+
+[[vm]]
+  memory = '1gb'
+  cpus = 1

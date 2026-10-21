@@ -1,0 +1,29 @@
+{
+  "name": "@prostor/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.723.0",
+    "@prostor/db": "*",
+    "@prostor/shared": "*",
+    "bullmq": "^5.34.8",
+    "ioredis": "^5.4.2",
+    "nodemailer": "^6.9.16",
+    "replicate": "^1.0.1",
+    "yjs": "^13.6.21",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^6.4.17",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2"
+  }
+}

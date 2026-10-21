@@ -1,0 +1,649 @@
+// ─────────────────────────────────────────────────────────────
+// Prostor — схема БД
+//
+// Принцип: содержимое канваса живёт ТОЛЬКО в Yjs-документе.
+// Postgres хранит метаданные (доски, права, ассеты, история версий,
+// комментарии, аудит) и бинарные Yjs-состояния (BoardDocument / BoardSnapshot).
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider      = "prisma-client-js"
+  // linux-musl-openssl-3.0.x — для образов на node:22-alpine
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+/// Роль на доске/папке. Порядок важен: OWNER > EDITOR > VIEWER > GUEST
+/// (сравнение рангов — в packages/shared/src/permissions.ts).
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+  GUEST
+}
+
+enum OrgRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum BoardVisibility {
+  /// Только участники доски/папки/организации
+  PRIVATE
+  /// Все участники организации получают VIEWER
+  ORGANIZATION
+  /// Read-only по ссылке без авторизации
+  PUBLIC_READ
+}
+
+enum SnapshotReason {
+  /// Периодический (debounce 30 c) снапшот WS-сервера
+  AUTO
+  /// Отключился последний клиент
+  LAST_CLIENT
+  /// Пользователь вручную сохранил версию
+  MANUAL
+  /// Состояние перед откатом — чтобы откат не терял историю
+  PRE_RESTORE
+  /// Результат отката
+  RESTORE
+  /// Импорт (Miro / FigJam / JSON / PDF)
+  IMPORT
+}
+
+enum AssetKind {
+  IMAGE
+  PDF
+  FILE
+  THUMBNAIL
+  EXPORT
+  AVATAR
+}
+
+enum AiJobType {
+  REMOVE_BG
+  GENERATE_IMAGE
+  ASSISTANT
+  SUMMARIZE
+  AUTOCOMPLETE
+  EXPORT_PDF
+  IMPORT_PDF
+  THUMBNAIL
+}
+
+enum AiJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum NotificationType {
+  MENTION
+  COMMENT_REPLY
+  INVITE
+  BOARD_SHARED
+  AI_JOB_DONE
+}
+
+// ───────────────────── NextAuth (Auth.js) ─────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  /// bcrypt-хеш; null для пользователей, вошедших только через OAuth
+  passwordHash   String?
+  /// Увеличивается при смене/сбросе пароля и «выйти на всех устройствах».
+  /// Записывается в JWT; несовпадение инвалидирует старые сессии.
+  sessionVersion Int       @default(0)
+  lastLoginAt    DateTime?
+
+  // 2FA (TOTP). Секрет хранится зашифрованным (AES-GCM, ключ AUTH_ENCRYPTION_KEY)
+  twoFactorEnabled    Boolean  @default(false)
+  twoFactorSecret     String?
+  twoFactorBackupKeys String[] @default([])
+
+  /// Письма об упоминаниях и ответах в комментариях (если не прочитано в приложении)
+  emailNotifications Boolean @default(true)
+
+  locale     String    @default("ru")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  /// Блокировка учётки администратором организации/инстанса
+  disabledAt DateTime?
+
+  accounts            Account[]
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  orgMemberships      OrgMember[]
+  ownedBoards         Board[]              @relation("BoardOwner")
+  boardMemberships    BoardMember[]
+  ownedFolders        Folder[]             @relation("FolderOwner")
+  folderMemberships   FolderMember[]
+  invitesCreated      Invite[]             @relation("InviteCreatedBy")
+  snapshots           BoardSnapshot[]
+  assets              Asset[]
+  aiJobs              AiJob[]
+  comments            Comment[]
+  reactions           Reaction[]
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  voteSessions        VoteSession[]
+  votes               Vote[]
+  favorites           BoardFavorite[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+/// Используется только при database-сессиях. По умолчанию — JWT-стратегия
+/// (обязательна для Credentials-провайдера), но таблица нужна адаптеру.
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Токены верификации email (Auth.js)
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/// Отдельная таблица под сброс пароля: храним только SHA-256 токена,
+/// одноразовость через usedAt.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─────────────────────── Организации ───────────────────────
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  plan      Plan     @default(FREE)
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ── Политики (enterprise). Проверяются и в REST API, и на WS-сервере. ──
+  /// Разрешён экспорт (PNG/PDF/SVG/JSON)
+  allowExport         Boolean  @default(true)
+  /// Разрешено копирование контента в буфер обмена / дублирование доски
+  allowCopy           Boolean  @default(true)
+  /// Разрешено удалять объекты, созданные другими пользователями
+  allowDeleteOthers   Boolean  @default(true)
+  /// Гости могут голосовать
+  guestCanVote        Boolean  @default(true)
+  /// Гости могут управлять таймером
+  guestCanUseTimer    Boolean  @default(false)
+  /// Разрешены публичные доски (PUBLIC_READ)
+  allowPublicBoards   Boolean  @default(true)
+  /// Домены, с которых пользователи автоматически вступают в организацию
+  allowedEmailDomains String[] @default([])
+  /// Обязательная 2FA для всех участников
+  require2fa          Boolean  @default(false)
+
+  // SSO (SAML/OIDC) — опционально
+  ssoEnabled Boolean @default(false)
+  /// { type: 'oidc' | 'saml', issuer, clientId, ... } — валидируется zod
+  ssoConfig  Json?
+
+  members   OrgMember[]
+  boards    Board[]
+  folders   Folder[]
+  auditLogs AuditLog[]
+}
+
+model OrgMember {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  role      OrgRole  @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, userId])
+  @@index([userId])
+}
+
+// ──────────────────────── Папки / доски ────────────────────────
+
+/// Папки вложенные (parentId). Права наследуются вниз по дереву:
+/// эффективная роль = max(роль на доске, роль на ближайших папках-предках, роль в организации).
+model Folder {
+  id        String    @id @default(cuid())
+  name      String
+  ownerId   String
+  orgId     String?
+  parentId  String?
+  /// Материализованный путь "/rootId/childId/" — быстрый поиск предков
+  /// и потомков без рекурсивных CTE при каждой проверке прав.
+  path      String    @default("/")
+  color     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  owner    User           @relation("FolderOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  org      Organization?  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  parent   Folder?        @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[]       @relation("FolderTree")
+  boards   Board[]
+  members  FolderMember[]
+  invites  Invite[]
+
+  @@index([ownerId])
+  @@index([orgId])
+  @@index([parentId])
+  @@index([path])
+}
+
+model FolderMember {
+  id        String   @id @default(cuid())
+  folderId  String
+  userId    String
+  role      Role     @default(EDITOR)
+  createdAt DateTime @default(now())
+
+  folder Folder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([folderId, userId])
+  @@index([userId])
+}
+
+model Board {
+  id           String          @id @default(cuid())
+  title        String          @default("Без названия")
+  description  String?
+  ownerId      String
+  orgId        String?
+  folderId     String?
+  visibility   BoardVisibility @default(PRIVATE)
+  /// Ключ превью-миниатюры в S3 (генерируется воркером после снапшота)
+  thumbnailKey String?
+  /// Доска-шаблон (для галереи шаблонов организации)
+  isTemplate   Boolean         @default(false)
+  /// Ключ встроенного шаблона, из которого создана доска (mindmap, kanban, retro...)
+  templateKey  String?
+  /// Плоский текст содержимого для поиска (обновляется при снапшоте).
+  /// Для полнотекстового поиска в миграции добавляется GIN-индекс по to_tsvector.
+  contentText  String          @default("") @db.Text
+  /// Кол-во объектов на доске (для дашборда и лимитов тарифа)
+  objectCount  Int             @default(0)
+  /// Переопределения политик организации на уровне доски (zod: BoardSettings)
+  settings     Json            @default("{}")
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastActivityAt DateTime  @default(now())
+  /// Мягкое удаление — доска попадает в корзину
+  deletedAt      DateTime?
+
+  owner     User            @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  org       Organization?   @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  folder    Folder?         @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  document  BoardDocument?
+  members   BoardMember[]
+  invites   Invite[]
+  snapshots BoardSnapshot[]
+  assets    Asset[]
+  aiJobs    AiJob[]
+  comments  Comment[]
+  voteSessions VoteSession[]
+  auditLogs AuditLog[]
+  favorites BoardFavorite[]
+
+  @@index([ownerId, deletedAt])
+  @@index([orgId, deletedAt])
+  @@index([folderId])
+  @@index([lastActivityAt])
+}
+
+/// Актуальное состояние Yjs-документа (Y.encodeStateAsUpdate).
+/// Вынесено из Board в отдельную таблицу, чтобы списки досок
+/// не тянули мегабайты бинарных данных.
+model BoardDocument {
+  boardId   String   @id
+  state     Bytes
+  /// Монотонный счётчик записей — защита от гонки двух WS-инстансов
+  version   Int      @default(0)
+  sizeBytes Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+}
+
+model BoardMember {
+  id            String    @id @default(cuid())
+  boardId       String
+  userId        String
+  role          Role      @default(EDITOR)
+  /// Через какое приглашение пользователь попал на доску (для аудита)
+  inviteId      String?
+  createdAt     DateTime  @default(now())
+  /// Последний визит — для «недавних досок» на дашборде
+  lastVisitedAt DateTime?
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
+  @@index([userId])
+}
+
+model BoardFavorite {
+  userId    String
+  boardId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@id([userId, boardId])
+}
+
+/// Приглашение: по email (email != null) или share-ссылка (email == null).
+/// В БД хранится только SHA-256 токена; сам токен виден один раз при создании.
+model Invite {
+  id          String    @id @default(cuid())
+  boardId     String?
+  folderId    String?
+  email       String?
+  role        Role      @default(EDITOR)
+  tokenHash   String    @unique
+  /// null — бессрочная ссылка
+  expiresAt   DateTime?
+  /// null — без лимита использований
+  maxUses     Int?
+  uses        Int       @default(0)
+  createdById String
+  createdAt   DateTime  @default(now())
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+
+  board     Board?  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  folder    Folder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  createdBy User    @relation("InviteCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@index([folderId])
+  @@index([email])
+}
+
+// ───────────────────────── История версий ─────────────────────────
+
+model BoardSnapshot {
+  id          String         @id @default(cuid())
+  boardId     String
+  /// Полное состояние Y.encodeStateAsUpdate на момент снапшота
+  state       Bytes
+  reason      SnapshotReason @default(AUTO)
+  /// Пользователь, инициировавший снапшот (MANUAL / RESTORE)
+  createdById String?
+  /// Кто редактировал доску с момента предыдущего снапшота (из awareness)
+  authorIds   String[]       @default([])
+  label       String?
+  objectCount Int            @default(0)
+  sizeBytes   Int            @default(0)
+  /// Превью (PNG в S3), рендерит воркер
+  previewKey  String?
+  createdAt   DateTime       @default(now())
+
+  board     Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdBy User? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([boardId, createdAt(sort: Desc)])
+}
+
+// ───────────────────────── Файлы ─────────────────────────
+
+model Asset {
+  id        String    @id @default(cuid())
+  ownerId   String
+  boardId   String?
+  kind      AssetKind
+  /// Ключ объекта в S3/MinIO
+  s3Key     String    @unique
+  mimeType  String
+  sizeBytes Int
+  width     Int?
+  height    Int?
+  pageCount Int?
+  /// SHA-256 содержимого — дедупликация одинаковых загрузок
+  sha256    String?
+  /// Исходный ассет (для результатов remove-bg / растеризации PDF)
+  sourceId  String?
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  owner   User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  board   Board?  @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  source  Asset?  @relation("AssetDerivation", fields: [sourceId], references: [id], onDelete: SetNull)
+  derived Asset[] @relation("AssetDerivation")
+
+  aiJobsAsInput  AiJob[] @relation("AiJobInputAsset")
+  aiJobsAsResult AiJob[] @relation("AiJobResultAsset")
+
+  @@index([boardId])
+  @@index([ownerId])
+  @@index([sha256])
+}
+
+// ───────────────────────── ИИ / фоновые задачи ─────────────────────────
+
+model AiJob {
+  id            String      @id @default(cuid())
+  type          AiJobType
+  status        AiJobStatus @default(QUEUED)
+  /// 0..100
+  progress      Int         @default(0)
+  userId        String
+  boardId       String?
+  inputAssetId  String?
+  resultAssetId String?
+  /// Параметры задачи (zod-схема по type)
+  input         Json
+  /// Результат (например, сгенерированные элементы доски для ASSISTANT)
+  output        Json?
+  error         String?
+  /// ID задачи в BullMQ
+  queueJobId    String?
+  provider      String?
+  createdAt     DateTime    @default(now())
+  startedAt     DateTime?
+  finishedAt    DateTime?
+
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  board       Board? @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  inputAsset  Asset? @relation("AiJobInputAsset", fields: [inputAssetId], references: [id], onDelete: SetNull)
+  resultAsset Asset? @relation("AiJobResultAsset", fields: [resultAssetId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([boardId])
+  @@index([status])
+}
+
+// ───────────────────────── Коммуникация ─────────────────────────
+
+/// Комментарии хранятся в Postgres (а не только в Yjs): нужны
+/// уведомления, @-упоминания, поиск и права. В Yjs-документе
+/// ("comments") лежат только «пины» — привязка треда к элементу/координатам.
+model Comment {
+  id         String    @id @default(cuid())
+  boardId    String
+  /// ID элемента в Yjs ("elements"); null — комментарий к точке на холсте
+  elementId  String?
+  /// Координаты пина в мировых единицах, если не привязан к элементу
+  x          Float?
+  y          Float?
+  /// Родитель — для ответов в треде (глубина 1)
+  parentId   String?
+  authorId   String
+  body       String    @db.Text
+  /// userId упомянутых пользователей
+  mentions   String[]  @default([])
+  createdAt  DateTime  @default(now())
+  editedAt   DateTime?
+  resolvedAt DateTime?
+  deletedAt  DateTime?
+
+  board     Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    Comment?   @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]  @relation("CommentThread")
+  reactions Reaction[]
+
+  @@index([boardId, createdAt])
+  @@index([parentId])
+  @@index([elementId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  /// { boardId, commentId, actorId, ... }
+  payload   Json
+  readAt    DateTime?
+  /// Отправлено ли email-уведомление (дайджест)
+  emailedAt DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+}
+
+// ───────────────────────── Голосование ─────────────────────────
+
+/// Сессия голосования на доске (итерация 7). Голоса — в Postgres, а не в Yjs:
+/// голосуют и читатели, которым WS-сервер не даёт менять документ доски,
+/// а лимит голосов на человека проверяется на сервере.
+model VoteSession {
+  id           String    @id @default(cuid())
+  boardId      String
+  title        String
+  votesPerUser Int       @default(3)
+  createdById  String
+  createdAt    DateTime  @default(now())
+  /// Голосование завершено — видны результаты
+  endedAt      DateTime?
+  /// Результаты скрыты ведущим
+  closedAt     DateTime?
+
+  board     Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdBy User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  votes     Vote[]
+
+  @@index([boardId, createdAt(sort: Desc)])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  /// ID элемента в Yjs; один человек может отдать за объект несколько голосов
+  elementId String
+  createdAt DateTime @default(now())
+
+  session VoteSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, userId])
+  @@index([sessionId, elementId])
+}
+
+// ───────────────────────── Аудит ─────────────────────────
+
+/// Append-only журнал. action — строка из AUDIT_ACTIONS (packages/shared),
+/// а не enum, чтобы добавление нового действия не требовало миграции.
+model AuditLog {
+  id         String   @id @default(cuid())
+  orgId      String?
+  boardId    String?
+  actorId    String?
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json     @default("{}")
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  org   Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  board Board?        @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  actor User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, createdAt(sort: Desc)])
+  @@index([boardId, createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+}

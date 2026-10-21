@@ -1,0 +1,213 @@
+# ═══════════════════════════════════════════════════════════════
+#  Prostor — полный стек
+#
+#  Только инфраструктура для локальной разработки:
+#    docker compose --profile dev up -d postgres redis s3 s3-init mailpit
+#  Весь стек (on-premise / staging):
+#    docker compose up -d --build
+#  С локальным удалением фона (rembg, ~1.5 GB образ + модели):
+#    docker compose --profile ai up -d --build
+# ═══════════════════════════════════════════════════════════════
+
+name: prostor
+
+x-app-env: &app-env
+  # Внутренние адреса сервисов перекрывают localhost-значения из .env
+  DATABASE_URL: postgresql://${POSTGRES_USER:-prostor}:${POSTGRES_PASSWORD:-prostor}@postgres:5432/${POSTGRES_DB:-prostor}?schema=public
+  REDIS_URL: redis://redis:6379
+  S3_ENDPOINT: http://s3:8333
+  REMBG_URL: http://rembg:7000
+  # Почта: по умолчанию — Mailpit из профиля dev; для боевого SMTP задайте SMTP_URL_DOCKER
+  # (в .env SMTP_URL указывает на localhost — внутри контейнера это сам контейнер)
+  SMTP_URL: ${SMTP_URL_DOCKER:-smtp://mailpit:1025}
+  NODE_ENV: production
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-prostor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prostor}
+      POSTGRES_DB: ${POSTGRES_DB:-prostor}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-prostor} -d ${POSTGRES_DB:-prostor}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    # AOF: очереди BullMQ переживают рестарт Redis.
+    # noeviction: BullMQ требует, чтобы Redis не вытеснял ключи задач.
+    command: ['redis-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # S3-совместимое хранилище — SeaweedFS (Apache-2.0).
+  # MinIO с конца 2025 года не публикует Docker-образы, поэтому используется SeaweedFS;
+  # в проде можно указать любой S3 (AWS, Cloudflare R2, Yandex Object Storage) через S3_*.
+  s3:
+    image: ${S3_IMAGE:-chrislusf/seaweedfs:3.80}
+    restart: unless-stopped
+    # Ключи доступа берутся из окружения: конфиг identities генерируется при старте
+    entrypoint: [/bin/sh, -c]
+    command:
+      - |
+        mkdir -p /etc/seaweedfs &&
+        printf '{"identities":[{"name":"app","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","List","Tagging","Write"]}]}' "$${S3_ACCESS_KEY}" "$${S3_SECRET_KEY}" > /etc/seaweedfs/s3.json &&
+        exec weed server -dir=/data -ip.bind=0.0.0.0 -volume.max=0 -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-prostor}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-prostor-secret}
+    ports:
+      - '${S3_PORT:-9000}:8333'
+    volumes:
+      - s3data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:9333/cluster/status >/dev/null || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Одноразово создаёт бакет (идемпотентно), затем завершается.
+  s3-init:
+    image: ${AWS_CLI_IMAGE:-amazon/aws-cli:2.27.0}
+    depends_on:
+      s3:
+        condition: service_healthy
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        for i in $$(seq 1 30); do
+          aws --endpoint-url http://s3:8333 s3api head-bucket --bucket "$${S3_BUCKET}" 2>/dev/null && { echo "bucket $${S3_BUCKET} exists"; exit 0; }
+          aws --endpoint-url http://s3:8333 s3api create-bucket --bucket "$${S3_BUCKET}" && { echo "bucket $${S3_BUCKET} created"; exit 0; }
+          sleep 2
+        done
+        exit 1
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-prostor}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-prostor-secret}
+      AWS_DEFAULT_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-prostor}
+    restart: 'no'
+
+  # Ловушка писем для разработки: UI на http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.21
+    profiles: ['dev']
+    restart: unless-stopped
+    environment:
+      # Обратный DNS клиента в Docker Desktop занимает 3–8 с на каждое письмо
+      MP_SMTP_DISABLE_RDNS: 'true'
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
+  # Применяет миграции Prisma перед стартом приложений
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+      target: migrate
+    image: prostor-migrate:${PROSTOR_VERSION:-latest}
+    environment:
+      <<: *app-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+      target: runner
+    image: prostor-web:${PROSTOR_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: *app-env
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      s3-init:
+        condition: service_completed_successfully
+
+  ws:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ws
+      target: runner
+    image: prostor-ws:${PROSTOR_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: *app-env
+    ports:
+      - '${WS_PORT:-1234}:1234'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    # Для горизонтального масштабирования: `docker compose up --scale ws=3`
+    # за балансировщиком (sticky-сессии не нужны — комнаты синхронизируются через Redis).
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+      target: runner
+    image: prostor-worker:${PROSTOR_VERSION:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      <<: *app-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      s3-init:
+        condition: service_completed_successfully
+
+  # Локальное удаление фона (https://github.com/danielgatis/rembg).
+  # Модели скачиваются при первом запросе и кешируются в томе.
+  rembg:
+    # У rembg нет версионных тегов на Docker Hub; в проде закрепите digest через REMBG_IMAGE
+    image: ${REMBG_IMAGE:-danielgatis/rembg:latest}
+    profiles: ['ai']
+    restart: unless-stopped
+    command: ['s', '--host', '0.0.0.0', '--port', '7000', '--log_level', 'info']
+    ports:
+      - '${REMBG_PORT:-7000}:7000'
+    volumes:
+      - rembgmodels:/root/.u2net
+    # Модель держится в памяти: isnet ~1 ГБ RAM; на CPU одно изображение — 1–5 с
+    deploy:
+      resources:
+        limits:
+          memory: ${REMBG_MEMORY:-3g}
+
+volumes:
+  pgdata:
+  redisdata:
+  s3data:
+  rembgmodels:

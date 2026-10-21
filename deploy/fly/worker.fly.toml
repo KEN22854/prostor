@@ -1,0 +1,20 @@
+# Деплой из корня репозитория:
+#   fly deploy --config deploy/fly/worker.fly.toml --dockerfile docker/Dockerfile.worker .
+# Воркер очередей (ИИ, письма) на Fly.io — без HTTP-сервиса:
+#   fly launch --config deploy/fly/worker.fly.toml --no-deploy
+# Секреты: DATABASE_URL, REDIS_URL, S3_*, SMTP_URL, EMAIL_FROM, APP_URL, REPLICATE_API_TOKEN …
+app = 'prostor-worker'
+primary_region = 'ams'
+
+[build]
+  build-target = 'runner'
+
+[env]
+  NODE_ENV = 'production'
+  # Без локального rembg в облаке — удаление фона через Replicate
+  AI_PROVIDER_REMOVE_BG = 'replicate'
+  AI_PROVIDER_IMAGE = 'replicate'
+
+[[vm]]
+  memory = '1gb'
+  cpus = 1

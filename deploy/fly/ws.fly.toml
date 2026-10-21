@@ -1,0 +1,38 @@
+# Деплой из корня репозитория:
+#   fly deploy --config deploy/fly/ws.fly.toml --dockerfile docker/Dockerfile.ws .
+# WS-сервер на Fly.io:  fly launch --config deploy/fly/ws.fly.toml --dockerfile docker/Dockerfile.ws --no-deploy
+# Секреты: fly secrets set --config deploy/fly/ws.fly.toml DATABASE_URL=… REDIS_URL=… WS_JWT_SECRET=… WS_ALLOWED_ORIGINS=https://board.example.ru
+app = 'prostor-ws'
+primary_region = 'ams'
+
+[build]
+  build-target = 'runner'
+
+[env]
+  NODE_ENV = 'production'
+  WS_PORT = '1234'
+  WS_HOST = '0.0.0.0'
+
+[http_service]
+  internal_port = 1234
+  force_https = true
+  # Долгоживущие соединения: машины не останавливаем по простою
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = 'connections'
+    soft_limit = 2000
+    hard_limit = 4000
+
+  [[http_service.checks]]
+    grace_period = '10s'
+    interval = '15s'
+    method = 'GET'
+    path = '/health'
+    timeout = '5s'
+
+[[vm]]
+  memory = '1gb'
+  cpus = 1

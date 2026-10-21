@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // Пакет используется в браузере — node-типы намеренно не подключены.
+    "lib": ["ES2023", "DOM"],
+    "types": []
+  },
+  "include": ["src"],
+  // Тесты используют node:fs; их типизирует vitest при запуске.
+  "exclude": ["src/**/*.test.ts"]
+}

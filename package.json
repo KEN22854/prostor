@@ -1,0 +1,55 @@
+{
+  "name": "prostor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Онлайн-доска для совместной работы (Yjs + Konva + Next.js)",
+  "packageManager": "npm@11.19.0",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run db:generate && concurrently -k -n web,ws,worker -c blue,magenta,yellow \"npm:dev:web\" \"npm:dev:ws\" \"npm:dev:worker\"",
+    "dev:web": "npm run dev -w @prostor/web",
+    "dev:ws": "npm run dev -w @prostor/ws-server",
+    "dev:worker": "npm run dev -w @prostor/worker",
+    "build": "npm run db:generate && npm run build -w @prostor/web -w @prostor/ws-server -w @prostor/worker",
+    "typecheck": "npm run db:generate && npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "npm run test:e2e -w @prostor/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "npm run generate -w @prostor/db",
+    "db:migrate": "npm run migrate:dev -w @prostor/db",
+    "db:deploy": "npm run migrate:deploy -w @prostor/db",
+    "db:seed": "npm run seed -w @prostor/db",
+    "db:studio": "npm run studio -w @prostor/db",
+    "infra:up": "docker compose --profile dev up -d postgres redis s3 s3-init mailpit",
+    "infra:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "concurrently": "^9.1.2",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.9",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.21.5": true,
+    "esbuild@0.27.7": true,
+    "esbuild@0.28.2": true,
+    "unrs-resolver@1.12.2": true
+  },
+  "overrides": {
+    "@prisma/client": "^6.19.3"
+  }
+}

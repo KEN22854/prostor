@@ -1,0 +1,62 @@
+'use client';
+
+import { memo } from 'react';
+import type {
+  BoardElement,
+  FrameElement,
+  ImageElement,
+  LineElement,
+  PathElement,
+  ShapeElement,
+  StickyElement,
+  TextElement,
+} from '@prostor/shared';
+import { BasicShape } from '@/components/canvas/shapes/basic-shape';
+import { FrameShape } from '@/components/canvas/shapes/frame-shape';
+import { ImageShape } from '@/components/canvas/shapes/image-shape';
+import { LineShape } from '@/components/canvas/shapes/line-shape';
+import { PathShape } from '@/components/canvas/shapes/path-shape';
+import { PlaceholderShape } from '@/components/canvas/shapes/placeholder-shape';
+import { StickyShape } from '@/components/canvas/shapes/sticky-shape';
+import { TextShape } from '@/components/canvas/shapes/text-shape';
+import type { DetailLevel } from '@/lib/canvas/constants';
+
+interface ElementNodeProps {
+  element: BoardElement;
+  detail: DetailLevel;
+  /** Текст элемента сейчас в inline-редакторе */
+  editing?: boolean;
+}
+
+/**
+ * Диспетчер по типу элемента.
+ *
+ * memo со сравнением по ссылке: ElementStore создаёт новый объект только для
+ * изменённого элемента, поэтому при правке одного стикера на доске из 1 500
+ * видимых перерисовывается ровно одна React-ветка (а Konva — только слой).
+ */
+export const ElementNode = memo(function ElementNode({
+  element,
+  detail,
+  editing = false,
+}: ElementNodeProps) {
+  switch (element.type) {
+    case 'sticky':
+      return <StickyShape element={element as StickyElement} detail={detail} hideText={editing} />;
+    case 'shape':
+      return <BasicShape element={element as ShapeElement} detail={detail} hideText={editing} />;
+    case 'text':
+      return <TextShape element={element as TextElement} detail={detail} hideText={editing} />;
+    case 'line':
+    case 'arrow':
+      return <LineShape element={element as LineElement} />;
+    case 'path':
+      return <PathShape element={element as PathElement} />;
+    case 'image':
+      return <ImageShape element={element as ImageElement} detail={detail} />;
+    case 'frame':
+      return <FrameShape element={element as FrameElement} />;
+    default:
+      return <PlaceholderShape element={element} detail={detail} />;
+  }
+});

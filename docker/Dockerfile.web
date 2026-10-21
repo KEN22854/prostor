@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1.7
+# ─── Prostor web (Next.js standalone) ───
+# Сборка из корня монорепо:  docker build -f docker/Dockerfile.web -t prostor-web .
+
+FROM node:22-alpine AS base
+# openssl — для движка Prisma, libc6-compat — для нативных модулей Next (SWC)
+RUN apk add --no-cache libc6-compat openssl
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# ── Зависимости: копируем только манифесты, чтобы слой кешировался ──
+FROM base AS deps
+COPY package.json package-lock.json ./
+COPY apps/web/package.json apps/web/
+COPY apps/ws-server/package.json apps/ws-server/
+COPY apps/worker/package.json apps/worker/
+COPY packages/db/package.json packages/db/
+COPY packages/shared/package.json packages/shared/
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+# ── Сборка ──
+FROM deps AS build
+COPY . .
+RUN npm run db:generate && npm run build -w @prostor/web
+
+# ── Миграции: отдельный таргет для one-shot сервиса `migrate` ──
+FROM deps AS migrate
+COPY packages/db packages/db
+RUN npm run db:generate
+CMD ["npm", "run", "migrate:deploy", "-w", "@prostor/db"]
+
+# ── Рантайм ──
+FROM base AS runner
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+RUN addgroup -S -g 1001 app && adduser -S -u 1001 -G app app
+
+COPY --from=build --chown=app:app /app/apps/web/.next/standalone ./
+COPY --from=build --chown=app:app /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=app:app /app/apps/web/public ./apps/web/public
+# Движок Prisma загружается динамически — трассировка Next его может пропустить.
+COPY --from=build --chown=app:app /app/node_modules/.prisma ./node_modules/.prisma
+
+USER app
+EXPOSE 3000
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
+  CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
+CMD ["node", "apps/web/server.js"]

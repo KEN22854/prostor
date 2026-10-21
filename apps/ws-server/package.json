@@ -1,0 +1,31 @@
+{
+  "name": "@prostor/ws-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "load-test": "tsx --env-file=../../.env scripts/load-test.ts"
+  },
+  "dependencies": {
+    "@prostor/db": "*",
+    "@prostor/shared": "*",
+    "ioredis": "^5.4.2",
+    "jose": "^5.9.6",
+    "lib0": "^0.2.99",
+    "ws": "^8.18.0",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.21",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "y-websocket": "^2.1.0"
+  }
+}
