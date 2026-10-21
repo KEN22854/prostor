@@ -19,6 +19,7 @@ import { FollowBanner } from '@/components/canvas/follow-banner';
 import { FramesPanel } from '@/components/canvas/frames-panel';
 import { LodShape } from '@/components/canvas/lod-shape';
 import { BoardSearch } from '@/components/canvas/board-search';
+import { StickerLibrary } from '@/components/canvas/sticker-library';
 import { TableCellEditor } from '@/components/canvas/table-cell-editor';
 import { EmbedPlayer } from '@/components/canvas/embed-player';
 import { Minimap } from '@/components/canvas/minimap';
@@ -449,6 +450,11 @@ export function BoardCanvas({
           onGenerateImage={ai.generateImage ? () => setGenerateOpen(true) : undefined}
           onImportPdf={() => pdfInputRef.current?.click()}
           onAddLink={() => void addLink()}
+          stickers={
+            user ? (
+              <StickerLibrary boardId={boardId} doc={doc} actions={actions} userId={user.id} />
+            ) : null
+          }
         />
       ) : null}
       {store && actions && !presenting ? (

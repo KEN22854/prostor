@@ -138,6 +138,8 @@ interface ToolPaletteProps {
   onImportPdf: () => void;
   /** Ссылка, видео, Figma — карточка с превью */
   onAddLink?: () => void;
+  /** Кнопка библиотеки стикеров (со своим всплывающим окном) */
+  stickers?: ReactNode;
 }
 
 export function ToolPalette({
@@ -145,6 +147,7 @@ export function ToolPalette({
   onGenerateImage,
   onImportPdf,
   onAddLink,
+  stickers,
 }: ToolPaletteProps) {
   const t = useT();
   const options = useCanvasStore((s) => s.toolOptions);
@@ -334,6 +337,7 @@ export function ToolPalette({
           Импорт PDF: страницы — фреймами (или перетащите файл на доску)
         </TooltipContent>
       </Tooltip>
+      {stickers}
       {onAddLink ? (
         <Tooltip>
           <TooltipTrigger asChild>
