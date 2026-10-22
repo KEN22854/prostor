@@ -15,10 +15,13 @@ export const GET = withErrorHandling(
   async (req: Request, { params }: { params: Promise<{ assetId: string }> }) => {
     const { assetId } = await params;
     const user = await getSessionUser();
-    const asset = await openAsset(assetId, user?.id ?? null);
+    // Range — только простой «bytes=a-b»: перемотка аудио; остальное — файл целиком
+    const rangeHeader = req.headers.get('range');
+    const range = rangeHeader && /^bytes=d*-d*$/.test(rangeHeader) ? rangeHeader : undefined;
+    const asset = await openAsset(assetId, user?.id ?? null, range);
     if (!asset) return new NextResponse(null, { status: 404 });
 
-    if (req.headers.get('if-none-match') === asset.etag) {
+    if (!range && req.headers.get('if-none-match') === asset.etag) {
       await asset.body.cancel();
       return new NextResponse(null, { status: 304, headers: { ETag: asset.etag } });
     }
@@ -27,11 +30,16 @@ export const GET = withErrorHandling(
       'Content-Type': asset.mimeType,
       'Cache-Control': 'private, max-age=31536000, immutable',
       ETag: asset.etag,
+      'Accept-Ranges': 'bytes',
       'X-Content-Type-Options': 'nosniff',
       // SVG, открытый напрямую, не должен исполнять скрипты в нашем origin
       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
     };
     if (asset.contentLength !== undefined) headers['Content-Length'] = String(asset.contentLength);
+    if (range && asset.contentRange) {
+      headers['Content-Range'] = asset.contentRange;
+      return new NextResponse(asset.body, { status: 206, headers });
+    }
     return new NextResponse(asset.body, { headers });
   },
 );

@@ -306,6 +306,10 @@ export class InteractionController {
       // Двойной клик по картинке — обрезка
       state().select([hit.id]);
       state().setCropping(hit.id);
+    } else if (hit.type === 'audio') {
+      // Двойной клик по аудио — воспроизвести / остановить
+      state().select([hit.id]);
+      state().setPlayingAudio(state().playingAudioId === hit.id ? null : hit.id);
     } else if (hit.type === 'embed') {
       // Ссылка: плеер поверх карточки, а у обычной ссылки — сайт в новой вкладке
       state().select([hit.id]);

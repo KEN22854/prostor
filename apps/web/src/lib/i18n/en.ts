@@ -618,4 +618,18 @@ export const EN: Readonly<Record<string, string>> = {
   Горы: 'Mountains',
   Море: 'Sea',
   Ретро: 'Retro',
+  // Аудио
+  'Загружаем аудио…': 'Uploading audio…',
+  'Не удалось загрузить аудио': 'Could not upload the audio',
+  Аудио: 'Audio',
+  'Нет доступа к микрофону — разрешите его в настройках браузера':
+    'No microphone access — allow it in your browser settings',
+  'Голосовая заметка {time}': 'Voice note {time}',
+  'Аудио: файл или запись с микрофона': 'Audio: file or microphone recording',
+  'Идёт запись': 'Recording',
+  'Остановить и добавить': 'Stop and add',
+  'Загрузить аудиофайл': 'Upload audio file',
+  'Записать с микрофона': 'Record from microphone',
+  'MP3, WAV, OGG, M4A, FLAC до 50 МБ; аудиофайл можно и просто перетащить на доску':
+    'MP3, WAV, OGG, M4A, FLAC up to 50 MB; you can also drag an audio file onto the board',
 };

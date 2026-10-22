@@ -25,6 +25,8 @@ interface ClipboardDeps {
   insertEmbed?: (url: string, at: Point) => Promise<void>;
   /** Картинка, перетащенная из ленты */
   insertFeedImage?: (img: FeedImage, at: Point) => Promise<void>;
+  /** Аудиофайл, брошенный на холст */
+  insertAudio?: (file: Blob, at: Point) => Promise<void>;
 }
 
 const MAX_PLAIN_TEXT = 10_000;
@@ -49,6 +51,7 @@ export function useBoardClipboard({
   importPdf,
   insertEmbed,
   insertFeedImage,
+  insertAudio,
 }: ClipboardDeps): void {
   useEffect(() => {
     const el = containerRef.current;
@@ -162,7 +165,11 @@ export function useBoardClipboard({
       const at = screenToWorld(camera, { x: e.clientX - rect.left, y: e.clientY - rect.top });
       // PDF — постранично фреймами, остальное — как изображения
       for (const pdf of files.filter(isPdf)) void importPdf?.(pdf, at);
-      const images = files.filter((f) => !isPdf(f));
+      // Аудио — карточками со смещением, чтобы не легли друг на друга
+      files
+        .filter((f) => f.type.startsWith('audio/'))
+        .forEach((f, i) => void insertAudio?.(f, { x: at.x, y: at.y + i * 96 }));
+      const images = files.filter((f) => !isPdf(f) && !f.type.startsWith('audio/'));
       if (images.length > 0) void insertImages(images, at);
       // Если бросили у самого края — подвинем камеру, чтобы картинка была видна
       if (e.clientX - rect.left < 40 || e.clientY - rect.top < 40)
@@ -187,5 +194,15 @@ export function useBoardClipboard({
       el.removeEventListener('dragover', onDragOver);
       el.removeEventListener('drop', onDrop);
     };
-  }, [containerRef, actions, doc, userId, insertImages, importPdf, insertEmbed, insertFeedImage]);
+  }, [
+    containerRef,
+    actions,
+    doc,
+    userId,
+    insertImages,
+    importPdf,
+    insertEmbed,
+    insertFeedImage,
+    insertAudio,
+  ]);
 }

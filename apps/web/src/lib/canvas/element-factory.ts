@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 import {
   Y_KEYS,
   richTextSchema,
+  type AudioElement,
   type BoardElement,
   type EmbedElement,
   type EmbedPreview,
@@ -188,6 +189,23 @@ export function buildLine(
     routing: p.routing ?? 'straight',
     ...(p.startBinding ? { startBinding: p.startBinding } : {}),
     ...(p.endBinding ? { endBinding: p.endBinding } : {}),
+  };
+}
+
+/** Карточка аудио */
+export const AUDIO_CARD = { width: 320, height: 76 } as const;
+
+export function buildAudio(
+  p: BaseParams & { assetId: string; title: string; mimeType: string; durationMs?: number },
+): AudioElement {
+  return {
+    ...baseFields(p, AUDIO_CARD.width, AUDIO_CARD.height),
+    type: 'audio',
+    assetId: p.assetId,
+    title: p.title,
+    mimeType: p.mimeType,
+    ...(p.durationMs !== undefined ? { durationMs: p.durationMs } : {}),
+    color: '#6366f1',
   };
 }
 

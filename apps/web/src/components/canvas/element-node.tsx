@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import type {
+  AudioElement,
   BoardElement,
   EmbedElement,
   FrameElement,
@@ -13,6 +14,7 @@ import type {
   TableElement,
   TextElement,
 } from '@prostor/shared';
+import { AudioShape } from '@/components/canvas/shapes/audio-shape';
 import { BasicShape } from '@/components/canvas/shapes/basic-shape';
 import { EmbedShape } from '@/components/canvas/shapes/embed-shape';
 import { FrameShape } from '@/components/canvas/shapes/frame-shape';
@@ -63,6 +65,8 @@ export const ElementNode = memo(function ElementNode({
       return <ImageShape element={element as ImageElement} detail={detail} />;
     case 'frame':
       return <FrameShape element={element as FrameElement} />;
+    case 'audio':
+      return <AudioShape element={element as AudioElement} detail={detail} />;
     case 'embed':
       return <EmbedShape element={element as EmbedElement} detail={detail} />;
     case 'table':

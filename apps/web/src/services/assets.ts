@@ -148,6 +148,7 @@ export interface AssetDownload extends ObjectStream {
 export async function openAsset(
   assetId: string,
   userId: string | null,
+  range?: string,
 ): Promise<AssetDownload | null> {
   const asset = await prisma.asset.findUnique({
     where: { id: assetId },
@@ -169,7 +170,7 @@ export async function openAsset(
     return null;
   }
 
-  const stream = await getObjectStream(asset.s3Key);
+  const stream = await getObjectStream(asset.s3Key, range);
   if (!stream) return null;
   return { ...stream, mimeType: asset.mimeType, etag: `"${asset.sha256 ?? assetId}"` };
 }

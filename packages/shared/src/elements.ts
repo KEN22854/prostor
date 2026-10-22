@@ -38,6 +38,7 @@ export const ELEMENT_TYPES = [
   'vote',
   'bpmn',
   'embed',
+  'audio',
 ] as const;
 export const elementTypeSchema = z.enum(ELEMENT_TYPES);
 export type ElementType = z.infer<typeof elementTypeSchema>;
@@ -251,6 +252,17 @@ export const tableSchema = baseElementSchema.extend({
   cells: z.array(z.array(z.string().max(TABLE_LIMITS.maxCellLength))).optional(),
 });
 
+/** Аудио: карточка с плеером (файл — ассет доски) */
+export const audioSchema = baseElementSchema.extend({
+  type: z.literal('audio'),
+  assetId: z.string().max(64),
+  title: z.string().max(200),
+  mimeType: z.string().max(100),
+  /** Длительность, мс (если известна) */
+  durationMs: z.number().int().nonnegative().optional(),
+  color: color.default('#6366f1'),
+});
+
 /** Ссылка-карточка; у видео и дизайн-сервисов — с плеером (embedUrl) */
 export const embedSchema = baseElementSchema.extend({
   type: z.literal('embed'),
@@ -300,6 +312,7 @@ export const boardElementSchema = z.discriminatedUnion('type', [
   frameSchema,
   tableSchema,
   embedSchema,
+  audioSchema,
   generic('mindmapNode'),
   generic('kanban'),
   generic('document'),
@@ -320,6 +333,7 @@ export type ImageElement = z.infer<typeof imageSchema>;
 export type FrameElement = z.infer<typeof frameSchema>;
 export type TableElement = z.infer<typeof tableSchema>;
 export type EmbedElement = z.infer<typeof embedSchema>;
+export type AudioElement = z.infer<typeof audioSchema>;
 export type GenericElement = z.infer<typeof genericElementSchema>;
 export type BoardElement =
   | StickyElement
@@ -331,6 +345,7 @@ export type BoardElement =
   | FrameElement
   | TableElement
   | EmbedElement
+  | AudioElement
   | GenericElement;
 
 /** Axis-aligned bounding box в мировых координатах */

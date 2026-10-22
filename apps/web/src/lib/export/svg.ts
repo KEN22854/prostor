@@ -1,4 +1,5 @@
 import type {
+  AudioElement,
   BoardElement,
   EmbedElement,
   Bounds,
@@ -553,6 +554,30 @@ function embed(el: EmbedElement, opts: SvgExportOptions): string {
   return `<a ${attrs({ href: el.url, target: '_blank' })}>${parts.join('')}</a>`;
 }
 
+/** Аудио: карточка с кнопкой ▶ и названием (звук в SVG не встраиваем) */
+function audio(el: AudioElement, opts: SvgExportOptions): string {
+  const cy = el.height / 2;
+  return [
+    `<rect ${attrs({ width: el.width, height: el.height, rx: 14, fill: '#ffffff', stroke: '#e2e8f0', 'stroke-width': 1 })}/>`,
+    `<circle ${attrs({ cx: 38, cy, r: 22, fill: el.color })}/>`,
+    `<polygon ${attrs({ points: `33,${cy - 9} 33,${cy + 9} 48,${cy}`, fill: '#ffffff' })}/>`,
+    textBlock(
+      {
+        text: el.title,
+        x: 76,
+        y: 12,
+        width: el.width - 92,
+        height: 20,
+        align: 'left',
+        verticalAlign: 'top',
+        ellipsis: true,
+      },
+      { fontSize: 14, fontWeight: 'bold', color: '#0f172a' },
+      opts,
+    ),
+  ].join('');
+}
+
 function placeholder(el: BoardElement): string {
   return `<rect ${attrs({ width: el.width, height: el.height, rx: 8, fill: '#f8fafc', stroke: '#94a3b8', 'stroke-dasharray': '6 4' })}/>`;
 }
@@ -578,6 +603,8 @@ export function elementToSvg(el: BoardElement, opts: SvgExportOptions): string {
       return wrapElement(el, table(el as TableElement, opts));
     case 'embed':
       return wrapElement(el, embed(el as EmbedElement, opts));
+    case 'audio':
+      return wrapElement(el, audio(el as AudioElement, opts));
     default:
       return wrapElement(el, placeholder(el));
   }

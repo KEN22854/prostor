@@ -32,13 +32,26 @@ export async function putObject(key: string, body: Uint8Array, contentType: stri
 export interface ObjectStream {
   body: ReadableStream<Uint8Array>;
   contentLength: number | undefined;
+  /** Ответ на запрос части файла: «bytes 0-99/1234» */
+  contentRange?: string;
 }
 
-export async function getObjectStream(key: string): Promise<ObjectStream | null> {
+/** range — заголовок HTTP Range («bytes=0-»): перемотка аудио и видео */
+export async function getObjectStream(key: string, range?: string): Promise<ObjectStream | null> {
   try {
-    const res = await s3().send(new GetObjectCommand({ Bucket: env().S3_BUCKET, Key: key }));
+    const res = await s3().send(
+      new GetObjectCommand({
+        Bucket: env().S3_BUCKET,
+        Key: key,
+        ...(range ? { Range: range } : {}),
+      }),
+    );
     if (!res.Body) return null;
-    return { body: res.Body.transformToWebStream(), contentLength: res.ContentLength };
+    return {
+      body: res.Body.transformToWebStream(),
+      contentLength: res.ContentLength,
+      contentRange: res.ContentRange,
+    };
   } catch (error: unknown) {
     if (
       typeof error === 'object' &&

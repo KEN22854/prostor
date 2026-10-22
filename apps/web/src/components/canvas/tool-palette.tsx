@@ -143,6 +143,8 @@ interface ToolPaletteProps {
   stickers?: ReactNode;
   /** Лента картинок (в духе Pinterest) */
   onOpenFeed?: () => void;
+  /** Кнопка аудио (загрузка и запись) */
+  audio?: ReactNode;
 }
 
 export function ToolPalette({
@@ -152,6 +154,7 @@ export function ToolPalette({
   onAddLink,
   stickers,
   onOpenFeed,
+  audio,
 }: ToolPaletteProps) {
   const t = useT();
   const options = useCanvasStore((s) => s.toolOptions);
@@ -342,6 +345,7 @@ export function ToolPalette({
         </TooltipContent>
       </Tooltip>
       {stickers}
+      {audio}
       {onOpenFeed ? (
         <Tooltip>
           <TooltipTrigger asChild>

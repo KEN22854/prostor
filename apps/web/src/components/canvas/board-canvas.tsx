@@ -21,6 +21,8 @@ import { LodShape } from '@/components/canvas/lod-shape';
 import { BoardSearch } from '@/components/canvas/board-search';
 import { StickerLibrary } from '@/components/canvas/sticker-library';
 import { TableCellEditor } from '@/components/canvas/table-cell-editor';
+import { AudioButton } from '@/components/canvas/audio-button';
+import { AudioPlayer } from '@/components/canvas/audio-player';
 import { CropEditor } from '@/components/canvas/crop-editor';
 import { ImageFeedPanel } from '@/components/canvas/image-feed-panel';
 import { EmbedPlayer } from '@/components/canvas/embed-player';
@@ -40,6 +42,7 @@ import { useElementStore } from '@/hooks/use-element-store';
 import { useFollow } from '@/hooks/use-follow';
 import { useBoardFonts } from '@/hooks/use-board-fonts';
 import { useEmbedInsert } from '@/hooks/use-embed-insert';
+import { useAudioInsert } from '@/hooks/use-audio-insert';
 import { useFeedInsert } from '@/hooks/use-feed-insert';
 import { usePrompt } from '@/components/ui/prompt-dialog';
 import { useImageInsert } from '@/hooks/use-image-insert';
@@ -314,6 +317,7 @@ export function BoardCanvas({
   const insertImages = useImageInsert({ boardId, doc, actions, userId: user?.id ?? null });
   const insertEmbed = useEmbedInsert({ boardId, doc, actions, userId: user?.id ?? null });
   const insertFeedImage = useFeedInsert({ boardId, doc, actions, userId: user?.id ?? null });
+  const insertAudio = useAudioInsert({ boardId, doc, actions, userId: user?.id ?? null });
   const [feedOpen, setFeedOpen] = useState(false);
   const [linkDialog, askLink] = usePrompt();
   const addLink = async () => {
@@ -384,6 +388,7 @@ export function BoardCanvas({
     importPdf,
     insertEmbed,
     insertFeedImage,
+    insertAudio,
   });
 
   const cursor = isPanning
@@ -450,6 +455,7 @@ export function BoardCanvas({
         <TableCellEditor store={store} actions={actions} />
       ) : null}
       {store && !presenting ? <EmbedPlayer store={store} /> : null}
+      {store ? <AudioPlayer store={store} /> : null}
       {feedOpen && !presenting ? (
         <ImageFeedPanel
           onClose={() => setFeedOpen(false)}
@@ -467,6 +473,7 @@ export function BoardCanvas({
           onImportPdf={() => pdfInputRef.current?.click()}
           onAddLink={() => void addLink()}
           onOpenFeed={() => setFeedOpen((v) => !v)}
+          audio={<AudioButton onInsert={insertAudio} />}
           stickers={
             user ? (
               <StickerLibrary boardId={boardId} doc={doc} actions={actions} userId={user.id} />
