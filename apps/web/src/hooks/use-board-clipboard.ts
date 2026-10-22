@@ -4,6 +4,8 @@ import { useEffect, type RefObject } from 'react';
 import { toast } from 'sonner';
 import type * as Y from 'yjs';
 import { looksLikeUrl } from '@prostor/shared';
+import { FEED_DRAG_TYPE } from '@/hooks/use-feed-insert';
+import type { FeedImage } from '@/lib/image-feed';
 import type { BoardActions } from '@/lib/canvas/board-actions';
 import { buildText, nextZIndex } from '@/lib/canvas/element-factory';
 import { isTypingTarget } from '@/lib/canvas/keyboard';
@@ -21,6 +23,8 @@ interface ClipboardDeps {
   importPdf?: (file: File, at: Point) => Promise<void>;
   /** Вставленная ссылка — карточка с превью (YouTube, Figma, сайт) */
   insertEmbed?: (url: string, at: Point) => Promise<void>;
+  /** Картинка, перетащенная из ленты */
+  insertFeedImage?: (img: FeedImage, at: Point) => Promise<void>;
 }
 
 const MAX_PLAIN_TEXT = 10_000;
@@ -44,6 +48,7 @@ export function useBoardClipboard({
   insertImages,
   importPdf,
   insertEmbed,
+  insertFeedImage,
 }: ClipboardDeps): void {
   useEffect(() => {
     const el = containerRef.current;
@@ -126,12 +131,28 @@ export function useBoardClipboard({
     };
 
     const onDragOver = (e: DragEvent) => {
-      if (e.dataTransfer?.types.includes('Files')) {
+      if (
+        e.dataTransfer?.types.includes('Files') ||
+        e.dataTransfer?.types.includes(FEED_DRAG_TYPE)
+      ) {
         e.preventDefault();
         e.dataTransfer.dropEffect = actions?.canEdit ? 'copy' : 'none';
       }
     };
     const onDrop = (e: DragEvent) => {
+      // Картинка из ленты — точка броска на доске
+      const feed = e.dataTransfer?.getData(FEED_DRAG_TYPE);
+      if (feed) {
+        e.preventDefault();
+        if (!actions?.canEdit || !insertFeedImage) return;
+        const rect = el.getBoundingClientRect();
+        const at = screenToWorld(useCanvasStore.getState().camera, {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        });
+        void insertFeedImage(JSON.parse(feed) as FeedImage, at);
+        return;
+      }
       const files = Array.from(e.dataTransfer?.files ?? []);
       if (files.length === 0) return;
       e.preventDefault();
@@ -166,5 +187,5 @@ export function useBoardClipboard({
       el.removeEventListener('dragover', onDragOver);
       el.removeEventListener('drop', onDrop);
     };
-  }, [containerRef, actions, doc, userId, insertImages, importPdf, insertEmbed]);
+  }, [containerRef, actions, doc, userId, insertImages, importPdf, insertEmbed, insertFeedImage]);
 }

@@ -2,6 +2,7 @@
 
 import {
   ArrowUpRight,
+  Images,
   Link2,
   Table2,
   Circle,
@@ -140,6 +141,8 @@ interface ToolPaletteProps {
   onAddLink?: () => void;
   /** Кнопка библиотеки стикеров (со своим всплывающим окном) */
   stickers?: ReactNode;
+  /** Лента картинок (в духе Pinterest) */
+  onOpenFeed?: () => void;
 }
 
 export function ToolPalette({
@@ -148,6 +151,7 @@ export function ToolPalette({
   onImportPdf,
   onAddLink,
   stickers,
+  onOpenFeed,
 }: ToolPaletteProps) {
   const t = useT();
   const options = useCanvasStore((s) => s.toolOptions);
@@ -338,6 +342,22 @@ export function ToolPalette({
         </TooltipContent>
       </Tooltip>
       {stickers}
+      {onOpenFeed ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-9"
+              aria-label={t('Лента картинок')}
+              onClick={onOpenFeed}
+            >
+              <Images />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">{t('Лента картинок: поиск и вдохновение')}</TooltipContent>
+        </Tooltip>
+      ) : null}
       {onAddLink ? (
         <Tooltip>
           <TooltipTrigger asChild>

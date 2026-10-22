@@ -22,6 +22,7 @@ import { BoardSearch } from '@/components/canvas/board-search';
 import { StickerLibrary } from '@/components/canvas/sticker-library';
 import { TableCellEditor } from '@/components/canvas/table-cell-editor';
 import { CropEditor } from '@/components/canvas/crop-editor';
+import { ImageFeedPanel } from '@/components/canvas/image-feed-panel';
 import { EmbedPlayer } from '@/components/canvas/embed-player';
 import { Minimap } from '@/components/canvas/minimap';
 import { PresentationMode } from '@/components/canvas/presentation-mode';
@@ -39,6 +40,7 @@ import { useElementStore } from '@/hooks/use-element-store';
 import { useFollow } from '@/hooks/use-follow';
 import { useBoardFonts } from '@/hooks/use-board-fonts';
 import { useEmbedInsert } from '@/hooks/use-embed-insert';
+import { useFeedInsert } from '@/hooks/use-feed-insert';
 import { usePrompt } from '@/components/ui/prompt-dialog';
 import { useImageInsert } from '@/hooks/use-image-insert';
 import { usePdfImport } from '@/hooks/use-pdf-import';
@@ -311,6 +313,8 @@ export function BoardCanvas({
   // ── Изображения ──
   const insertImages = useImageInsert({ boardId, doc, actions, userId: user?.id ?? null });
   const insertEmbed = useEmbedInsert({ boardId, doc, actions, userId: user?.id ?? null });
+  const insertFeedImage = useFeedInsert({ boardId, doc, actions, userId: user?.id ?? null });
+  const [feedOpen, setFeedOpen] = useState(false);
   const [linkDialog, askLink] = usePrompt();
   const addLink = async () => {
     const url = await askLink({
@@ -379,6 +383,7 @@ export function BoardCanvas({
     insertImages,
     importPdf,
     insertEmbed,
+    insertFeedImage,
   });
 
   const cursor = isPanning
@@ -445,6 +450,13 @@ export function BoardCanvas({
         <TableCellEditor store={store} actions={actions} />
       ) : null}
       {store && !presenting ? <EmbedPlayer store={store} /> : null}
+      {feedOpen && !presenting ? (
+        <ImageFeedPanel
+          onClose={() => setFeedOpen(false)}
+          onInsert={insertFeedImage}
+          canEdit={Boolean(actions?.canEdit)}
+        />
+      ) : null}
       {store && actions?.canEdit && !presenting ? (
         <CropEditor store={store} actions={actions} />
       ) : null}
@@ -454,6 +466,7 @@ export function BoardCanvas({
           onGenerateImage={ai.generateImage ? () => setGenerateOpen(true) : undefined}
           onImportPdf={() => pdfInputRef.current?.click()}
           onAddLink={() => void addLink()}
+          onOpenFeed={() => setFeedOpen((v) => !v)}
           stickers={
             user ? (
               <StickerLibrary boardId={boardId} doc={doc} actions={actions} userId={user.id} />

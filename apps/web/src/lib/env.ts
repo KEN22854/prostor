@@ -84,6 +84,8 @@ const serverEnvSchema = z.object({
   AI_PROVIDER_IMAGE: z.enum(['pollinations', 'replicate', 'mock', 'disabled']).default('disabled'),
   REMBG_URL: optional(z.string().url()),
   REPLICATE_API_TOKEN: optionalSecret,
+  /** Ключ Pexels (бесплатный) — красивые фото в ленте картинок; без него — только Wikimedia Commons */
+  PEXELS_API_KEY: optionalSecret,
   OPENAI_API_KEY: optionalSecret,
   LLM_BASE_URL: optional(z.string().url()),
   LLM_MODEL: optional(z.string()),
