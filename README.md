@@ -1,165 +1,163 @@
-# Простор — онлайн-доска для совместной работы
+# Prostor — collaborative online whiteboard
 
-Бесконечный холст для команд: стикеры, фигуры, mind map, канбан, документы,
-комментарии, презентации и ИИ-помощник. Real-time на Yjs (CRDT), офлайн-режим,
-история версий, SaaS и on-premise.
+[Русский](README.ru.md) | **English**
 
-> **Статус:** готовы все 9 итераций плана — от авторизации и real-time до enterprise-функций, замеров производительности и деплоя.
-> План итераций — в разделе [Roadmap](#roadmap).
+An infinite canvas for teams: sticky notes, shapes, mind maps, kanban, documents,
+comments, presentations and an AI assistant. Real-time on Yjs (CRDT), offline mode,
+version history, SaaS and on-premise.
 
-## Архитектура
+> **Status:** all 9 planned iterations are done — from authentication and real-time to enterprise features, performance measurements and deployment — plus a 10th round of extras.
+> The iteration plan is in the [Roadmap](#roadmap) section.
+
+## Architecture
 
 ```
 prostor/
 ├── apps/
 │   ├── web/            Next.js 15 (App Router): UI + REST API + Auth.js
-│   ├── ws-server/      y-websocket-совместимый сервер: JWT, Redis pub/sub, снапшоты в Postgres
-│   └── worker/         BullMQ: ИИ (remove-bg, генерация), экспорт PDF, email, превью
+│   ├── ws-server/      y-websocket compatible server: JWT, Redis pub/sub, snapshots in Postgres
+│   └── worker/         BullMQ: AI (remove-bg, generation), PDF export, email, webhooks, thumbnails
 ├── packages/
-│   ├── db/             Prisma schema + клиент (общий для web, ws, worker)
-│   └── shared/         zod-схемы элементов, права, протокол WS, константы
-└── docker/             Dockerfile для web / ws / worker
+│   ├── db/             Prisma schema + client (shared by web, ws, worker)
+│   └── shared/         zod element schemas, permissions, WS protocol, constants
+└── docker/             Dockerfiles for web / ws / worker
 ```
 
 ```
- Браузер ──HTTP──► web (Next.js) ──► Postgres
+ Browser ──HTTP──► web (Next.js) ──► Postgres
     │                  │  └────────► Redis ◄── worker ──► S3 (SeaweedFS), rembg, Replicate, SMTP
-    │                  └── ставит задачи ──┘
+    │                  └── enqueues jobs ──┘
     └──WebSocket──► ws-server ×N ◄──Redis pub/sub──► ws-server
-                       └── снапшоты Yjs ──► Postgres
+                       └── Yjs snapshots ──► Postgres
 ```
 
-**Почему worker вынесен в `apps/worker`, а не `apps/web/worker`:** у него свой образ,
-свой цикл деплоя и свои зависимости (Replicate SDK, nodemailer). Отдельный workspace даёт
-честный `package.json` и маленький Docker-образ без Next.js. Общий код — в `packages/*`.
+**Why the worker lives in `apps/worker` and not `apps/web/worker`:** it has its own image,
+its own deploy cycle and its own dependencies (Replicate SDK, nodemailer). A separate workspace gives
+an honest `package.json` and a small Docker image without Next.js. Shared code lives in `packages/*`.
 
-**Почему Prisma в `packages/db`:** схема используется тремя приложениями; один
-источник правды и одна генерация клиента.
+**Why Prisma is in `packages/db`:** the schema is used by three apps; one
+source of truth and one client generation.
 
-### Рендер-движок: Konva (Canvas2D) + виртуализация + LOD
+### Rendering engine: Konva (Canvas2D) + virtualization + LOD
 
-Выбран Konva, а не PixiJS. Обоснование:
+Konva was chosen over PixiJS. Rationale:
 
-- Цель «10 000 объектов» — это объекты *на доске*, а не одновременно *на экране*.
-  При обычном масштабе в viewport (+1 экран буфера) попадает 100–1 500 объектов;
-  R-tree (`rbush`) отбирает их за ~0.1 мс, Konva рисует такое количество в 60 FPS.
-- Худший случай — отдалённый зум, когда видна вся доска. Его закрывает **LOD**:
-  при `zoom < 0.25` все видимые объекты рисуются прямоугольниками в одном
-  `Konva.Shape` с кастомным `sceneFunc` (один проход вместо 10 000 нод);
-  при `0.25 ≤ zoom < 0.45` — ноды без текста (на экране он всё равно < 6 px).
-- Текст, rich-text-редактирование, Transformer, hit-test, события — у Konva из коробки.
-  В PixiJS всё это пришлось бы писать вручную, а текст в WebGL — отдельная боль
-  (кириллица, переносы, SDF-шрифты).
-- Если профилирование покажет упор в CPU-растеризацию, LOD-слой можно заменить
-  на WebGL (PixiJS) точечно, не трогая инструменты.
+- The "10,000 objects" goal means objects *on the board*, not *on screen* at the same time.
+  At normal zoom the viewport (+1 screen of buffer) contains 100–1,500 objects;
+  an R-tree (`rbush`) selects them in ~0.1 ms, and Konva draws that many at 60 FPS.
+- The worst case is zoomed far out, when the whole board is visible. That is covered by **LOD**:
+  at `zoom < 0.25` all visible objects are drawn as rectangles in a single
+  `Konva.Shape` with a custom `sceneFunc` (one pass instead of 10,000 nodes);
+  at `0.25 ≤ zoom < 0.45` nodes are drawn without text (it would be < 6 px on screen anyway).
+- Text, rich-text editing, Transformer, hit-testing and events come out of the box with Konva.
+  In PixiJS all of that would have to be written by hand, and text in WebGL is a pain of its own
+  (Cyrillic, line wrapping, SDF fonts).
+- If profiling ever shows CPU rasterization as the bottleneck, the LOD layer can be replaced
+  with WebGL (PixiJS) in isolation, without touching the tools.
 
-**Как устроено (итерация 4a):**
+**How it works (iteration 4a):**
 
-| Приём | Где |
+| Technique | Where |
 | --- | --- |
-| Неизменяемые снимки элементов, новый объект только для изменённого → `React.memo` по ссылке | `lib/canvas/element-store.ts` |
-| R-tree с точечным обновлением по `observeDeep`, bulk-load при открытии | `lib/canvas/spatial-index.ts` |
-| Выборка «viewport + 1 экран буфера» с гистерезисом; пересборка в `startTransition` | `hooks/use-visible-elements.ts` |
-| Камера применяется к Stage императивно — панорамирование без React-рендеров | `components/canvas/board-canvas.tsx` |
-| Сетка — CSS-фон контейнера (0 затрат на canvas) | там же |
-| Курсоры — отдельный слой с rAF-интерполяцией, отправка 20 Гц | `lib/canvas/cursors-renderer.ts`, `hooks/use-presence-broadcast.ts` |
-| Без теней, `perfectDrawEnabled=false`, `listening=false` до появления инструментов | `components/canvas/shapes/*` |
+| Immutable element snapshots, a new object only for the changed one → `React.memo` by reference | `lib/canvas/element-store.ts` |
+| R-tree with point updates from `observeDeep`, bulk-load on open | `lib/canvas/spatial-index.ts` |
+| "Viewport + 1 screen of buffer" selection with hysteresis; rebuilt in `startTransition` | `hooks/use-visible-elements.ts` |
+| The camera is applied to the Stage imperatively — panning without React renders | `components/canvas/board-canvas.tsx` |
+| The grid is the container's CSS background (zero canvas cost) | same |
+| Cursors — a separate layer with rAF interpolation, sent at 20 Hz | `lib/canvas/cursors-renderer.ts`, `hooks/use-presence-broadcast.ts` |
+| No shadows, `perfectDrawEnabled=false`, `listening=false` until tools need it | `components/canvas/shapes/*` |
 
-**Замеры** (production-сборка, 10 007 объектов, Chromium, 1280×720):
+**Measurements** (production build, 10,007 objects, Chromium, 1280×720):
 
-| Масштаб | Нод в выборке | Кадр панорамирования p50 / p95 | Пересборка выборки |
+| Zoom | Nodes in selection | Pan frame p50 / p95 | Selection rebuild |
 | --- | --- | --- | --- |
-| 100% | 104 | 1,1 / 2,2 мс | 5 мс |
-| 60% | 280 | 2,2 / 3,7 мс | 10 мс |
-| 35% (без текста) | 816 | 3,3 / 4,1 мс | 17 мс |
-| 15% (LOD) | 4 464 | 0,8 / 1,0 мс | — |
-| вся доска (LOD) | 10 007 | 2,4 / 3,7 мс | — |
+| 100% | 104 | 1.1 / 2.2 ms | 5 ms |
+| 60% | 280 | 2.2 / 3.7 ms | 10 ms |
+| 35% (no text) | 816 | 3.3 / 4.1 ms | 17 ms |
+| 15% (LOD) | 4,464 | 0.8 / 1.0 ms | — |
+| whole board (LOD) | 10,007 | 2.4 / 3.7 ms | — |
 
-Холодное открытие доски с 10 000 объектов (токен → WS → 6 МБ состояния → индекс → рендер): ~1 с.
-Повторить замеры: `npm run dev`, на доске кнопка FPS → «+10 000 объектов»
-(dev-панель есть только в dev; для production-бандла соберите с `NEXT_PUBLIC_CANVAS_DEBUG=1` —
-откроется `window.__prostorCanvas` для скриптов).
+Cold open of a 10,000-object board (token → WS → 6 MB state → index → render): ~1 s.
+To repeat the measurements: `npm run dev`, then the FPS button on a board → "+10,000 objects"
+(the dev panel exists only in dev; for a production bundle build with `NEXT_PUBLIC_CANVAS_DEBUG=1` —
+this exposes `window.__prostorCanvas` for scripts).
 
-### Навигация по холсту
+### Canvas navigation
 
-| Действие | Как |
+| Action | How |
 | --- | --- |
-| Зум к курсору | Ctrl/Cmd + колесо, щипок на тачпаде, два пальца на тач-экране |
-| Панорамирование | колесо / два пальца на тачпаде, Space + drag, средняя кнопка, инструмент «рука» (H) |
-| Масштаб | Ctrl+= / Ctrl+− / Ctrl+0 (100%), Shift+1 — показать всё; кнопки внизу слева |
-| Мини-карта | внизу справа: клик или перетаскивание — переход к месту доски |
+| Zoom to cursor | Ctrl/Cmd + wheel, trackpad pinch, two fingers on a touch screen |
+| Pan | wheel / two fingers on a trackpad, Space + drag, middle button, the Hand tool (H) |
+| Zoom level | Ctrl+= / Ctrl+− / Ctrl+0 (100%), Shift+1 — fit all; buttons bottom left |
+| Minimap | bottom right: click or drag to jump to a place on the board |
 
-### Инструменты и горячие клавиши
+### Tools and keyboard shortcuts
 
-| Инструмент | Клавиша | Как |
+| Tool | Key | How |
 | --- | --- | --- |
-| Выделение | V | клик, Shift+клик (добавить/убрать), рамка; двойной клик — внутрь группы / редактировать текст |
-| Рука | H, зажатый Space | панорамирование |
-| Стикер | N | клик → сразу ввод текста |
-| Фигура | R (прямоугольник), O (эллипс) | перетаскивание; Shift — квадрат/круг; вид и цвета — в меню инструмента |
-| Линия / стрелка | L / A | перетаскивание; Shift — шаг 45° |
-| Текст | T | клик → ввод; пустой блок удаляется |
-| Карандаш | P | ручка, маркер, выделитель; цвет и толщина в меню |
-| Ластик | E | проведите по росчеркам карандаша |
-| Изображение | I | выбор файла, перетаскивание на холст, Ctrl+V |
-| Фрейм | F | перетаскивание (клик — 16:9); объекты внутри двигаются, копируются и удаляются вместе с фреймом |
-| Комментарий | C | клик по объекту (пин едет за ним) или по месту на доске; Shift+C — скрыть/показать |
-| Лазерная указка | K | след видят все участники и гаснет за секунду |
-| Импорт PDF | кнопка в палитре | или перетащите PDF на доску: страница — фрейм с картинкой |
+| Select | V | click, Shift+click (add/remove), marquee; double-click — into a group / edit text |
+| Hand | H, hold Space | pan |
+| Sticky note | N | click → start typing right away |
+| Shape | R (rectangle), O (ellipse) | drag; Shift — square/circle; kind and colors in the tool menu |
+| Line / arrow | L / A | drag; Shift — 45° steps; start or end on an object to attach |
+| Text | T | click → type; an empty block is removed |
+| Table | B | click — a 3×3 table |
+| Pen | P | pen, marker, highlighter; color and width in the menu |
+| Eraser | E | drag over pen strokes |
+| Image | I | pick a file, drop onto the canvas, Ctrl+V |
+| Frame | F | drag (click — 16:9); objects inside move, copy and delete with the frame |
+| Comment | C | click an object (the pin follows it) or a spot on the board; Shift+C — hide/show |
+| Laser pointer | K | everyone sees the trail, it fades in a second |
+| PDF import | palette button | or drop a PDF onto the board: each page becomes a frame with an image |
 
-Двойной клик по инструменту закрепляет его (не сбрасывается на «выделение» после создания объекта).
+Double-clicking a tool locks it (it does not switch back to Select after creating an object).
 
-| Действие | Клавиши |
+| Action | Keys |
 | --- | --- |
-| Отменить / повторить | Ctrl+Z / Ctrl+Shift+Z, Ctrl+Y |
-| Копировать / вырезать / вставить | Ctrl+C / Ctrl+X / Ctrl+V (вставка — под курсор) |
-| Дублировать | Ctrl+D |
-| Выделить всё | Ctrl+A |
-| Группировать / разгруппировать | Ctrl+G / Ctrl+Shift+G |
-| На передний / задний план | Ctrl+] / Ctrl+[ |
-| Заблокировать / разблокировать | Ctrl+Shift+L |
-| Удалить | Delete, Backspace |
-| Сдвиг | стрелки (Shift — ×10) |
-| Редактировать текст | Enter или двойной клик |
-| Без привязки при перетаскивании | зажатый Alt |
-| Экспорт PNG / PDF / SVG | Ctrl+Shift+E |
-| В тексте: жирный / курсив / подчёркнутый / зачёркнутый | Ctrl+B / Ctrl+I / Ctrl+U / Ctrl+Shift+X |
-| В тексте: список | Ctrl+Shift+8 или «- » в начале строки |
-| В тексте: в начало / конец | Ctrl+Home / Ctrl+End |
+| Undo / redo | Ctrl+Z / Ctrl+Shift+Z, Ctrl+Y |
+| Copy / cut / paste | Ctrl+C / Ctrl+X / Ctrl+V (paste goes under the cursor) |
+| Duplicate | Ctrl+D |
+| Select all | Ctrl+A |
+| Group / ungroup | Ctrl+G / Ctrl+Shift+G |
+| Bring to front / send to back | Ctrl+] / Ctrl+[ |
+| Lock / unlock | Ctrl+Shift+L |
+| Delete | Delete, Backspace |
+| Nudge | arrows (Shift — ×10) |
+| Edit text | Enter or double-click |
+| Find on board | Ctrl+F |
+| No snapping while dragging | hold Alt |
+| Export PNG / PDF / SVG | Ctrl+Shift+E |
+| In text: bold / italic / underline / strikethrough | Ctrl+B / Ctrl+I / Ctrl+U / Ctrl+Shift+X |
+| In text: list | Ctrl+Shift+8 or "- " at the start of a line |
+| In text: to start / end | Ctrl+Home / Ctrl+End |
 
-Клавиши инструментов работают и в русской раскладке (по физической клавише, e.code).
+Tool keys also work in the Russian keyboard layout (by physical key, `e.code`).
 
-### Как устроены взаимодействия (итерация 4b)
+### How interactions work (iteration 4b)
 
-- **Hit-test свой, а не Konva.** Слой элементов без hit-графа: попадания считаются по R-tree +
-  геометрии (`lib/canvas/hit-test.ts`). Hit-граф Konva удвоил бы стоимость каждого кадра.
-  Интерактивен только маленький слой Transformer.
-- **Все изменения — через `BoardActions`.** Одна Yjs-транзакция на действие, клиентские проверки
-  прав (роль, `allowCopy`, `allowDeleteOthers`, `locked`). Дискретные действия начинают новый шаг
-  undo (`stopCapturing`), жесты (перетаскивание, набор текста) склеиваются в один.
-- **Перетаскивание вживую.** До 150 объектов позиции пишутся в Yjs каждый кадр (коллеги видят
-  движение), больше — двигаются только Konva-ноды, а в Yjs пишется итог.
-- **Снэппинг.** Края и центры соседних объектов (порог 6 px экрана) с красными направляющими,
-  опционально сетка 20 px. Alt — временно выключить.
-- **Текст редактируется HTML-textarea поверх холста** (масштаб и поворот вместе с объектом):
-  IME, проверка орфографии и выделение работают нативно.
-- **Изображения** загружаются через `POST /api/boards/:id/assets` (проверка сигнатуры файла,
-  дедупликация по SHA-256) и раздаются через `GET /api/assets/:id` с проверкой прав — same-origin,
-  поэтому экспорт PNG/PDF не упрётся в «грязный» canvas.
-- **Холст всегда светлый.** Цвета объектов общие для всех участников, тёмная тема — для интерфейса.
+- **Custom hit-testing instead of Konva's.** The element layer has no hit graph: hits are computed from the R-tree +
+  geometry (`lib/canvas/hit-test.ts`). Konva's hit graph would double the cost of every frame.
+  Only the small Transformer layer is interactive.
+- **All changes go through `BoardActions`.** One Yjs transaction per action, client-side permission
+  checks (role, `allowCopy`, `allowDeleteOthers`, `locked`). Discrete actions start a new undo
+  step (`stopCapturing`); gestures (dragging, typing) are merged into one.
+- **Live dragging.** For up to 150 objects positions are written to Yjs every frame (colleagues see
+  the movement); for more, only the Konva nodes move and the result is written to Yjs at the end.
+- **Snapping.** Edges and centers of nearby objects (6 screen px threshold) with red guides,
+  optionally a 20 px grid. Alt disables it temporarily.
+- **Text is edited in an HTML textarea over the canvas** (scaled and rotated with the object):
+  IME, spell checking and selection work natively.
+- **Images** are uploaded via `POST /api/boards/:id/assets` (file signature check,
+  SHA-256 deduplication) and served via `GET /api/assets/:id` with a permission check — same-origin,
+  so PNG/PDF export never hits a "tainted" canvas.
+- **The canvas is always light.** Object colors are shared by all participants; the dark theme applies to the UI.
 
-**Известные ограничения 4b** (запланированы):
-текст стикера — строка в Y.Map, одновременная правка одного стикера двумя людьми — last-writer-wins
-(посимвольная совместная правка через Y.Text/ProseMirror — итерация 7); привязка стрелок к фигурам
-(startBinding/endBinding в модели уже есть) — итерация 7; запрет удаления чужих объектов
-проверяется на клиенте, серверная проверка Yjs-апдейтов — итерация 8.
+## Quick start (local development)
 
-## Быстрый старт (локальная разработка)
+> **If sign-in says "no connection to the database"** — the containers are not running (often after a
+> computer restart): start Docker Desktop and run `npm run infra:up`.
 
-> **Если вход пишет «Нет связи с базой данных»** — не запущены контейнеры (часто после перезагрузки
-> компьютера): запустите Docker Desktop и выполните `npm run infra:up`.
-
-Требования: Node.js ≥ 20.11 (рекомендуется 22), Docker.
+Requirements: Node.js ≥ 20.11 (22 recommended), Docker.
 
 ```bash
 cp .env.example .env
@@ -185,492 +183,496 @@ npm run db:seed
 npm run dev
 ```
 
-| Сервис         | Адрес                                     |
+| Service | Address |
 | -------------- | ----------------------------------------- |
-| Web            | http://localhost:3000                     |
-| WS-сервер      | ws://localhost:1234 (health: `/health`)   |
-| S3 (SeaweedFS)  | http://localhost:9000 (ключи `S3_ACCESS_KEY` / `S3_SECRET_KEY`) |
-| Mailpit (письма) | http://localhost:8025                   |
+| Web | http://localhost:3000 |
+| WS server | ws://localhost:1234 (health: `/health`) |
+| S3 (SeaweedFS) | http://localhost:9000 (keys `S3_ACCESS_KEY` / `S3_SECRET_KEY`) |
+| Mailpit (email) | http://localhost:8025 |
 
-Демо-учётки после seed: `demo@prostor.local`, `alice@prostor.local`, пароль из `SEED_PASSWORD`.
+Demo accounts after seeding: `demo@prostor.local`, `alice@prostor.local`, password from `SEED_PASSWORD`.
 
-> **S3 локально — SeaweedFS.** MinIO с конца 2025 года не публикует Docker-образы, поэтому
-> docker-compose поднимает SeaweedFS (Apache-2.0) с S3 API на порту 9000. Приложение работает
-> с любым S3-совместимым хранилищем — в проде достаточно поменять `S3_*`.
+> **Local S3 is SeaweedFS.** Since late 2025 MinIO no longer publishes Docker images, so
+> docker-compose starts SeaweedFS (Apache-2.0) with an S3 API on port 9000. The app works
+> with any S3-compatible storage — in production just change `S3_*`.
 >
-> **Windows:** `npm run db:generate` (и `typecheck`, который его вызывает) падает с `EPERM`,
-> пока запущены web/ws/worker — движок Prisma заблокирован процессом. Остановите их перед генерацией.
+> **Windows:** `npm run db:generate` (and `typecheck`, which calls it) fails with `EPERM`
+> while web/ws/worker are running — the Prisma engine is locked by the process. Stop them before generating.
+> In PowerShell run npm as `npm.cmd` if script execution is disabled.
 
-### Скрипты
+### Scripts
 
-| Команда              | Что делает                                        |
+| Command | What it does |
 | -------------------- | ------------------------------------------------- |
-| `npm run dev`        | web + ws + worker параллельно                     |
-| `npm run build`      | production-сборка всех приложений                 |
-| `npm run typecheck`  | `tsc --noEmit` во всех workspaces                 |
-| `npm run lint`       | ESLint (web)                                      |
-| `npm test`           | Vitest (юнит-тесты всех пакетов)                  |
-| `npm run test:e2e`   | Playwright (apps/web/e2e), см. «E2E-тесты»        |
-| `npm run db:migrate` | создать/применить миграцию (dev)                  |
-| `npm run db:deploy`  | применить миграции (prod)                         |
-| `npm run db:studio`  | Prisma Studio                                     |
+| `npm run dev` | web + ws + worker in parallel |
+| `npm run build` | production build of all apps |
+| `npm run typecheck` | `tsc --noEmit` in all workspaces |
+| `npm run lint` | ESLint (web) |
+| `npm test` | Vitest (unit tests of all packages) |
+| `npm run test:e2e` | Playwright (apps/web/e2e), see "E2E tests" |
+| `npm run db:migrate` | create/apply a migration (dev) |
+| `npm run db:deploy` | apply migrations (prod) |
+| `npm run db:studio` | Prisma Studio |
 
-### E2E-тесты
+### E2E tests
 
-Playwright гоняется по **production-сборке** web: dev-сервер с компиляцией по требованию и HMR
-не выдерживает параллельных сценариев с несколькими браузерами на одной доске.
+Playwright runs against a **production build** of web: the dev server with on-demand compilation and HMR
+cannot handle parallel scenarios with several browsers on one board.
 
 ```bash
 docker compose up -d postgres redis s3 mailpit
-npm run dev:ws        # в отдельном терминале
-npm run dev:worker    # в отдельном терминале
+npm run dev:ws        # in a separate terminal
+npm run dev:worker    # in a separate terminal (with AI_PROVIDER_IMAGE=mock)
 npm run test:e2e -w @prostor/web
 ```
 
-Web Playwright поднимает сам: `build:e2e` (сборка с отладочным хуком холста
-`NEXT_PUBLIC_CANVAS_DEBUG=1`) и `start:e2e` — с `RATE_LIMIT_MULTIPLIER=50` (тесты регистрируют
-десятки пользователей с одного IP) и `NOTIFICATION_EMAIL_DELAY_MS=3000` (письма о комментариях
-проверяются через Mailpit). Против готового стенда: `E2E_BASE_URL=https://… npm run test:e2e -w @prostor/web`.
+Playwright starts web itself: `build:e2e` (a build with the canvas debug hook
+`NEXT_PUBLIC_CANVAS_DEBUG=1`, into a separate `.next-e2e` folder) and `start:e2e` — with `RATE_LIMIT_MULTIPLIER=50`
+(tests register dozens of users from one IP) and `NOTIFICATION_EMAIL_DELAY_MS=3000` (comment emails
+are checked through Mailpit). Against a ready environment: `E2E_BASE_URL=https://… npm run test:e2e -w @prostor/web`.
 
 ## On-premise (Docker Compose)
 
-Весь стек одной командой — web, ws, worker, Postgres, Redis, S3 (SeaweedFS), миграции:
+The whole stack with one command — web, ws, worker, Postgres, Redis, S3 (SeaweedFS), migrations:
 
 ```bash
 cp .env.example .env
 ```
 
-Отредактируйте `.env`: обязательно смените `AUTH_SECRET`, `WS_JWT_SECRET`,
-`AUTH_ENCRYPTION_KEY`, пароль Postgres, ключи `S3_ACCESS_KEY`/`S3_SECRET_KEY`, укажите `APP_URL`, `WS_PUBLIC_URL`,
-`S3_PUBLIC_ENDPOINT`. Боевой SMTP для контейнеров — `SMTP_URL_DOCKER` (по умолчанию письма уходят
-в Mailpit из профиля `dev`). Затем:
+Edit `.env`: be sure to change `AUTH_SECRET`, `WS_JWT_SECRET`,
+`AUTH_ENCRYPTION_KEY`, the Postgres password and `S3_ACCESS_KEY`/`S3_SECRET_KEY`; set `APP_URL`, `WS_PUBLIC_URL`,
+`S3_PUBLIC_ENDPOINT`. Production SMTP for the containers is `SMTP_URL_DOCKER` (by default email goes
+to Mailpit from the `dev` profile). Then:
 
 ```bash
 docker compose up -d --build
 ```
 
-С локальным удалением фона (без внешних API — подходит для закрытого контура):
+With local background removal (no external APIs — suitable for an air-gapped network):
 
 ```bash
 docker compose --profile ai up -d --build
 ```
 
-Рекомендации для прода:
+Production recommendations:
 
-- Поставьте reverse-proxy с TLS: `/` → web:3000, `wss://…/ws` → ws:1234 — готовый пример
-  [deploy/nginx/prostor.conf](deploy/nginx/prostor.conf) (WebSocket, таймауты, лимиты загрузки).
-- WS-сервер масштабируется горизонтально (`--scale ws=3`): комнаты синхронизируются через Redis.
-- Адрес WS отдаётся клиенту в рантайме (`WS_PUBLIC_URL`), поэтому один образ работает на любом домене.
-- Бэкапы: `pg_dump` (доски, версии) + копия бакета (`aws s3 sync` против S3-endpoint).
-- Для закрытого контура (РФ): Yandex ID и VK ID вместо Google/GitHub, LLM через
-  OpenAI-совместимый шлюз (`LLM_BASE_URL`), S3 — встроенный SeaweedFS или Yandex Object Storage.
+- Put a reverse proxy with TLS in front: `/` → web:3000, `wss://…/ws` → ws:1234 — a ready example is
+  [deploy/nginx/prostor.conf](deploy/nginx/prostor.conf) (WebSocket, timeouts, upload limits).
+- The WS server scales horizontally (`--scale ws=3`): rooms are synchronized through Redis.
+- The WS address is given to the client at runtime (`WS_PUBLIC_URL`), so one image works on any domain.
+- Backups: `pg_dump` (boards, versions) + a copy of the bucket (`aws s3 sync` against the S3 endpoint).
+- For closed networks (e.g. in Russia): Yandex ID and VK ID instead of Google/GitHub, LLM through an
+  OpenAI-compatible gateway (`LLM_BASE_URL`), S3 — the built-in SeaweedFS or Yandex Object Storage.
 
-## Переменные окружения
+## Environment variables
 
-Полный список с комментариями — в [.env.example](.env.example). Ключевые:
+The full commented list is in [.env.example](.env.example). Key ones:
 
-| Переменная | Назначение |
+| Variable | Purpose |
 | --- | --- |
-| `APP_URL` | публичный адрес web |
-| `DATABASE_URL` | Postgres (при PgBouncer миграции запускайте с прямым адресом) |
-| `REDIS_URL` | очереди, pub/sub WS-инстансов |
-| `AUTH_SECRET`, `AUTH_ENCRYPTION_KEY` | Auth.js и шифрование TOTP-секретов |
-| `AUTH_{GOOGLE,GITHUB,YANDEX,VK}_{ID,SECRET}` | OAuth (пустые — провайдер скрыт) |
-| `WS_JWT_SECRET`, `WS_PUBLIC_URL`, `WS_ALLOWED_ORIGINS` | WS-сервер |
-| `S3_*` | хранилище файлов (SeaweedFS / R2 / S3 / Yandex Object Storage) |
-| `SMTP_URL`, `EMAIL_FROM` | письма (приглашения, сброс пароля, уведомления) |
-| `SMTP_URL_DOCKER` | SMTP для контейнеров docker compose (по умолчанию — Mailpit) |
-| `NOTIFICATION_EMAIL_DELAY_MS` | через сколько слать письмо о непрочитанном упоминании (2 мин) |
-| `AUTH_OIDC_ISSUER`, `AUTH_OIDC_ID`, `AUTH_OIDC_SECRET`, `AUTH_OIDC_NAME` | корпоративный SSO (OpenID Connect) |
-| `OUTBOUND_PROXY` | HTTP-прокси для запросов сервера во внешний интернет (превью ссылок) |
-| `PEXELS_API_KEY` | бесплатный ключ Pexels для ленты картинок (без него — только Wikimedia Commons) |
-| `AI_PROVIDER_IMAGE`, `POLLINATIONS_TOKEN` | генерация изображений: pollinations (бесплатно), replicate, mock |
-| `RATE_LIMIT_MULTIPLIER` | множитель лимитов частоты запросов (в проде 1; e2e-стенд — 50) |
-| `AI_PROVIDER_REMOVE_BG`, `REMBG_URL`, `REPLICATE_API_TOKEN`, `LLM_*` | ИИ |
+| `APP_URL` | public web address |
+| `DATABASE_URL` | Postgres (with PgBouncer, run migrations against the direct address) |
+| `REDIS_URL` | queues, pub/sub between WS instances |
+| `AUTH_SECRET`, `AUTH_ENCRYPTION_KEY` | Auth.js and encryption of TOTP secrets |
+| `AUTH_{GOOGLE,GITHUB,YANDEX,VK}_{ID,SECRET}` | OAuth (empty — provider hidden) |
+| `WS_JWT_SECRET`, `WS_PUBLIC_URL`, `WS_ALLOWED_ORIGINS` | WS server |
+| `S3_*` | file storage (SeaweedFS / R2 / S3 / Yandex Object Storage) |
+| `SMTP_URL`, `EMAIL_FROM` | email (invitations, password reset, notifications) |
+| `SMTP_URL_DOCKER` | SMTP for docker compose containers (Mailpit by default) |
+| `NOTIFICATION_EMAIL_DELAY_MS` | delay before emailing about an unread mention (2 min) |
+| `AUTH_OIDC_ISSUER`, `AUTH_OIDC_ID`, `AUTH_OIDC_SECRET`, `AUTH_OIDC_NAME` | corporate SSO (OpenID Connect) |
+| `OUTBOUND_PROXY` | HTTP proxy for server requests to the internet (link previews, fonts, images) |
+| `PEXELS_API_KEY` | free Pexels key for the image feed (without it — Wikimedia Commons only) |
+| `AI_PROVIDER_IMAGE`, `POLLINATIONS_TOKEN` | image generation: pollinations (free), replicate, mock |
+| `RATE_LIMIT_MULTIPLIER` | rate-limit multiplier (1 in production; 50 for the e2e environment) |
+| `AI_PROVIDER_REMOVE_BG`, `REMBG_URL`, `REPLICATE_API_TOKEN`, `LLM_*` | AI |
 
-## Авторизация
+## Authentication
 
-Auth.js v5 (JWT-сессии) + Prisma-адаптер для OAuth-аккаунтов.
+Auth.js v5 (JWT sessions) + a Prisma adapter for OAuth accounts.
 
-| Способ | Детали |
+| Method | Details |
 | --- | --- |
-| Email + пароль | scrypt (N=2¹⁵, r=8: нативно, в пуле потоков — не блокирует сервер); старые bcrypt-хеши перехешируются при входе. Rate-limit по IP и email в Redis, одинаковое время ответа для несуществующих email |
-| Google, Яндекс ID | автопривязка к существующему аккаунту с тем же email (провайдеры подтверждают email) |
-| GitHub, VK ID | без автопривязки; VK без email получает технический адрес `vk-<id>@users.prostor.invalid` |
+| Email + password | scrypt (N=2¹⁵, r=8: native, in the thread pool — does not block the server); old bcrypt hashes are rehashed on sign-in. Rate limits per IP and email in Redis, identical response time for non-existent emails |
+| Google, Yandex ID | automatic linking to an existing account with the same email (providers verify the email) |
+| GitHub, VK ID | no automatic linking; VK without an email gets a technical address `vk-<id>@users.prostor.invalid` |
 
-Callback URL для настройки приложения у провайдера: `{APP_URL}/api/auth/callback/{google|github|yandex|vk}`.
-Кнопка провайдера появляется автоматически, когда заданы его `AUTH_*_ID` и `AUTH_*_SECRET`.
+Callback URL for setting up the app at the provider: `{APP_URL}/api/auth/callback/{google|github|yandex|vk}`.
+A provider button appears automatically once its `AUTH_*_ID` and `AUTH_*_SECRET` are set.
 
-- **Сброс пароля**: ссылка живёт 60 минут, в БД хранится только SHA-256 токена. После сброса
-  `User.sessionVersion` увеличивается — сессии на других устройствах гаснут (в пределах 60 с кеша).
-- **Закрытая регистрация** (`ALLOW_SIGNUP=false`): новые аккаунты нельзя создать ни формой, ни через OAuth.
-- **Middleware** (Edge) пускает на `/dashboard`, `/board`, `/settings` только с сессией; проверка
-  блокировки и смены пароля — в `auth()` на сервере.
+- **Password reset**: the link lives for 60 minutes, only the SHA-256 of the token is stored. After a reset
+  `User.sessionVersion` is incremented — sessions on other devices expire (within the 60 s cache).
+- **Closed sign-up** (`ALLOW_SIGNUP=false`): new accounts cannot be created via the form or OAuth.
+- **Middleware** (Edge) lets only signed-in users into `/dashboard`, `/board`, `/settings`; checks for
+  blocking and password changes happen in `auth()` on the server.
+- If the database is unavailable, sign-in and API requests answer with a clear message (503) instead of a generic error.
 - REST: `POST /api/account/register`, `/api/account/forgot-password`, `/api/account/reset-password`.
-- Письма локально смотрите в Mailpit: http://localhost:8025.
+- Check emails locally in Mailpit: http://localhost:8025.
 
-## Real-time и офлайн
+## Real-time and offline
 
-Содержимое доски — Yjs-документ (CRDT); Postgres хранит его бинарное состояние.
-
-```
-браузер: Y.Doc ◄─► y-indexeddb (офлайн-копия)
-            └─► y-websocket ──JWT──► ws-server ──Redis Pub/Sub──► ws-server (другие инстансы)
-                                         └── debounce 2 с ─► BoardDocument
-                                         └── debounce 30 с ─► BoardSnapshot (история версий)
-```
-
-- **Подключение.** Клиент берёт JWT на 5 минут в `POST /api/boards/:id/ws-token` (там же адрес
-  WS) и обновляет его заранее; при закрытии с кодом 4401 токен обновляется и y-websocket
-  переподключается сам. Коды 4403/4404 — доступ отозван или доска удалена.
-- **Права.** WS-сервер перепроверяет роль по БД при подключении. От VIEWER/GUEST принимается
-  только sync step1 (запрос состояния) — изменения отбрасываются. Смена роли и удаление доски
-  приходят из web через Redis-канал `prostor:control` и действуют сразу.
-- **Awareness.** Имя и цвет в курсоре сервер берёт из JWT, а не из присланных данных, — выдать
-  себя за коллегу нельзя.
-- **Несколько инстансов.** Апдейты ретранслируются через Redis. Новый инстанс после загрузки из
-  БД запрашивает у остальных недостающее (state vector), а запись в `BoardDocument` идёт под
-  `SELECT … FOR UPDATE` с CRDT-слиянием, так что инстансы не затирают изменения друг друга.
-- **Снапшоты.** AUTO — debounce 30 с (не реже раза в 5 мин), LAST_CLIENT — когда ушёл последний
-  клиент; дубли между инстансами исключает Redis-lock. Хранятся последние 200 AUTO-версий.
-- **Офлайн.** Изменения копятся в IndexedDB; после восстановления связи Yjs сливает их без
-  конфликтов. Индикатор в шапке: Офлайн / Подключение / Синхронизация / Сохранено.
-- **Undo/redo.** `Y.UndoManager` с `trackedOrigins = {'local'}`: отменяются только свои действия.
-
-## ИИ-функции
-
-Все ИИ-задачи асинхронные:
+Board content is a Yjs document (CRDT); Postgres stores its binary state.
 
 ```
-браузер ──POST /api/ai/remove-bg | generate-image──► web ──► AiJob (Postgres, QUEUED)
+browser: Y.Doc ◄─► y-indexeddb (offline copy)
+            └─► y-websocket ──JWT──► ws-server ──Redis Pub/Sub──► ws-server (other instances)
+                                         └── debounce 2 s ─► BoardDocument
+                                         └── debounce 30 s ─► BoardSnapshot (version history)
+```
+
+- **Connection.** The client gets a 5-minute JWT from `POST /api/boards/:id/ws-token` (along with the WS
+  address) and refreshes it in advance; on close with code 4401 the token is refreshed and y-websocket
+  reconnects by itself. Codes 4403/4404 — access revoked or board deleted.
+- **Permissions.** The WS server rechecks the role in the database on connect. From VIEWER/GUEST only
+  sync step1 (state request) is accepted — changes are dropped. Role changes and board deletion
+  arrive from web through the Redis channel `prostor:control` and take effect immediately.
+- **Awareness.** The name and color in the cursor are taken by the server from the JWT, not from the client — you
+  cannot impersonate a colleague.
+- **Multiple instances.** Updates are relayed through Redis. A new instance, after loading from the
+  database, asks the others for what is missing (state vector), and writes to `BoardDocument` happen under
+  `SELECT … FOR UPDATE` with a CRDT merge, so instances never overwrite each other's changes.
+- **Snapshots.** AUTO — debounce 30 s (at least every 5 min), LAST_CLIENT — when the last
+  client leaves; duplicates between instances are prevented by a Redis lock. The last 200 AUTO versions are kept.
+- **Offline.** Changes accumulate in IndexedDB; after reconnecting Yjs merges them without
+  conflicts. Header indicator: Offline / Connecting / Syncing / Saved.
+- **Undo/redo.** `Y.UndoManager` with `trackedOrigins = {'local'}`: only your own actions are undone.
+
+## AI features
+
+All AI jobs are asynchronous:
+
+```
+browser ──POST /api/ai/remove-bg | generate-image──► web ──► AiJob (Postgres, QUEUED)
                                                           └─► BullMQ (Redis) ──► worker
-браузер ◄──GET /api/ai/jobs/:id (polling 0,8–3 с)── web ◄── AiJob: RUNNING → прогресс → SUCCEEDED
-                                                    worker ──► провайдер ──► S3 ──► новый Asset
+browser ◄──GET /api/ai/jobs/:id (polling 0.8–3 s)── web ◄── AiJob: RUNNING → progress → SUCCEEDED
+                                                    worker ──► provider ──► S3 ──► new Asset
 ```
 
-- **Удаление фона** — контекстное меню изображения (правый клик) или кнопка на панели выделения.
-  Результат — новый ассет; в элементе меняется только `assetId`, поэтому Ctrl+Z возвращает исходник.
-  Если пока шла обработка коллега заменил картинку, результат кладётся рядом.
-- **Генерация изображения** — кнопка ✨ на панели инструментов: описание и формат (1:1, 16:9, 9:16, 4:3, 3:4).
-  Диалог закрывается сразу, на доске — индикатор прогресса на месте будущей картинки.
-- **Провайдеры** (`AI_PROVIDER_REMOVE_BG`, `AI_PROVIDER_IMAGE`):
+- **Background removal** — image context menu (right click) or a button in the selection toolbar.
+  The result is a new asset; only `assetId` changes in the element, so Ctrl+Z brings back the original.
+  Transparent margins are trimmed around the object, and the element stays in the same place on the board.
+  If a colleague replaced the image while it was being processed, the result is placed next to it.
+- **Image generation** — the ✨ button in the toolbar: a description and a format (1:1, 16:9, 9:16, 4:3, 3:4).
+  The dialog closes immediately; a progress indicator appears on the board where the image will be.
+- **Providers** (`AI_PROVIDER_REMOVE_BG`, `AI_PROVIDER_IMAGE`):
 
-  | Функция | Провайдер | Когда |
+  | Feature | Provider | When |
   | --- | --- | --- |
-  | Удаление фона | `local` — rembg в Docker | on-prem, закрытый контур: изображения не покидают сервер |
-  | Удаление фона | `replicate` | SaaS без GPU/CPU-ресурсов под rembg |
-  | Генерация | `replicate` (Flux Schnell по умолчанию) | SaaS |
-  | Генерация | `mock` — градиент по хешу промпта | разработка, e2e, демо без доступа к ИИ |
-  | Любая | `disabled` | кнопки скрыты, API отвечает 503 |
+  | Background removal | `local` — rembg in Docker | on-prem, closed network: images never leave the server |
+  | Background removal | `replicate` | SaaS without GPU/CPU resources for rembg |
+  | Generation | `pollinations` (Flux, free; non-English prompts are translated first) | default; without a key — 1 image per 45 s and a small logo, `POLLINATIONS_TOKEN` removes both |
+  | Generation | `replicate` (Flux Schnell by default) | SaaS |
+  | Generation | `mock` — a gradient from the prompt hash | development, e2e, demos without AI access |
+  | Any | `disabled` | buttons hidden, the API answers 503 |
 
-- **Локальный rembg:** `docker compose --profile ai up -d rembg` (образ ~1,6 ГБ, модель ~170 МБ
-  скачивается при первом запросе в том `rembgmodels`; модель — `REMBG_MODEL`).
-- **Проверено на реальном фото** (белый тигр в джунглях, 1000×667, модель `isnet-general-use`, CPU):
-  первый запрос — ~29 с (загрузка модели), дальше ~1,2–1,5 с на изображение; фон прозрачен на 74%
-  площади, объект целиком непрозрачен. Повторить: `docker compose --profile ai up -d rembg`, затем
-  `E2E_REMBG_PHOTO=/путь/к/фото.jpg npm run test:e2e -w @prostor/web -- -g "реальном фото"`.
-- **Надёжность:** задача хранится в Postgres, BullMQ — только транспорт. Сетевые сбои и 5xx провайдера —
-  до 3 попыток с экспоненциальной задержкой; отказ модели и неверный ввод — сразу FAILED с понятным
-  текстом. Ответ провайдера проверяется по сигнатуре файла и ограничен 40 МБ.
-- **Лимиты:** удаление фона — 60 в час, генерация — 30 в час, не больше 5 незавершённых задач на
-  пользователя; удаление фона — только PNG/JPEG/WebP.
+- **Local rembg:** `docker compose --profile ai up -d rembg` (image ~1.6 GB, the ~170 MB model
+  is downloaded on the first request into the `rembgmodels` volume; model — `REMBG_MODEL`).
+- **Tested on a real photo** (white tiger in the jungle, 1000×667, model `isnet-general-use`, CPU):
+  first request ~29 s (model loading), then ~1.2–1.5 s per image; the background is transparent on 74%
+  of the area, the object is fully opaque. To repeat: `docker compose --profile ai up -d rembg`, then
+  `E2E_REMBG_PHOTO=/path/to/photo.jpg npm run test:e2e -w @prostor/web -- -g "реальном фото"`.
+- **Reliability:** the job is stored in Postgres, BullMQ is only transport. Network failures and provider 5xx —
+  up to 3 attempts with exponential backoff; model refusals and invalid input — FAILED right away with a clear
+  message. The provider response is checked by file signature and limited to 40 MB.
+- **Limits:** background removal — 60 per hour, generation — 30 per hour, at most 5 unfinished jobs per
+  user; background removal — PNG/JPEG/WebP only.
 
-## Совместный доступ
+## Sharing
 
-Кнопка **«Поделиться»** в шапке доски открывает диалог с вкладками «Пригласить», «Участники»,
-«Ссылки» и «Доступ»; те же настройки — на странице `/board/:id/settings`
-(плюс название, описание, удаление доски или выход из неё). Аккаунт — `/settings`:
-имя, смена или первая установка пароля, «Выйти на всех устройствах».
+The **"Share"** button in the board header opens a dialog with "Invite", "Members",
+"Links" and "Access" tabs; the same settings are on the `/board/:id/settings` page
+(plus name, description, deleting or leaving the board). Account — `/settings`:
+name, changing or setting a password for the first time, "Sign out on all devices", language, API keys and webhooks.
 
-| Роль | Что может |
+| Role | Can |
 | --- | --- |
-| Владелец | всё, включая роли участников, видимость и удаление доски |
-| Редактор | редактирует, приглашает (с ролью не выше своей) |
-| Читатель | смотрит, комментирует |
-| Гость | только смотрит |
+| Owner | everything, including member roles, visibility and deleting the board |
+| Editor | edit, invite (with a role no higher than their own) |
+| Viewer | view, comment |
+| Guest | view only |
 
-- **Ссылки-приглашения:** роль, срок (1 / 7 / 30 дней, бессрочно) и лимит переходов. В БД хранится
-  только SHA-256 токена, поэтому ссылку видно один раз — сразу после создания; отозвать можно в любой момент.
-  Переходы считаются атомарно (`UPDATE … WHERE uses < maxUses`), принятие не понижает уже выданную роль.
-- **Email-приглашения:** до 20 адресов за раз, личное сообщение, одноразовая ссылка на 14 дней,
-  принять можно только из аккаунта с этим email. Зарегистрированные пользователи получают ещё и уведомление.
-  Лимит — 50 писем в час на пользователя.
-- **Страница `/board/:id/join`:** без входа предлагает зарегистрироваться или войти и возвращает обратно;
-  объясняет, почему приглашение не действует (отозвано, истекло, исчерпано, другой email).
-- **Видимость:** приватная, вся организация (для досок организации) и публичная только для чтения —
-  если её не запретила организация (`allowPublicBoards`).
-- **Применяется сразу.** Смена роли, удаление участника или видимости публикуют событие `access-changed`;
-  WS-сервер перепроверяет права каждого подключения: пониженному приходит `role-changed`
-  (запись блокируется без перезагрузки), лишённый доступа отключается с кодом 4403.
+- **Invite links:** role, expiry (1 / 7 / 30 days, never) and a usage limit. Only the SHA-256 of the token
+  is stored, so the link is shown once — right after creation; it can be revoked at any time.
+  Uses are counted atomically (`UPDATE … WHERE uses < maxUses`); accepting never lowers a role already granted.
+- **Email invitations:** up to 20 addresses at a time, a personal message, a one-time 14-day link
+  that can only be accepted from the account with that email. Registered users also get a notification.
+  Limit — 50 emails per hour per user.
+- **The `/board/:id/join` page:** without signing in it offers to sign up or sign in and comes back;
+  it explains why an invitation does not work (revoked, expired, used up, different email).
+- **Visibility:** private, the whole organization (for organization boards) and public read-only —
+  unless the organization forbids it (`allowPublicBoards`).
+- **Applied immediately.** Changing a role, removing a member or changing visibility publishes an `access-changed` event;
+  the WS server rechecks the permissions of every connection: a downgraded user gets `role-changed`
+  (writing is blocked without a reload), a user who lost access is disconnected with code 4403.
 
-## Фреймы, шаблоны, экспорт и версии
+## Frames, templates, export and versions
 
-- **Фреймы** (F) — области-«слайды». Принадлежность к фрейму определяется центром объекта: перенесли
-  центр внутрь — объект во фрейме. Фрейм двигается, копируется и удаляется вместе с содержимым,
-  рисуется под всеми объектами; список фреймов и переход к ним — кнопка «Фреймы» справа вверху.
-- **Шаблоны** (майнд-карта, канбан, ретро, блок-схема, BPMN, SWOT, story map) — обычные элементы,
-  которые записываются в документ доски при создании: их сразу можно править, а Ctrl+Z их не «отменяет».
-- **Экспорт** (Ctrl+Shift+E) собирается в браузере — данные у клиента уже есть, сервер только
-  проверяет право (политика `allowExport`) и пишет аудит:
-  - **PNG** — те же Konva-компоненты на офлайн-Stage, масштаб 1×/2×/4×, прозрачный фон;
-    размер ограничивается, чтобы огромная доска не упёрлась в лимит canvas браузера;
-  - **PDF** — по странице на фрейм (порядок презентации) или вся доска; растр 2× в JPEG;
-  - **SVG со слоями** — каждый фрейм — слой (`inkscape:groupmode="layer"`), группы — вложенные `<g>`,
-    текст — `<text>` с той же разбивкой строк, что на холсте, картинки встроены как data: URL.
-- **История версий** (иконка часов в шапке, редакторам): автоснимки WS-сервера и сохранённые вручную.
-  Просмотр версии подменяет документ на холсте (только чтение; объекты можно скопировать Ctrl+C).
-  «Восстановить» — это обычная CRDT-правка живого документа одной транзакцией: коллеги получают
-  апдейт, Ctrl+Z отменяет восстановление, а перед ним автоматически сохраняется «Перед восстановлением».
+- **Frames** (F) — "slide" areas. Membership in a frame is determined by the object's center: move the
+  center inside — the object is in the frame. A frame moves, copies and deletes together with its content
+  and is drawn below all objects; the frame list and navigation — the "Frames" button at the top right.
+- **Templates** (mind map, kanban, retro, flowchart, BPMN, SWOT, story map) — ordinary elements
+  written into the board document on creation: you can edit them right away, and Ctrl+Z does not "undo" them.
+- **Export** (Ctrl+Shift+E) is assembled in the browser — the client already has the data; the server only
+  checks the permission (the `allowExport` policy) and writes an audit record:
+  - **PNG** — the same Konva components on an offscreen Stage, 1×/2×/4× scale, transparent background;
+    the size is capped so a huge board does not hit the browser's canvas limit;
+  - **PDF** — one page per frame (presentation order) or the whole board; 2× raster as JPEG, assembled in a Web Worker;
+  - **SVG with layers** — every frame is a layer (`inkscape:groupmode="layer"`), groups are nested `<g>`,
+    text is `<text>` with the same line breaks as on the canvas, images are embedded as data: URLs.
+- **Version history** (clock icon in the header, for editors): automatic WS server snapshots and manually saved ones.
+  Previewing a version swaps the document on the canvas (read-only; objects can be copied with Ctrl+C).
+  "Restore" is an ordinary CRDT edit of the live document in one transaction: colleagues get the
+  update, Ctrl+Z undoes the restore, and a "Before restore" version is saved automatically first.
 
-## Форматированный текст
+## Rich text
 
-Стикеры, фигуры и текстовые блоки редактируются ProseMirror, связанным с `Y.XmlFragment` элемента
-через y-prosemirror: несколько человек правят один стикер посимвольно и видят курсоры друг друга.
-Поддерживаются жирный, курсив, подчёркнутый, зачёркнутый и маркированные списки. На холсте
-форматированный текст рисует собственная Konva.Shape с той же раскладкой строк, что и экспорт;
-обычный текст — по-прежнему быстрый `Konva.Text`. Поле `text` остаётся плоской копией для поиска.
-Объекты, созданные до 7-й итерации, получают `Y.XmlFragment` при первом открытии редактора.
+Sticky notes, shapes and text blocks are edited with ProseMirror bound to the element's `Y.XmlFragment`
+via y-prosemirror: several people edit one sticky note character by character and see each other's cursors.
+Bold, italic, underline, strikethrough and bulleted lists are supported. On the canvas,
+formatted text is drawn by a custom Konva.Shape with the same line layout as the export;
+plain text still uses the fast `Konva.Text`. The `text` field remains a plain copy for search.
+Objects created before iteration 7 get a `Y.XmlFragment` the first time the editor is opened.
 
-## Комментарии и уведомления
+## Comments and notifications
 
-- Инструмент «Комментарий» (C): тред к объекту (пин едет за ним) или к точке холста. Ответы,
-  реакции, правка и удаление своих, «Решено». Комментировать могут читатели и выше; аноним на
-  публичной доске обсуждения видит, но не пишет.
-- **Упоминания** `@` — подсказки из участников доски; упомянуть можно только тех, у кого есть доступ.
-- Тела комментариев — в Postgres (свои права, уведомления, документ доски не растёт от переписки);
-  клиенты обновляются по событию `comments-changed` от WS-сервера.
-- **Уведомления**: упомянутым и участникам треда — колокольчик в шапке. Письмо уходит через очередь
-  `prostor-email` с задержкой (`NOTIFICATION_EMAIL_DELAY_MS`, 2 минуты): прочитали в приложении —
-  письма нет. Отключается в настройках аккаунта; без `SMTP_URL` у воркера письма не отправляются.
+- The Comment tool (C): a thread on an object (the pin follows it) or on a spot on the canvas. Replies,
+  reactions, editing and deleting your own, "Resolved". Viewers and above can comment; an anonymous user on a
+  public board sees discussions but cannot write.
+- **Mentions** `@` — suggestions from board members; you can mention only people who have access.
+- Comment bodies live in Postgres (their own permissions, notifications, and the board document does not grow from chatter);
+  clients refresh on the `comments-changed` event from the WS server.
+- **Notifications**: mentioned users and thread participants — the bell in the header. An email goes through the
+  `prostor-email` queue with a delay (`NOTIFICATION_EMAIL_DELAY_MS`, 2 minutes): read it in the app —
+  no email. Can be disabled in account settings; without `SMTP_URL` the worker sends no email.
 
-## Фасилитация
+## Facilitation
 
-- **Follow-mode**: клик по аватару участника → «Следовать». «Позвать всех за мной» (свой аватар) —
-  остальные автоматически следуют за ведущим; собственное движение камеры выключает следование.
-- **Лазерная указка** (K) — след через awareness (~25 обновлений/с), гаснет за секунду.
-- **Таймер** — один на доску в Yjs: отсчёт видят все, управляют редакторы; по окончании — сигнал.
-- **Голосование** — тема и число голосов на человека; клик по объекту отдаёт голос, по бейджу — забирает.
-  Голоса хранятся в Postgres (голосуют и читатели, которым WS не даёт менять документ), лимит
-  проверяется на сервере под блокировкой. Чужие голоса скрыты до завершения, затем — рейтинг.
-- **Импорт PDF** — страницы рендерятся в браузере (pdf.js, `isEvalSupported: false` против
-  CVE-2024-4367), загружаются как изображения и раскладываются фреймами (до 50 страниц).
+- **Follow mode**: click a participant's avatar → "Follow". "Ask everyone to follow me" (your own avatar) —
+  others automatically follow the presenter; moving your own camera stops following.
+- **Laser pointer** (K) — a trail through awareness (~25 updates/s), fades in a second.
+- **Timer** — one per board in Yjs: everyone sees the countdown, editors control it; a signal at the end.
+- **Voting** — a topic and the number of votes per person; clicking an object casts a vote, clicking the badge takes it back.
+  Votes are stored in Postgres (viewers vote too, though WS does not let them change the document); the limit
+  is checked on the server under a lock. Other people's votes are hidden until the end, then — the ranking.
+- **PDF import** — pages are rendered in the browser (pdf.js, `isEvalSupported: false` against
+  CVE-2024-4367), uploaded as images and laid out as frames (up to 50 pages).
 
-## Enterprise: организации, папки, политики, аудит, 2FA, SSO
+## Enterprise: organizations, folders, policies, audit, 2FA, SSO
 
-- **Организации** — пространство команды: кнопка «+» у раздела «Организации» на дашборде,
-  настройки — `/org/<id>/settings`. Роли: владелец, администратор (на досках организации — редактор),
-  участник (видит доски с видимостью «Организация»). Доска, созданная в организации, по умолчанию
-  видна всей организации. Новые пользователи с почтой из «доменов автоприсоединения» вступают сами.
-- **Папки с наследованием прав** — дерево в боковой панели. Доступ к папке (участник + роль) получают
-  все доски папки и вложенных папок; права считаются по материализованному пути (`Folder.path`),
-  без рекурсивных запросов. Перемещение папки переписывает путь поддерева одним `UPDATE`.
-  Удаление папки не удаляет доски — они переезжают в корень и остаются у владельцев.
-- **Политики организации** (вкладка «Политики»): экспорт, копирование, удаление чужих объектов,
-  публичные доски, права гостей. Изменение сразу действует на открытых досках: web публикует
-  `access-changed`, WS-сервер пересчитывает роль и политику каждого подключения.
-- **Удаление чужих объектов на сервере.** Отбросить Yjs-апдейт нельзя (CRDT разойдётся), поэтому
-  WS-сервер разбирает delete set апдейта до применения, и если редактор удалил чужой
-  (при запрете политики) или заблокированный объект, сразу возвращает его компенсирующей серверной
-  транзакцией — все клиенты, включая автора, сходятся к одному состоянию. Событие пишется в аудит.
-- **Журнал аудита** — у организации (администраторам) и у доски (владельцу): входы, доступ,
-  экспорт, версии, политики, заблокированные удаления. Фильтр по действию, подгрузка, выгрузка CSV
-  (UTF-8 с BOM, «;», защита от CSV-инъекций).
-- **2FA (TOTP, RFC 6238)** — в настройках аккаунта: QR для приложения-аутентификатора, подтверждение
-  кодом, 10 одноразовых резервных кодов (хранятся хешами). Секрет зашифрован AES-256-GCM ключом
-  `AUTH_ENCRYPTION_KEY`; повтор уже использованного кода блокируется. Организация может сделать 2FA
-  обязательной — без неё участник не откроет её доски.
-- **SSO по OpenID Connect** (Keycloak, ADFS, Azure AD, Okta…): задайте `AUTH_OIDC_ISSUER`,
-  `AUTH_OIDC_ID`, `AUTH_OIDC_SECRET`, `AUTH_OIDC_NAME` — на странице входа появится кнопка.
-  SAML-провайдеры подключаются через Keycloak как брокер (SAML → OIDC). 2FA приложения действует
-  для входа по паролю; при входе через SSO второй фактор обеспечивает корпоративный IdP.
-- **Пароли** хешируются scrypt (нативно, не блокирует сервер); старые bcrypt-хеши перехешируются при входе.
+- **Organizations** — a team space: the "+" button next to "Organizations" on the dashboard,
+  settings — `/org/<id>/settings`. Roles: owner, admin (editor on organization boards),
+  member (sees boards with "Organization" visibility). A board created in an organization is visible
+  to the whole organization by default. New users with an email from the "auto-join domains" join automatically.
+- **Folders with inherited permissions** — a tree in the sidebar. Access to a folder (member + role) applies to
+  all boards of the folder and its subfolders; permissions are computed from a materialized path (`Folder.path`),
+  without recursive queries. Moving a folder rewrites the subtree path with a single `UPDATE`.
+  Deleting a folder does not delete boards — they move to the root and stay with their owners.
+- **Organization policies** ("Policies" tab): export, copying, deleting other people's objects,
+  public boards, guest permissions. Changes take effect immediately on open boards: web publishes
+  `access-changed`, and the WS server recomputes the role and policy of every connection.
+- **Deleting other people's objects is enforced on the server.** A Yjs update cannot be dropped (the CRDT would diverge), so
+  the WS server parses the update's delete set before applying it, and if an editor deleted someone else's object
+  (when the policy forbids it) or a locked one, it immediately restores it with a compensating server
+  transaction — all clients, including the author, converge to the same state. The event is written to the audit log.
+- **Audit log** — for the organization (admins) and for a board (owner): sign-ins, access,
+  export, versions, policies, API keys and webhooks, blocked deletions. Filter by action, pagination, CSV export
+  (UTF-8 with BOM, ";", protection against CSV injection).
+- **2FA (TOTP, RFC 6238)** — in account settings: a QR code for an authenticator app, confirmation
+  with a code, 10 one-time backup codes (stored as hashes). The secret is encrypted with AES-256-GCM using the
+  `AUTH_ENCRYPTION_KEY`; reuse of an already used code is blocked. An organization can make 2FA
+  mandatory — without it a member cannot open its boards.
+- **SSO via OpenID Connect** (Keycloak, ADFS, Azure AD, Okta…): set `AUTH_OIDC_ISSUER`,
+  `AUTH_OIDC_ID`, `AUTH_OIDC_SECRET`, `AUTH_OIDC_NAME` — a button appears on the sign-in page.
+  SAML providers are connected through Keycloak as a broker (SAML → OIDC). The app's 2FA applies
+  to password sign-in; with SSO the second factor is provided by the corporate IdP.
+- **Passwords** are hashed with scrypt (native, does not block the server); old bcrypt hashes are rehashed on sign-in.
 
-## Стрелки, презентации, поиск, таблицы, ссылки
+## Arrows, presentations, search, tables, links
 
-- **Стрелки, привязанные к объектам.** Начните или закончите стрелку (A) или линию (L) на объекте —
-  конец привяжется: к середине стороны (если отпустить рядом с ней) или к ближайшей точке границы.
-  Объект двигается или меняет размер — стрелка следует за ним (тем же шагом отмены). Маршрут:
-  прямой, ломаный (под прямыми углами) или кривой; подпись посередине; наконечники с обеих сторон.
-  У выделенной линии — ручки концов: перетащите на другой объект, чтобы перепривязать, или в пустоту,
-  чтобы отвязать. Перенесённая отдельно стрелка отрывается от объектов, копия — от оригиналов.
-- **Режим презентации** («Показать» или список фреймов): слайды — фреймы в заданном порядке
-  (стрелками в панели «Фреймы»), полный экран, плавный переход. →/Space/клик — дальше, ← — назад,
-  N — заметки докладчика (редактор правит их прямо в показе), «Все за мной» — камеры участников
-  следуют за ведущим, Esc — выход.
-- **Поиск по доске (Ctrl+F):** стикеры, текст, фигуры, названия фреймов, подписи стрелок, ячейки таблиц,
-  заметки и комментарии; без учёта регистра и «ё». Enter / Shift+Enter — следующее/предыдущее,
-  камера переезжает к найденному.
-- **Таблицы (B):** ячейки хранятся отдельными полями Yjs, поэтому двое могут одновременно править
-  разные ячейки. Двойной клик — редактирование, Tab/Shift+Tab — соседняя ячейка (Tab в последней
-  добавляет строку), Enter — ниже. Строки и столбцы добавляются и удаляются из панели выделения,
-  первая строка — заголовок.
-- **Ссылки и встраивания:** вставьте ссылку на доску (Ctrl+V) или нажмите «Ссылка» в палитре.
-  Сервер собирает превью (Open Graph/oEmbed, картинка сохраняется ассетом доски — экспорт работает),
-  у YouTube, Vimeo, Loom, Figma, Google Docs/Sheets/Slides и Miro по двойному клику открывается
-  живой плеер поверх карточки, обычные сайты открываются в новой вкладке. Загрузка страниц защищена
-  от SSRF: внутренние адреса, нестандартные порты и редиректы во внутреннюю сеть запрещены.
-  Если сервер выходит в интернет через прокси (VPN-клиент), задайте `OUTBOUND_PROXY`.
+- **Arrows attached to objects.** Start or end an arrow (A) or a line (L) on an object —
+  the end attaches: to the middle of a side (if released near it) or to the nearest point of the border.
+  When the object moves or is resized, the arrow follows it (in the same undo step). Routing:
+  straight, elbow (right angles) or curved; a label in the middle; arrowheads on both ends.
+  A selected line has endpoint handles: drag one onto another object to reattach, or into empty space
+  to detach. An arrow moved on its own detaches from objects; a copy detaches from the originals.
+- **Presentation mode** ("Present" or the frame list): slides are frames in the chosen order
+  (arrows in the "Frames" panel), full screen, smooth transitions. →/Space/click — next, ← — back,
+  N — speaker notes (editors can edit them during the show), "Everyone follow me" — participants'
+  cameras follow the presenter, Esc — exit.
+- **Find on board (Ctrl+F):** sticky notes, text, shapes, frame names, arrow labels, table cells,
+  notes and comments; case-insensitive and treats "ё" as "е". Enter / Shift+Enter — next/previous,
+  the camera moves to the match.
+- **Tables (B):** cells are stored as separate Yjs fields, so two people can edit
+  different cells at the same time. Double-click — edit, Tab/Shift+Tab — neighboring cell (Tab in the last one
+  adds a row), Enter — the cell below. Rows and columns are added and removed from the selection toolbar;
+  the first row is a header.
+- **Links and embeds:** paste a link onto the board (Ctrl+V) or press "Link" in the palette.
+  The server builds a preview (Open Graph/oEmbed; the image is stored as a board asset — export works);
+  for YouTube, Vimeo, Loom, Figma, Google Docs/Sheets/Slides and Miro a double-click opens
+  a live player over the card, ordinary sites open in a new tab. Page fetching is protected
+  against SSRF: internal addresses, non-standard ports and redirects into the internal network are forbidden.
+  If the server reaches the internet through a proxy (a VPN client), set `OUTBOUND_PROXY`.
 
-## Шрифты, стикеры, картинки, аудио и язык интерфейса
+## Fonts, stickers, images, audio and interface language
 
-- **Шрифты.** В панели выделения у стикеров, текста и фигур — меню шрифтов: весь каталог Google Fonts
-  (около 1 950 семейств) с поиском, фильтром «только с кириллицей» и превью каждого названия своим
-  шрифтом. Каталог, CSS и файлы шрифтов идут через сервер Простора (`/api/fonts/*`, кэш в Redis):
-  браузеру не нужен прямой доступ к Google, участники не передают ему свои IP. **Свой шрифт**
-  (TTF, OTF, WOFF, WOFF2, до 10 МБ) загружается на доску и подгружается у всех участников.
-- **Библиотека стикеров** (кнопка со смайликом в палитре): около 18 000 бесплатных эмодзи из открытых
-  наборов — Fluent Emoji и Fluent Emoji Flat (MIT), Noto Emoji (Apache 2.0), Twemoji (CC BY 4.0),
-  OpenMoji (CC BY-SA 4.0) — через Iconify API. Поиск по-русски и по-английски, категории, выбор
-  набора; стикер сохраняется картинкой доски (экспорт, офлайн, видят коллеги). Лицензии указаны
-  в панели; для CC BY/BY-SA при публикации нужна атрибуция.
-- **Обрезка изображений:** двойной клик по картинке (или «Обрезать» в панели) — рамка с ручками,
-  пропорции 1:1, 4:3, 16:9, 3:4, исходные; Enter — готово, Esc — отмена. Исходник не портится:
-  «Сбросить» возвращает картинку целиком. Обрезка сохраняется в экспорте PNG, PDF и SVG.
-- **Лента картинок** (кнопка с картинками в палитре) — поиск и вдохновение в духе Pinterest: плитка в две
-  колонки с бесконечной прокруткой, подборки (природа, архитектура, интерьер…), поиск по-русски
-  и по-английски. Источник — свободные изображения Wikimedia Commons, а с бесплатным ключом
-  `PEXELS_API_KEY` — ещё и фото Pexels. Картинку можно добавить на доску кнопкой или перетаскиванием,
-  скопировать в буфер обмена (вставляется куда угодно) или открыть источник; автор и лицензия
-  сохраняются в подписи картинки. Сам Pinterest не используется: открытого API у него нет,
-  а его картинки защищены авторским правом.
-- **Аудио** (кнопка с нотой в палитре): загрузка MP3, WAV, OGG, M4A, AAC, FLAC, WebM до 50 МБ,
-  запись голосовой заметки с микрофона (до 10 минут) или просто перетаскивание файла на доску.
-  На доске — карточка с названием, длительностью и «волной»; двойной клик — плеер с паузой,
-  перемоткой (сервер отдаёт файлы частями, HTTP Range), громкостью и скоростью.
-- **Язык интерфейса:** русский и английский (переключатель в меню пользователя, на странице входа и в
-  настройках; по умолчанию — язык браузера). Ключ перевода — сама русская строка (`t('Вход')`),
-  тест `lib/i18n/i18n.test.ts` проверяет, что у каждой строки есть английский перевод.
-  Сообщения API об ошибках пока только на русском.
+- **Fonts.** Sticky notes, text and shapes have a font menu in the selection toolbar: the whole Google Fonts catalog
+  (about 1,950 families) with search, a "Cyrillic only" filter and a preview of each name in its own
+  font. The catalog, CSS and font files go through the Prostor server (`/api/fonts/*`, cached in Redis):
+  the browser needs no direct access to Google, and participants do not send it their IPs. **A custom font**
+  (TTF, OTF, WOFF, WOFF2, up to 10 MB) is uploaded to the board and loaded for all participants.
+- **Sticker library** (smiley button in the palette): about 18,000 free emoji from open
+  sets — Fluent Emoji and Fluent Emoji Flat (MIT), Noto Emoji (Apache 2.0), Twemoji (CC BY 4.0),
+  OpenMoji (CC BY-SA 4.0) — via the Iconify API. Search in Russian and English, categories, set
+  selection; a sticker is stored as a board image (export, offline, visible to colleagues). Licenses are shown
+  in the panel; CC BY/BY-SA require attribution when published.
+- **Image cropping:** double-click an image (or "Crop" in the toolbar) — a frame with handles,
+  aspect ratios 1:1, 4:3, 16:9, 3:4, original; Enter — done, Esc — cancel. The original is never damaged:
+  "Reset" brings the whole image back. Cropping is preserved in PNG, PDF and SVG export.
+- **Image feed** (images button in the palette) — search and inspiration in the spirit of Pinterest: a two-column
+  grid with infinite scroll, collections (nature, architecture, interior…), search in Russian
+  and English. The source is free images from Wikimedia Commons, and with a free
+  `PEXELS_API_KEY` — Pexels photos as well. An image can be added to the board with a button or by dragging,
+  copied to the clipboard (paste it anywhere) or opened at its source; the author and license
+  are kept in the image caption. Pinterest itself is not used: it has no open API,
+  and its images are protected by copyright.
+- **Audio** (music note button in the palette): upload MP3, WAV, OGG, M4A, AAC, FLAC, WebM up to 50 MB,
+  record a voice note from the microphone (up to 10 minutes), or simply drop a file onto the board.
+  On the board — a card with a title, duration and a "waveform"; double-click opens a player with pause,
+  seeking (the server serves files in ranges, HTTP Range), volume and speed.
+- **Interface language:** Russian and English (switcher in the user menu, on the sign-in page and in
+  settings; defaults to the browser language). The translation key is the Russian string itself (`t('Вход')`);
+  the test `lib/i18n/i18n.test.ts` checks that every string has an English translation.
+  API error messages are Russian only for now.
 
-## Публичный API и вебхуки
+## Public API and webhooks
 
-**API-ключи** создаются в «Настройки → API-ключи» (ключ показывается один раз; в базе — только
-SHA-256). Ключ действует от вашего имени и с вашими правами на доски: «только чтение» или
-«чтение и изменения». Лимит — 600 запросов в минуту на ключ.
+**API keys** are created in "Settings → API keys" (the key is shown once; only its
+SHA-256 is stored). A key acts on your behalf with your permissions on boards: "read only" or
+"read and write". Limit — 600 requests per minute per key.
 
 ```bash
 curl -H "Authorization: Bearer pst_…" http://localhost:3000/api/v1/boards
 ```
 
-| Метод | Путь | Что делает |
+| Method | Path | What it does |
 | --- | --- | --- |
-| GET | `/api/v1/me` | владелец ключа |
-| GET | `/api/v1/boards?q=…` | доступные доски |
-| POST | `/api/v1/boards` `{ title }` | новая доска (scope write) |
-| GET | `/api/v1/boards/:id` | сведения о доске и ваша роль |
-| GET | `/api/v1/boards/:id/elements?type=sticky` | объекты доски |
-| POST | `/api/v1/boards/:id/elements` | добавить объекты (scope write) |
+| GET | `/api/v1/me` | key owner |
+| GET | `/api/v1/boards?q=…` | accessible boards |
+| POST | `/api/v1/boards` `{ title }` | new board (scope write) |
+| GET | `/api/v1/boards/:id` | board details and your role |
+| GET | `/api/v1/boards/:id/elements?type=sticky` | board objects |
+| POST | `/api/v1/boards/:id/elements` | add objects (scope write) |
 
-Создание объектов: `{ "elements": [{ "type": "sticky", "text": "Задача", "color": "#bbf7d0", "x": 0, "y": 0 }] }`
-(`type`: sticky, text, shape; без координат объекты встают ниже содержимого доски). Изменение
-записывается в документ доски и сразу рассылается открытым клиентам через Redis — участники видят
-новые объекты без перезагрузки. Ошибки — `{ "error": { "code", "message", "fields" } }`.
+Creating objects: `{ "elements": [{ "type": "sticky", "text": "Task", "color": "#bbf7d0", "x": 0, "y": 0 }] }`
+(`type`: sticky, text, shape; without coordinates objects are placed below the board content). The change
+is written to the board document and immediately broadcast to open clients through Redis — participants see
+new objects without reloading. Errors — `{ "error": { "code", "message", "fields" } }`.
 
-**Вебхуки** («Настройки → Вебхуки»): POST JSON на ваш адрес при событиях `board.created`,
-`board.updated` (после автоснимка версии, не чаще раза в несколько минут), `board.deleted`,
-`element.created`, `comment.created`, `comment.resolved`, `voting.closed`. Тело:
-`{ id, event, occurredAt, board: { id, title, url }, actor, data }`. Заголовки `X-Prostor-Event`,
-`X-Prostor-Delivery` и `X-Prostor-Signature: sha256=<hex HMAC-SHA256(секрет, тело)>`.
-Доставляет worker с повторами (5 попыток, экспоненциальная пауза); 4xx не повторяются,
-после 15 неудач подряд вебхук выключается. События получают только те, у кого есть доступ к доске
-на момент события. Кнопка «Отправить проверку» шлёт событие `ping`.
+**Webhooks** ("Settings → Webhooks"): a JSON POST to your URL on the events `board.created`,
+`board.updated` (after an automatic version snapshot, at most once every few minutes), `board.deleted`,
+`element.created`, `comment.created`, `comment.resolved`, `voting.closed`. Body:
+`{ id, event, occurredAt, board: { id, title, url }, actor, data }`. Headers `X-Prostor-Event`,
+`X-Prostor-Delivery` and `X-Prostor-Signature: sha256=<hex HMAC-SHA256(secret, body)>`.
+Delivered by the worker with retries (5 attempts, exponential backoff); 4xx are not retried,
+after 15 failures in a row the webhook is disabled. Only users who have access to the board
+at the time of the event receive it. The "Send test event" button sends a `ping` event.
 
-Проверка подписи (Node.js):
+Verifying the signature (Node.js):
 
 ```js
 const expected = 'sha256=' + crypto.createHmac('sha256', SECRET).update(rawBody).digest('hex');
 const ok = crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(req.headers['x-prostor-signature']));
 ```
 
-## Производительность и нагрузка
+## Performance and load
 
-Все замеры — на обычном ноутбуке (Windows, Chromium headless, production-сборка); повторяются
-тестами из репозитория.
+All measurements are on an ordinary laptop (Windows, headless Chromium, production build); they are repeated
+by tests in the repository.
 
-**Ядро холста, 10 000 объектов** (`apps/web/src/lib/canvas/perf.test.ts`, бюджеты проверяются в CI):
+**Canvas core, 10,000 objects** (`apps/web/src/lib/canvas/perf.test.ts`, budgets are checked in CI):
 
-| Операция | Время |
+| Operation | Time |
 | --- | --- |
-| Чтение документа в ElementStore + bulk-load R-дерева | 47 мс |
-| Запрос видимой области (экран 1920×1080) | 0,03 мс (p95 0,09) |
-| Hit-test под курсором | 0,003 мс |
-| Точечное обновление одного объекта (без пересборки индекса) | < 2 мс |
-| Yjs-документ 10 000 объектов | ~5,6 МБ |
+| Reading the document into ElementStore + R-tree bulk-load | 47 ms |
+| Visible-area query (1920×1080 screen) | 0.03 ms (p95 0.09) |
+| Hit-test under the cursor | 0.003 ms |
+| Point update of one object (without rebuilding the index) | < 2 ms |
+| Yjs document with 10,000 objects | ~5.6 MB |
 
-**Браузер, 10 000 объектов** (`e2e/perf.spec.ts`):
+**Browser, 10,000 objects** (`e2e/perf.spec.ts`):
 
-| Сценарий | Результат |
+| Scenario | Result |
 | --- | --- |
-| Панорамирование при 100% | 60 FPS, кадр p95 16,7 мс |
-| Панорамирование всей доски (LOD) | 60 FPS, кадр p95 16,7 мс |
-| Генерация 10 000 объектов одной транзакцией | 0,4 с |
-| Повторное открытие доски (IndexedDB + WS-синхронизация + индекс) | 0,7 с |
-| Экспорт SVG / PNG / PDF | 0,3 / 2,6 / 2,7 с |
+| Panning at 100% | 60 FPS, frame p95 16.7 ms |
+| Panning the whole board (LOD) | 60 FPS, frame p95 16.7 ms |
+| Generating 10,000 objects in one transaction | 0.4 s |
+| Reopening the board (IndexedDB + WS sync + index) | 0.7 s |
+| Export SVG / PNG / PDF | 0.3 / 2.6 / 2.7 s |
 
-**Экспорт без «зависаний».** Офлайн-сцена монтирует Konva-ноды порциями (а не 10 000 за один commit
-React), PNG/JPEG кодируются асинхронно (`canvas.toBlob`), PDF собирается в **Web Worker**
-(`lib/export/pdf.worker.ts`), PDF-импорт рендерит страницы в воркере pdf.js. Остаётся одна пауза
-главного потока — синхронная отрисовка Konva всей сцены (~1 с на 10 000 объектов): Konva требует DOM
-и в воркер не выносится. Hit-test в воркер не выносим сознательно: R-дерево отвечает за микросекунды,
-а пересылка в воркер и обратно стоила бы дороже самого поиска.
+**Export without freezes.** The offscreen scene mounts Konva nodes in chunks (not 10,000 in one React
+commit), PNG/JPEG are encoded asynchronously (`canvas.toBlob`), the PDF is assembled in a **Web Worker**
+(`lib/export/pdf.worker.ts`), and PDF import renders pages in the pdf.js worker. One main-thread pause
+remains — the synchronous Konva draw of the whole scene (~1 s for 10,000 objects): Konva needs the DOM
+and cannot be moved to a worker. Hit-testing is deliberately kept off workers: the R-tree answers in microseconds,
+and round-tripping to a worker would cost more than the search itself.
 
-**WS-сервер** (`npm run load-test -w @prostor/ws-server -- --clients N --rate R --seconds S`): N настоящих
-Yjs-клиентов на одной доске двигают свои стикеры, каждый клиент меряет задержку доставки чужих правок.
+**WS server** (`npm run load-test -w @prostor/ws-server -- --clients N --rate R --seconds S`): N real
+Yjs clients on one board move their sticky notes, each client measures the delivery latency of others' edits.
 
-| Клиентов × правок/с | Доставок в секунду | Доставлено | Задержка p50 / p95 / p99 |
+| Clients × edits/s | Deliveries per second | Delivered | Latency p50 / p95 / p99 |
 | --- | --- | --- | --- |
-| 30 × 5 | 3 869 | 100% | 11 / 19 / 24 мс |
-| 100 × 5 | 31 914 | 100% | 169 / 320 / 378 мс |
+| 30 × 5 | 3,869 | 100% | 11 / 19 / 24 ms |
+| 100 × 5 | 31,914 | 100% | 169 / 320 / 378 ms |
 
-На 100 клиентах упирается сам генератор: все 100 Y.Doc живут в одном процессе Node и применяют
-~32 000 апдейтов в секунду (вместо запланированных 500 правок/с он успевал отправить 322). Для оценки
-сервера при большей нагрузке запускайте несколько генераторов с разных машин; WS-инстансы
-масштабируются горизонтально через Redis.
+At 100 clients the generator itself is the bottleneck: all 100 Y.Docs live in one Node process and apply
+~32,000 updates per second (instead of the planned 500 edits/s it managed to send 322). To evaluate
+the server under heavier load, run several generators from different machines; WS instances
+scale horizontally through Redis.
 
-## Деплой в облако (SaaS)
+## Cloud deployment (SaaS)
 
-WS-сервер держит долгоживущие соединения и **не работает на Vercel** (serverless).
-Типовая схема:
+The WS server holds long-lived connections and **does not run on Vercel** (serverless).
+A typical setup:
 
-| Компонент | Где |
+| Component | Where |
 | --- | --- |
-| web | Vercel или Fly.io (`deploy/fly/web.fly.toml`) |
+| web | Vercel or Fly.io (`deploy/fly/web.fly.toml`) |
 | ws-server | Fly.io (`deploy/fly/ws.fly.toml`), Railway, VPS |
 | worker | Fly.io (`deploy/fly/worker.fly.toml`), Railway, VPS |
 | Postgres | Neon / Supabase / Railway / managed PG |
 | Redis | Upstash (TLS, `rediss://`) / Railway |
 | S3 | Cloudflare R2 / AWS S3 / Yandex Object Storage |
 
-**Пошагово (Vercel + Fly.io):**
+**Step by step (Vercel + Fly.io):**
 
-1. Создайте Postgres, Redis и бакет S3; заполните `.env` по `.env.example` (секреты — случайные:
+1. Create Postgres, Redis and an S3 bucket; fill in `.env` from `.env.example` (secrets — random:
    `openssl rand -hex 32`).
-2. Миграции — один раз с машины разработчика или CI:
+2. Migrations — once, from a developer machine or CI:
    `DATABASE_URL=… npm run db:deploy`.
-3. WS-сервер и воркер (из корня репозитория):
+3. WS server and worker (from the repository root):
    ```bash
    fly launch --config deploy/fly/ws.fly.toml --dockerfile docker/Dockerfile.ws --no-deploy
    fly secrets set --config deploy/fly/ws.fly.toml DATABASE_URL=… REDIS_URL=… WS_JWT_SECRET=… WS_ALLOWED_ORIGINS=https://app.example.com
    fly deploy --config deploy/fly/ws.fly.toml --dockerfile docker/Dockerfile.ws .
    ```
-   Так же — `deploy/fly/worker.fly.toml` с `docker/Dockerfile.worker`.
-4. web на Vercel: Root Directory — `apps/web`, Install Command — `cd ../.. && npm ci`,
+   The same for `deploy/fly/worker.fly.toml` with `docker/Dockerfile.worker`.
+4. web on Vercel: Root Directory — `apps/web`, Install Command — `cd ../.. && npm ci`,
    Build Command — `cd ../.. && npm run db:generate && npm run build -w @prostor/web`.
-   Переменные — все из `.env.example`, `WS_PUBLIC_URL=wss://prostor-ws.fly.dev`.
-5. OAuth-провайдеры: callback `{APP_URL}/api/auth/callback/{provider}`.
+   Variables — all from `.env.example`, `WS_PUBLIC_URL=wss://prostor-ws.fly.dev`.
+5. OAuth providers: callback `{APP_URL}/api/auth/callback/{provider}`.
 
-`WS_PUBLIC_URL` web отдаёт клиенту в рантайме, поэтому смена домена WS не требует пересборки.
+web gives `WS_PUBLIC_URL` to the client at runtime, so changing the WS domain does not require a rebuild.
 
 ## Roadmap
 
-- [x] **1. Фундамент** — монорепо, Prisma schema, docker-compose, конфиги, layout
-- [x] **2. Авторизация** — Auth.js (email+пароль, Google, GitHub, Yandex, VK), сброс пароля, middleware
-- [x] **3. Real-time** — WS-сервер (Yjs + JWT + Redis + Postgres), `useYjs` + y-indexeddb, дашборд
-- [x] **4a. Канвас** — Konva Stage, зум/пан, сетка, миникарта, курсоры, виртуализация
-- [x] **4b. Инструменты** — стикеры, фигуры, текст, карандаш, Transformer, undo/redo, snap
-- [x] **5. ИИ** — remove-bg, генерация изображений, BullMQ, прогресс
-- [x] **6. Шаринг** — invite-ссылки, email-приглашения, роли, ShareDialog, настройки доски и аккаунта
-- [x] **7. Доп. функционал** — фреймы, шаблоны, экспорт PNG/PDF/SVG, история версий, rich-text, комментарии и уведомления, follow-mode, лазер, таймер, голосование, импорт PDF
-- [x] **8. Enterprise** — организации, папки с наследованием прав, политики (с серверной защитой от удаления чужого), журнал аудита с CSV, 2FA (TOTP), SSO (OIDC)
-- [x] **9. Производительность и тесты** — бюджеты на 10 000 объектов (юнит и браузер), экспорт без зависаний (Web Worker для PDF), нагрузочный тест WS, Docker-образы всего стека, конфиги деплоя (Fly.io, nginx)
-- [x] **10. Развитие** — привязанные стрелки, презентации, поиск, таблицы, встраивания, публичный API и вебхуки, английский интерфейс, все шрифты Google и свои, библиотека стикеров, обрезка картинок, лента картинок, аудио
+- [x] **1. Foundation** — monorepo, Prisma schema, docker-compose, configs, layout
+- [x] **2. Authentication** — Auth.js (email+password, Google, GitHub, Yandex, VK), password reset, middleware
+- [x] **3. Real-time** — WS server (Yjs + JWT + Redis + Postgres), `useYjs` + y-indexeddb, dashboard
+- [x] **4a. Canvas** — Konva Stage, zoom/pan, grid, minimap, cursors, virtualization
+- [x] **4b. Tools** — sticky notes, shapes, text, pen, Transformer, undo/redo, snapping
+- [x] **5. AI** — background removal, image generation, BullMQ, progress
+- [x] **6. Sharing** — invite links, email invitations, roles, ShareDialog, board and account settings
+- [x] **7. Extra features** — frames, templates, PNG/PDF/SVG export, version history, rich text, comments and notifications, follow mode, laser, timer, voting, PDF import
+- [x] **8. Enterprise** — organizations, folders with inherited permissions, policies (with server-side protection against deleting others' objects), audit log with CSV, 2FA (TOTP), SSO (OIDC)
+- [x] **9. Performance and tests** — budgets for 10,000 objects (unit and browser), freeze-free export (Web Worker for PDF), WS load test, Docker images for the whole stack, deploy configs (Fly.io, nginx)
+- [x] **10. Extras** — attached arrows, presentations, search, tables, embeds, public API and webhooks, English interface, all Google fonts and custom fonts, sticker library, image cropping, image feed, audio
