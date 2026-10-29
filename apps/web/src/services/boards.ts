@@ -178,10 +178,21 @@ export async function createBoard(
     orgId = data.orgId;
   }
 
+  // Свой шаблон: копия его содержимого (доступ проверяется в сервисе шаблонов)
+  const custom = data.customTemplateId
+    ? await (await import('@/services/templates')).templateForBoard(user, data.customTemplateId)
+    : null;
+
   const board = await prisma.board.create({
     data: {
       title: data.title,
-      templateKey: data.templateKey,
+      templateKey: custom ? 'blank' : data.templateKey,
+      ...(custom
+        ? {
+            objectCount: custom.objectCount,
+            document: { create: { state: custom.state, sizeBytes: custom.sizeBytes } },
+          }
+        : {}),
       ownerId: user.id,
       folderId: data.folderId ?? null,
       orgId,
@@ -192,12 +203,12 @@ export async function createBoard(
     },
     select: { id: true },
   });
-  await seedTemplate(board.id, data.templateKey, user.id);
+  if (!custom) await seedTemplate(board.id, data.templateKey, user.id);
   await audit({
     action: 'board.create',
     actorId: user.id,
     boardId: board.id,
-    metadata: { templateKey: data.templateKey },
+    metadata: { templateKey: data.templateKey, customTemplateId: data.customTemplateId },
   });
   await emitWebhookEvent('board.created', board.id, user.id, { title: data.title });
   return board;

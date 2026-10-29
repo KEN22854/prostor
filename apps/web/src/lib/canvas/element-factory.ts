@@ -193,7 +193,6 @@ export function buildLine(
   };
 }
 
-/** Карточка аудио */
 /** Размер новой диаграммы */
 export const CHART_DEFAULT = { width: 480, height: 320 } as const;
 
@@ -217,6 +216,7 @@ export function buildChart(
   };
 }
 
+/** Карточка аудио */
 export const AUDIO_CARD = { width: 320, height: 76 } as const;
 
 export function buildAudio(

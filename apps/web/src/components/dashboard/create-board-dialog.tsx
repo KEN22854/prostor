@@ -1,14 +1,20 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, Plus } from 'lucide-react';
+import { Building2, Loader2, Plus, Trash2, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { BOARD_TEMPLATES, LIMITS, type BoardTemplateKey } from '@prostor/shared';
+import {
+  BOARD_TEMPLATES,
+  LIMITS,
+  type BoardTemplateDto,
+  type BoardTemplateKey,
+} from '@prostor/shared';
 import { BoardThumbnail } from '@/components/dashboard/board-thumbnail';
+import { TemplatePreview } from '@/components/dashboard/template-preview';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -52,6 +58,28 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
   const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  // Свои шаблоны (личные и организаций) — подгружаются при открытии
+  const [custom, setCustom] = useState<BoardTemplateDto[] | null>(null);
+  const [customId, setCustomId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setCustomId(null);
+    apiRequest<{ templates: BoardTemplateDto[] }>('/api/templates')
+      .then((r) => setCustom(r.templates))
+      .catch(() => setCustom([]));
+  }, [open]);
+
+  async function removeTemplate(tpl: BoardTemplateDto) {
+    try {
+      await apiRequest(`/api/templates/${tpl.id}`, { method: 'DELETE' });
+      setCustom((list) => list?.filter((x) => x.id !== tpl.id) ?? null);
+      if (customId === tpl.id) setCustomId(null);
+      toast.success(t('Шаблон удалён'));
+    } catch (e: unknown) {
+      toast.error(errorMessage(e, t('Не удалось удалить шаблон')));
+    }
+  }
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { title: 'Новая доска', templateKey: 'blank' },
@@ -61,7 +89,11 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
     try {
       const board = await apiRequest<{ id: string }>('/api/boards', {
         method: 'POST',
-        body: { ...values, ...(folderId ? { folderId } : orgId ? { orgId } : {}) },
+        body: {
+          ...values,
+          ...(customId ? { customTemplateId: customId } : {}),
+          ...(folderId ? { folderId } : orgId ? { orgId } : {}),
+        },
       });
       setOpen(false);
       form.reset();
@@ -110,11 +142,14 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
                         key={tpl.key}
                         type="button"
                         role="radio"
-                        aria-checked={field.value === tpl.key}
-                        onClick={() => field.onChange(tpl.key)}
+                        aria-checked={!customId && field.value === tpl.key}
+                        onClick={() => {
+                          setCustomId(null);
+                          field.onChange(tpl.key);
+                        }}
                         className={cn(
                           'overflow-hidden rounded-lg border text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          field.value === tpl.key
+                          !customId && field.value === tpl.key
                             ? 'border-primary ring-2 ring-primary'
                             : 'hover:border-foreground/30',
                         )}
@@ -129,6 +164,55 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
                 </FormItem>
               )}
             />
+            {custom && custom.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{t('Свои шаблоны')}</p>
+                <div
+                  role="radiogroup"
+                  className="grid max-h-64 grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3"
+                >
+                  {custom.map((tpl) => (
+                    <div key={tpl.id} className="group relative animate-appear">
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={customId === tpl.id}
+                        onClick={() => setCustomId(tpl.id)}
+                        className={cn(
+                          'block w-full overflow-hidden rounded-lg border text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          customId === tpl.id
+                            ? 'border-primary ring-2 ring-primary'
+                            : 'hover:border-foreground/30',
+                        )}
+                      >
+                        <TemplatePreview templateId={tpl.id} />
+                        <span className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium">
+                          {tpl.org ? (
+                            <Building2
+                              className="size-3 shrink-0 text-primary"
+                              aria-label={tpl.org.name}
+                            />
+                          ) : (
+                            <User className="size-3 shrink-0 text-muted-foreground" />
+                          )}
+                          <span className="truncate">{tpl.title}</span>
+                        </span>
+                      </button>
+                      {tpl.canDelete ? (
+                        <button
+                          type="button"
+                          onClick={() => void removeTemplate(tpl)}
+                          className="shadow-soft absolute right-1.5 top-1.5 rounded-md bg-background/90 p-1 text-muted-foreground opacity-0 transition hover:text-destructive group-hover:opacity-100"
+                          aria-label={t('Удалить шаблон «{title}»', { title: tpl.title })}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
                 {t('Отмена')}

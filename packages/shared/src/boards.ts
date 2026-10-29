@@ -29,6 +29,8 @@ export const createBoardSchema = z.object({
   folderId: z.string().max(64).optional(),
   /** Доска организации (без папки) */
   orgId: z.string().max(64).optional(),
+  /** Свой шаблон (BoardTemplate) — вместо встроенного */
+  customTemplateId: z.string().max(64).optional(),
 });
 export type CreateBoardInput = z.input<typeof createBoardSchema>;
 

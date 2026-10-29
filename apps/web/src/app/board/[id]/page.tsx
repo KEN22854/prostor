@@ -67,6 +67,14 @@ export default async function BoardPage({ params }: BoardPageProps) {
       isAuthenticated={user !== null}
       ai={aiCapabilities()}
       pinnedTools={user ? await getPinnedTools(user.id) : undefined}
+      org={
+        access.orgId
+          ? await prisma.organization.findUnique({
+              where: { id: access.orgId },
+              select: { id: true, name: true },
+            })
+          : null
+      }
     />
   );
 }

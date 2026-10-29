@@ -45,6 +45,10 @@ export const AUDIT_ACTIONS = [
   'api_key.revoke',
   'webhook.create',
   'webhook.delete',
+  'template.create',
+  'template.delete',
+  'billing.trial_start',
+  'billing.payment',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -94,6 +98,10 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   'api_key.revoke': 'Отозван API-ключ',
   'webhook.create': 'Создан вебхук',
   'webhook.delete': 'Удалён вебхук',
+  'template.create': 'Сохранён шаблон',
+  'template.delete': 'Удалён шаблон',
+  'billing.trial_start': 'Начат пробный период',
+  'billing.payment': 'Оплата тарифа',
 };
 
 export interface AuditEntryDto {

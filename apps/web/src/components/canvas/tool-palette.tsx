@@ -151,6 +151,8 @@ interface ToolPaletteProps {
   audio?: ReactNode;
   /** Диаграмма из данных */
   onAddChart?: () => void;
+  /** Импорт из других досок (draw.io, Excalidraw, Mermaid, Miro) */
+  importer?: ReactNode;
   /** Библиотека фигур (блок-схемы, UML, ER, сеть) */
   shapeLibrary?: ReactNode;
   /** Закреплённые инструменты из профиля; без них — набор по умолчанию */
@@ -169,6 +171,7 @@ export function ToolPalette({
   audio,
   shapeLibrary,
   onAddChart,
+  importer,
   pinned: pinnedIds = DEFAULT_PINNED_TOOLS,
   canCustomize = false,
 }: ToolPaletteProps) {
@@ -444,6 +447,7 @@ export function ToolPalette({
         t('Импорт PDF: страницы — фреймами (или перетащите файл на доску)'),
       ),
     },
+    ...(importer ? [{ id: 'import', node: importer }] : []),
     ...(stickers ? [{ id: 'stickers', node: stickers }] : []),
     ...(audio ? [{ id: 'audio', node: audio }] : []),
     ...(onOpenFeed

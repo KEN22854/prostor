@@ -37,7 +37,20 @@ enum OrgRole {
 enum Plan {
   FREE
   PRO
+  /// Тариф организации (команды)
+  TEAM
   ENTERPRISE
+}
+
+enum PaymentProvider {
+  YOOKASSA
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  CANCELED
 }
 
 enum BoardVisibility {
@@ -126,6 +139,12 @@ model User {
   /// Закреплённые инструменты на панели доски (пусто — набор по умолчанию)
   toolbarTools String[] @default([])
 
+  /// Личный тариф: до какого момента действует оплаченный/пробный план (null — бессрочно)
+  plan        Plan      @default(FREE)
+  planUntil   DateTime?
+  /// Пробный период уже использован (выдаётся один раз)
+  trialUsedAt DateTime?
+
   locale     String    @default("ru")
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -153,6 +172,8 @@ model User {
   favorites           BoardFavorite[]
   apiKeys             ApiKey[]
   webhooks            Webhook[]
+  templates           BoardTemplate[]
+  payments            Payment[]
 }
 
 model Account {
@@ -250,6 +271,12 @@ model Organization {
   boards    Board[]
   folders   Folder[]
   auditLogs AuditLog[]
+  templates BoardTemplate[]
+  payments  Payment[]
+
+  /// До какого момента действует оплаченный/пробный тариф организации
+  planUntil   DateTime?
+  trialUsedAt DateTime?
 }
 
 model OrgMember {
@@ -700,4 +727,50 @@ model Webhook {
 
   @@index([userId])
   @@index([boardId])
+}
+
+// ──────────────────────── Шаблоны и оплата ────────────────────────
+
+/// Свой шаблон: снимок доски (Yjs), личный (orgId = null) или общий для организации
+model BoardTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  ownerId     String
+  orgId       String?
+  state       Bytes
+  sizeBytes   Int      @default(0)
+  objectCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  owner User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  org   Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@index([orgId])
+}
+
+/// Платёж за тариф (ЮKassa / Stripe). providerPaymentId — идемпотентность вебхуков
+model Payment {
+  id                String          @id @default(cuid())
+  userId            String
+  orgId             String?
+  plan              Plan
+  months            Int             @default(1)
+  /// Сумма в минимальных единицах (копейки / центы)
+  amount            Int
+  currency          String
+  provider          PaymentProvider
+  providerPaymentId String?         @unique
+  status            PaymentStatus   @default(PENDING)
+  confirmationUrl   String?
+  paidAt            DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([orgId])
 }

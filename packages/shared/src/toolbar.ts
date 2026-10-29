@@ -22,6 +22,7 @@ export const TOOLBAR_TOOL_IDS = [
   'eraser',
   'image',
   'pdf',
+  'import',
   'stickers',
   'audio',
   'feed',

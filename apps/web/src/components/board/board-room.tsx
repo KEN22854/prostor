@@ -7,6 +7,7 @@ import { can, type AiCapabilities, type BoardRole } from '@prostor/shared';
 import { BoardTimerControl } from '@/components/board/board-timer';
 import { ConnectionStatusIndicator } from '@/components/board/connection-status';
 import { PresenceAvatars } from '@/components/board/presence-avatars';
+import { SaveTemplateDialog } from '@/components/board/save-template-dialog';
 import { ShareDialog } from '@/components/board/share-dialog';
 import { CommentsPanel } from '@/components/comments/comments-panel';
 import { NotificationsBell } from '@/components/notifications/notifications-bell';
@@ -56,6 +57,8 @@ interface BoardRoomProps {
   ai: AiCapabilities;
   /** Закреплённые инструменты панели из профиля */
   pinnedTools?: readonly string[];
+  /** Организация доски — для шаблонов команды */
+  org?: { id: string; name: string } | null;
 }
 
 /** Комната доски: шапка (статус, присутствие, undo/redo) + холст */
@@ -66,6 +69,7 @@ export function BoardRoom({
   isAuthenticated,
   ai,
   pinnedTools,
+  org = null,
 }: BoardRoomProps) {
   const t = useT();
   const tp = usePlural();
@@ -199,6 +203,9 @@ export function BoardRoom({
               </TooltipTrigger>
               <TooltipContent>{t('Обсуждения')}</TooltipContent>
             </Tooltip>
+            {isAuthenticated && can(effectiveRole, 'copy', policy) && !preview ? (
+              <SaveTemplateDialog boardId={boardId} title={title} org={org} />
+            ) : null}
             {canEdit && isAuthenticated ? (
               <Tooltip>
                 <TooltipTrigger asChild>

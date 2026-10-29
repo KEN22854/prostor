@@ -19,3 +19,4 @@ export * from './embeds';
 export * from './integrations';
 export * from './net';
 export * from './toolbar';
+export * from './templates';

@@ -32,6 +32,7 @@ import { SelectionLayer } from '@/components/canvas/selection-layer';
 import { SelectionToolbar } from '@/components/canvas/selection-toolbar';
 import { TextEditor } from '@/components/canvas/text-editor';
 import { ChartEditor } from '@/components/canvas/chart-editor';
+import { ImportDialog } from '@/components/canvas/import-dialog';
 import { ShapeLibraryPanel } from '@/components/canvas/shape-library-panel';
 import { ToolPalette } from '@/components/canvas/tool-palette';
 import { ZoomControls } from '@/components/canvas/zoom-controls';
@@ -481,6 +482,17 @@ export function BoardCanvas({
           onAddLink={() => void addLink()}
           onOpenFeed={() => setFeedOpen((v) => !v)}
           onAddChart={() => useCanvasStore.getState().setChartEditor('new')}
+          importer={
+            user && doc && actions && store ? (
+              <ImportDialog
+                doc={doc}
+                store={store}
+                actions={actions}
+                userId={user.id}
+                onImportPdf={() => pdfInputRef.current?.click()}
+              />
+            ) : null
+          }
           audio={<AudioButton onInsert={insertAudio} />}
           shapeLibrary={
             user ? (

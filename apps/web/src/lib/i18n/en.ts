@@ -769,4 +769,43 @@ export const EN: Readonly<Record<string, string>> = {
   Компьютер: 'Computer',
   Телефон: 'Phone',
   Почта: 'Email',
+  'Шаблон сохранён — команда увидит его в «Новая доска»':
+    'Template saved — your team will see it in “New board”',
+  'Шаблон сохранён — он появится в «Новая доска»': 'Template saved — it will appear in “New board”',
+  'Не удалось сохранить шаблон': "Couldn't save the template",
+  'Сохранить как шаблон': 'Save as template',
+  'Новые доски можно будет начинать с копии этой: со всеми объектами и текстом':
+    'New boards can start as a copy of this one, with all objects and text',
+  'Когда пригодится шаблон (необязательно)': 'When the template is useful (optional)',
+  'Только для меня': 'Only me',
+  'Личный шаблон': 'Personal template',
+  'Для команды': 'For the team',
+  'Всем участникам «{name}»': 'All members of “{name}”',
+  'Не нашлось объектов для импорта — проверьте файл или текст':
+    'Nothing to import — check the file or text',
+  'Импортировано объектов: {n}, пропущено: {skipped} (картинки и неподдерживаемые)':
+    'Imported objects: {n}, skipped: {skipped} (images and unsupported)',
+  'Импортировано объектов: {n}': 'Imported objects: {n}',
+  'Не удалось прочитать файл — формат не распознан':
+    "Couldn't read the file — format not recognized",
+  'Файл больше 20 МБ': 'The file is larger than 20 MB',
+  'Импорт из других досок': 'Import from other boards',
+  'Импорт: draw.io, Excalidraw, Mermaid, Miro (CSV), PDF':
+    'Import: draw.io, Excalidraw, Mermaid, Miro (CSV), PDF',
+  'Отпустите файл': 'Drop the file',
+  'Выбрать файл': 'Choose file',
+  'PDF (Miro, FigJam…)': 'PDF (Miro, FigJam…)',
+  Импортировать: 'Import',
+  'Шаблон удалён': 'Template deleted',
+  'Не удалось удалить шаблон': "Couldn't delete the template",
+  'Свои шаблоны': 'Your templates',
+  'Удалить шаблон «{title}»': 'Delete template “{title}”',
+  'Перетащите файл или вставьте текст — формат определится сам. Импорт отменяется одним Ctrl+Z':
+    'Drop a file or paste text — the format is detected automatically. Ctrl+Z undoes the whole import',
+  'Файл .drawio или .xml': '.drawio or .xml file',
+  'Файл .excalidraw («Сохранить в файл»)': '.excalidraw file (“Save to file”)',
+  'Код блок-схемы: flowchart TD …': 'Flowchart code: flowchart TD …',
+  'CSV-экспорт стикеров Miro или строки текста': 'Miro sticky CSV export or lines of text',
+  'flowchart TD\n  A[Идея] --> B{Проверка}\n  B -->|да| C[Готово]\n\nили список стикеров — по строке на стикер':
+    'flowchart TD\n  A[Idea] --> B{Ready?}\n  B -->|yes| C[Done]\n\nor a list of stickies — one line per sticky',
 };
