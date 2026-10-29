@@ -42,7 +42,7 @@ export function ZoomControls({
 
   return (
     <div
-      className="absolute bottom-4 left-4 z-10 flex items-center gap-1 rounded-lg border bg-background/95 p-1 shadow-md backdrop-blur"
+      className="floating-panel absolute bottom-4 left-4 z-10 flex items-center gap-1 p-1 duration-300 animate-in fade-in-0 zoom-in-95"
       onPointerDown={(e) => e.stopPropagation()}
     >
       {showNavTools ? (
@@ -52,7 +52,10 @@ export function ZoomControls({
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn('size-8', tool === 'select' && 'bg-accent text-accent-foreground')}
+                className={cn(
+                  'size-8 rounded-xl',
+                  tool === 'select' && 'bg-brand-gradient shadow-glow text-white hover:text-white',
+                )}
                 onClick={() => setTool('select')}
                 aria-label={t('Выделение')}
                 aria-pressed={tool === 'select'}
@@ -67,7 +70,10 @@ export function ZoomControls({
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn('size-8', tool === 'hand' && 'bg-accent text-accent-foreground')}
+                className={cn(
+                  'size-8 rounded-xl',
+                  tool === 'hand' && 'bg-brand-gradient shadow-glow text-white hover:text-white',
+                )}
                 onClick={() => setTool('hand')}
                 aria-label={t('Рука')}
                 aria-pressed={tool === 'hand'}
@@ -83,7 +89,11 @@ export function ZoomControls({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn('size-8', tool === 'comment' && 'bg-accent text-accent-foreground')}
+                  className={cn(
+                    'size-8 rounded-xl',
+                    tool === 'comment' &&
+                      'bg-brand-gradient shadow-glow text-white hover:text-white',
+                  )}
                   onClick={() => setTool('comment')}
                   aria-label={t('Комментарий')}
                   aria-pressed={tool === 'comment'}
@@ -99,7 +109,10 @@ export function ZoomControls({
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn('size-8', tool === 'laser' && 'bg-accent text-accent-foreground')}
+                className={cn(
+                  'size-8 rounded-xl',
+                  tool === 'laser' && 'bg-brand-gradient shadow-glow text-white hover:text-white',
+                )}
                 onClick={() => setTool('laser')}
                 aria-label={t('Лазерная указка')}
                 aria-pressed={tool === 'laser'}

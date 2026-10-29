@@ -34,7 +34,7 @@ export function CommentsPanel() {
 
   return (
     <aside
-      className="absolute bottom-0 right-0 top-0 z-20 flex w-80 max-w-full flex-col border-l bg-background shadow-xl"
+      className="shadow-soft-lg absolute bottom-0 right-0 top-0 z-20 flex w-80 max-w-full flex-col border-l bg-background/90 backdrop-blur-xl duration-300 ease-smooth animate-in fade-in-0 slide-in-from-right-8"
       aria-label={t('Обсуждения')}
       onPointerDown={(e) => e.stopPropagation()}
     >

@@ -17,7 +17,7 @@ interface AuthCardProps {
 
 export function AuthCard({ title, description, children, footer }: AuthCardProps) {
   return (
-    <Card className="w-full max-w-md">
+    <Card className="glass shadow-soft-lg w-full max-w-md animate-fade-up rounded-3xl">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}

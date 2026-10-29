@@ -36,9 +36,10 @@ export function Providers({ children, locale }: { children: ReactNode; locale: L
     // запросы /api/auth/session при переключении вкладок не нужны
     <I18nProvider locale={locale}>
       <SessionProvider refetchOnWindowFocus={false}>
+        {/* Основная тема — светлая; тёмную или «как в системе» выбирают сами */}
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >

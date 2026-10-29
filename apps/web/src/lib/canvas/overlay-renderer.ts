@@ -2,7 +2,7 @@ import Konva from 'konva';
 import type { Bounds } from '@prostor/shared';
 import type { GuideLine } from '@/lib/canvas/snapping';
 
-const ACCENT = '#6366f1';
+const ACCENT = '#9b6bdf';
 const GUIDE = '#e5484d';
 
 /**

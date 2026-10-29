@@ -214,7 +214,7 @@ export function PresentationMode({
       ) : null}
 
       <div
-        className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-xl border bg-background/90 p-1 text-sm shadow-lg backdrop-blur"
+        className="floating-panel absolute bottom-4 left-1/2 flex -translate-x-1/2 animate-appear items-center gap-1 p-1"
         role="toolbar"
         aria-label={t('Управление презентацией')}
       >
@@ -308,7 +308,7 @@ function SpeakerNotes({ frame, actions }: { frame: FrameElement; actions: BoardA
 
   return (
     <aside
-      className="absolute bottom-20 right-4 top-4 flex w-80 flex-col gap-2 rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur"
+      className="floating-panel absolute bottom-20 right-4 top-4 flex w-80 flex-col gap-2 p-3 duration-300 animate-in fade-in-0 zoom-in-95"
       aria-label={t('Заметки докладчика')}
     >
       <h2 className="text-sm font-medium">{t('Заметки докладчика')}</h2>

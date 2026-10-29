@@ -1,6 +1,7 @@
 import { LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { NotificationsBell } from '@/components/notifications/notifications-bell';
 import { Button } from '@/components/ui/button';
 import { signOutAction } from '@/lib/auth/actions';
@@ -20,6 +21,7 @@ export async function UserMenu({ name, email }: UserMenuProps) {
         {name ? <div className="text-xs text-muted-foreground">{email}</div> : null}
       </div>
       <LanguageSwitcher className="hidden md:flex" />
+      <ThemeToggle />
       <NotificationsBell />
       <Button asChild variant="ghost" size="icon" aria-label={t('Настройки аккаунта')}>
         <Link href="/settings">

@@ -104,7 +104,7 @@ export function BoardSearch({ store }: { store: ElementStore | null }) {
 
   return (
     <div
-      className="absolute left-1/2 top-16 z-20 w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 rounded-xl border bg-background/95 shadow-lg backdrop-blur"
+      className="floating-panel absolute left-1/2 top-16 z-20 w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 animate-appear"
       role="search"
       onPointerDown={(e) => e.stopPropagation()}
       data-testid="board-search"

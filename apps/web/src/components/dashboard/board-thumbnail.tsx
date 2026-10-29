@@ -25,7 +25,7 @@ const ICONS: Record<string, LucideIcon> = {
 function hueFor(id: string): number {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 33 + id.charCodeAt(i)) % 360;
-  return h;
+  return 235 + (h % 95);
 }
 
 interface BoardThumbnailProps {

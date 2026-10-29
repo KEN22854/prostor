@@ -174,7 +174,7 @@ export function Minimap({ store }: { store: ElementStore | null }) {
   }
 
   return (
-    <div className="absolute bottom-4 right-4 overflow-hidden rounded-lg border bg-background/95 shadow-md backdrop-blur">
+    <div className="floating-panel absolute bottom-4 right-4 overflow-hidden duration-300 animate-in fade-in-0 zoom-in-95">
       <canvas
         ref={canvasRef}
         style={{ width: WIDTH, height: HEIGHT }}

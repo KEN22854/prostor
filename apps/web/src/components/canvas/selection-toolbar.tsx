@@ -145,7 +145,7 @@ export function SelectionToolbar({
 
   return (
     <div
-      className="absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border bg-background/95 p-1 shadow-md backdrop-blur"
+      className="floating-panel absolute left-1/2 top-3 z-10 flex -translate-x-1/2 animate-appear items-center gap-0.5 p-1"
       role="toolbar"
       aria-label={t('Свойства выделения')}
       data-testid="selection-toolbar"

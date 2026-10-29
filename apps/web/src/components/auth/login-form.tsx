@@ -140,7 +140,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
           </p>
         ) : null}
 
-        <Button type="submit" className="w-full" disabled={submitting}>
+        <Button type="submit" variant="gradient" className="h-11 w-full" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" /> : null}
           {needCode ? t('Подтвердить') : t('Войти')}
         </Button>

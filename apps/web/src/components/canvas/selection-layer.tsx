@@ -158,9 +158,9 @@ export function SelectionLayer({
         keepRatio={false}
         anchorSize={9}
         anchorCornerRadius={2}
-        anchorStroke="#6366f1"
+        anchorStroke="#9b6bdf"
         anchorFill="#ffffff"
-        borderStroke="#6366f1"
+        borderStroke="#9b6bdf"
         borderStrokeWidth={1.5}
         rotateAnchorOffset={28}
         padding={2}

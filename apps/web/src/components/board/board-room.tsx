@@ -13,6 +13,8 @@ import { NotificationsBell } from '@/components/notifications/notifications-bell
 import { StartVotingButton } from '@/components/voting/start-voting-button';
 import { VersionHistoryPanel } from '@/components/board/version-history-panel';
 import { VersionPreviewBar } from '@/components/board/version-preview-bar';
+import { LogoMark } from '@/components/brand/logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCommentsSync } from '@/hooks/use-comments-sync';
@@ -33,7 +35,7 @@ const BoardCanvas = dynamic(
   () => import('@/components/canvas/board-canvas').then((m) => m.BoardCanvas),
   {
     ssr: false,
-    loading: () => <div className="h-full w-full animate-pulse bg-canvas" />,
+    loading: () => <div className="skeleton h-full w-full opacity-60" />,
   },
 );
 
@@ -79,15 +81,16 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex h-dvh flex-col">
-        <header className="z-10 flex h-14 shrink-0 items-center gap-3 border-b bg-background px-3">
+        <header className="glass z-10 flex h-14 shrink-0 animate-appear items-center gap-3 border-x-0 border-t-0 px-3">
           <Button asChild variant="ghost" size="icon" aria-label={t('К списку досок')}>
             <Link href={isAuthenticated ? '/dashboard' : '/'}>
               <ArrowLeft />
             </Link>
           </Button>
-          <h1 className="min-w-0 truncate font-medium">{title}</h1>
+          <LogoMark className="hidden size-7 sm:inline-flex" />
+          <h1 className="min-w-0 truncate font-semibold tracking-tight">{title}</h1>
           {!canEdit ? (
-            <span className="flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-xs text-accent-foreground">
               <Lock className="size-3" aria-hidden /> {t('Только просмотр')}
             </span>
           ) : null}
@@ -179,7 +182,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
                 >
                   <MessageSquare />
                   {openComments > 0 ? (
-                    <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-primary-foreground">
+                    <span className="bg-brand-gradient absolute -right-0.5 -top-0.5 min-w-4 animate-pop rounded-full px-1 text-[10px] font-semibold leading-4 text-primary-foreground">
                       {openComments}
                     </span>
                   ) : null}
@@ -206,6 +209,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
               </Tooltip>
             ) : null}
             <PresenceAvatars users={presence} awareness={preview ? null : awareness} />
+            <ThemeToggle className="hidden sm:inline-flex" />
             {isAuthenticated ? <NotificationsBell /> : null}
             {isAuthenticated ? <ShareDialog boardId={boardId} title={title} /> : null}
           </div>

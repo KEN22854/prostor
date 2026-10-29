@@ -26,7 +26,7 @@ export function VersionPreviewBar({
   const [pending, setPending] = useState(false);
   return (
     <div
-      className="absolute left-1/2 top-3 z-20 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center gap-3 rounded-xl border border-primary/40 bg-background/95 px-4 py-2 shadow-lg backdrop-blur"
+      className="floating-panel absolute left-1/2 top-3 z-20 flex max-w-[calc(100%-2rem)] -translate-x-1/2 animate-appear flex-wrap items-center gap-3 px-4 py-2"
       role="status"
       aria-label={t('Просмотр версии')}
       data-testid="version-preview-bar"

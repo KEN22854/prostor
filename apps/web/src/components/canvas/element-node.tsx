@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useLayoutEffect } from 'react';
 import type {
   AudioElement,
   BoardElement,
@@ -25,6 +25,7 @@ import { PathShape } from '@/components/canvas/shapes/path-shape';
 import { PlaceholderShape } from '@/components/canvas/shapes/placeholder-shape';
 import { StickyShape } from '@/components/canvas/shapes/sticky-shape';
 import { TextShape } from '@/components/canvas/shapes/text-shape';
+import { animateAppear } from '@/lib/canvas/appear-animation';
 import type { DetailLevel } from '@/lib/canvas/constants';
 
 interface ElementNodeProps {
@@ -49,6 +50,12 @@ export const ElementNode = memo(function ElementNode({
   editing = false,
   editingCell = null,
 }: ElementNodeProps) {
+  // Только при монтировании: новый объект мягко «выпрыгивает» на холст
+  // layout-эффект — до первой отрисовки Konva, без вспышки в полном размере
+  useLayoutEffect(() => {
+    if (detail !== 'lod') animateAppear(element);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- анимация один раз, при появлении узла
+  }, []);
   switch (element.type) {
     case 'sticky':
       return <StickyShape element={element as StickyElement} detail={detail} hideText={editing} />;

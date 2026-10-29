@@ -1,5 +1,6 @@
 import { Building2, ChevronRight, LayoutGrid, Settings, User } from 'lucide-react';
 import type { Metadata } from 'next';
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { listBoardsQuerySchema, type FolderDto, type ListBoardsQuery } from '@prostor/shared';
@@ -10,6 +11,7 @@ import { CreateFolderButton } from '@/components/dashboard/create-folder-button'
 import { CreateOrgButton } from '@/components/dashboard/create-org-button';
 import { FolderTree } from '@/components/dashboard/folder-tree';
 import { UserMenu } from '@/components/dashboard/user-menu';
+import { Logo } from '@/components/brand/logo';
 import { getSessionUser } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import { listBoards } from '@/services/boards';
@@ -69,27 +71,25 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const baseQuery = org ? `org=${org.id}` : '';
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/40">
+      <header className="glass sticky top-0 z-30 border-x-0 border-t-0">
         <div className="flex h-14 items-center justify-between px-4 sm:px-6">
-          <Link href="/dashboard" className="font-semibold">
-            {t('Простор')}
-          </Link>
+          <Logo href="/dashboard" label={t('Простор')} className="text-base" />
           <UserMenu name={user.name} email={user.email ?? ''} />
         </div>
       </header>
 
       <div className="flex">
         <aside
-          className="hidden min-h-[calc(100dvh-3.5rem)] w-64 shrink-0 border-r bg-background p-3 md:block"
+          className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-64 shrink-0 overflow-y-auto border-r bg-background/60 p-3 backdrop-blur md:block"
           aria-label={t('Рабочие пространства')}
         >
           <nav className="space-y-0.5">
             <Link
               href="/dashboard"
               className={cn(
-                'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted',
-                !org && !query.folder && 'bg-accent font-medium',
+                'flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors duration-200 hover:bg-accent/70',
+                !org && !query.folder && 'bg-accent font-medium text-accent-foreground',
               )}
             >
               <User className="size-4" /> {t('Все доски')}
@@ -110,8 +110,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <div
                 key={o.id}
                 className={cn(
-                  'group flex items-center rounded-md hover:bg-muted',
-                  org?.id === o.id && !query.folder && 'bg-accent font-medium',
+                  'group flex items-center rounded-lg transition-colors duration-200 hover:bg-accent/70',
+                  org?.id === o.id &&
+                    !query.folder &&
+                    'bg-accent font-medium text-accent-foreground',
                 )}
               >
                 <Link
@@ -171,7 +173,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                   </span>
                 ))}
               </nav>
-              <h1 className="truncate text-2xl font-semibold">
+              <h1 className="animate-fade-up truncate text-3xl font-bold tracking-tight">
                 {currentFolder?.name ?? (org ? org.name : t('Доски'))}
               </h1>
             </div>
@@ -182,8 +184,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
           {boards.length > 0 ? (
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {boards.map((board) => (
-                <li key={board.id}>
+              {boards.map((board, i) => (
+                <li
+                  key={board.id}
+                  className="stagger"
+                  style={{ '--i': Math.min(i, 12) } as CSSProperties}
+                >
                   <BoardCard board={board} />
                 </li>
               ))}
@@ -212,8 +218,10 @@ async function EmptyState({
 }) {
   const t = await getT();
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed bg-background py-16 text-center">
-      <LayoutGrid className="size-10 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+    <div className="flex animate-fade-up flex-col items-center gap-3 rounded-3xl border border-dashed border-primary/30 bg-background/70 py-20 text-center backdrop-blur">
+      <span className="mb-2 inline-flex size-16 animate-float items-center justify-center rounded-2xl bg-accent text-primary">
+        <LayoutGrid className="size-8" strokeWidth={1.5} aria-hidden />
+      </span>
       <p className="font-medium">{searching ? t('Ничего не найдено') : t('Здесь пока пусто')}</p>
       <p className="max-w-sm text-sm text-muted-foreground">
         {searching

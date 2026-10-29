@@ -14,7 +14,10 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   const setLocale = useSetLocale();
   return (
     <div
-      className={cn('flex items-center gap-1', className)}
+      className={cn(
+        'flex items-center gap-0.5 rounded-full border bg-background/60 p-0.5 pl-2 backdrop-blur',
+        className,
+      )}
       role="group"
       aria-label={t('Language / Язык')}
     >
@@ -24,8 +27,12 @@ export function LanguageSwitcher({ className }: { className?: string }) {
           key={l}
           type="button"
           size="sm"
-          variant={l === locale ? 'secondary' : 'ghost'}
-          className="h-7 px-2 text-xs"
+          variant="ghost"
+          className={cn(
+            'h-7 rounded-full px-2.5 text-xs',
+            l === locale &&
+              'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+          )}
           aria-pressed={l === locale}
           onClick={() => l !== locale && setLocale(l)}
         >

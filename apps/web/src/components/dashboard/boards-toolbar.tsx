@@ -63,7 +63,7 @@ export function BoardsToolbar({ query }: { query: ListBoardsQuery }) {
       <div
         role="tablist"
         aria-label={t('Фильтр досок')}
-        className="flex gap-1 rounded-lg bg-muted p-1"
+        className="flex gap-1 rounded-xl bg-muted p-1"
       >
         {FILTERS.map((f) => (
           <button
@@ -72,9 +72,9 @@ export function BoardsToolbar({ query }: { query: ListBoardsQuery }) {
             aria-selected={query.filter === f.value}
             onClick={() => update({ filter: f.value === 'all' ? '' : f.value })}
             className={cn(
-              'rounded-md px-3 py-1 text-sm transition-colors',
+              'rounded-lg px-3 py-1.5 text-sm transition-all duration-200',
               query.filter === f.value
-                ? 'bg-background shadow-sm'
+                ? 'shadow-soft bg-background font-medium text-primary'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >

@@ -11,6 +11,7 @@ export function Toaster(props: ToasterProps) {
       position="bottom-right"
       richColors
       closeButton
+      toastOptions={{ classNames: { toast: '!rounded-xl !shadow-soft-lg backdrop-blur-xl' } }}
       {...props}
     />
   );

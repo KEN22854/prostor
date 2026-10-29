@@ -123,7 +123,7 @@ export function ImageFeedPanel({ onClose, onInsert, canEdit }: ImageFeedPanelPro
 
   return (
     <aside
-      className="absolute bottom-3 right-3 top-14 z-20 flex w-[min(24rem,calc(100%-5rem))] flex-col rounded-xl border bg-background/95 shadow-xl backdrop-blur"
+      className="floating-panel absolute bottom-3 right-3 top-14 z-20 flex w-[min(24rem,calc(100%-5rem))] flex-col duration-300 animate-in fade-in-0 zoom-in-95"
       aria-label={t('Лента картинок')}
       onPointerDown={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}

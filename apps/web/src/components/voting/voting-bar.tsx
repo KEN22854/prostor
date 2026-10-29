@@ -34,7 +34,7 @@ export function VotingBar({ store }: { store: ElementStore | null }) {
 
   return (
     <div
-      className="absolute left-1/2 top-16 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 flex-wrap items-center gap-2 rounded-xl border bg-background/95 px-3 py-1.5 text-sm shadow-md backdrop-blur"
+      className="floating-panel absolute left-1/2 top-16 z-10 flex max-w-[calc(100%-2rem)] -translate-x-1/2 animate-appear flex-wrap items-center gap-2 px-3 py-1.5"
       data-testid="voting-bar"
       onPointerDown={(e) => e.stopPropagation()}
     >

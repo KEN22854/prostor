@@ -42,7 +42,7 @@ export function AudioPlayer({ store }: { store: ElementStore }) {
 
   return (
     <div
-      className="absolute z-20 flex items-center gap-1 rounded-xl border bg-background/95 p-1 shadow-lg backdrop-blur"
+      className="floating-panel absolute z-20 flex items-center gap-1 p-1 duration-300 animate-in fade-in-0 zoom-in-95"
       style={{ left: bottom.x, top: bottom.y + 6, width }}
       onPointerDown={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}

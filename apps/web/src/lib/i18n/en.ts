@@ -632,4 +632,41 @@ export const EN: Readonly<Record<string, string>> = {
   'Записать с микрофона': 'Record from microphone',
   'MP3, WAV, OGG, M4A, FLAC до 50 МБ; аудиофайл можно и просто перетащить на доску':
     'MP3, WAV, OGG, M4A, FLAC up to 50 MB; you can also drag an audio file onto the board',
+  // Главная страница
+  'Онлайн-доска для команд': 'Online whiteboard for teams',
+  'Думайте вместе на': 'Think together on an',
+  'бесконечной доске': 'infinite board',
+  'Планируйте, рисуйте схемы и проводите ретро с командой. В облаке или на своём сервере.':
+    'Plan, draw diagrams and run retros with your team. In the cloud or on your own server.',
+  'Бесконечный холст': 'Infinite canvas',
+  'Стикеры, фигуры, mind map, канбан и документы на одной доске.':
+    'Stickies, shapes, mind maps, kanban and docs on one board.',
+  'Вместе в реальном времени': 'Together in real time',
+  'Курсоры коллег, follow-mode и презентации по фреймам.':
+    "Teammates' cursors, follow mode and frame-based presentations.",
+  'Работает офлайн': 'Works offline',
+  'Изменения сохраняются локально и синхронизируются без конфликтов.':
+    'Changes are saved locally and synced without conflicts.',
+  'ИИ-помощник': 'AI assistant',
+  'Генерация картинок, удаление фона и подсказки прямо на доске.':
+    'Image generation, background removal and suggestions right on the board.',
+  'Ретро спринта': 'Sprint retro',
+  'Что прошло хорошо?': 'What went well?',
+  'Идеи на следующий спринт': 'Ideas for the next sprint',
+  'Что улучшить?': 'What to improve?',
+  'Голосуем за лучшие идеи': 'Voting for the best ideas',
+  'Ещё инструменты': 'More tools',
+  Привязка: 'Snapping',
+  'К объектам': 'To objects',
+  'К сетке': 'To grid',
+  'Светлая тема': 'Light theme',
+  'Тёмная тема': 'Dark theme',
+  Светлая: 'Light',
+  Тёмная: 'Dark',
+  'Как в системе': 'System',
+  'Тема оформления': 'Theme',
+  'Импорт PDF: страницы — фреймами (или перетащите файл на доску)':
+    'PDF import: pages become frames (or drop the file onto the board)',
+  'Ссылка, YouTube, Figma, Google Docs (или просто вставьте ссылку Ctrl+V)':
+    'Link, YouTube, Figma, Google Docs (or just paste a link with Ctrl+V)',
 };

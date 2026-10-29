@@ -74,7 +74,7 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button variant="gradient">
           <Plus /> {t('Новая доска')}
         </Button>
       </DialogTrigger>

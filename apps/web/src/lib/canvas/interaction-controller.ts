@@ -678,7 +678,7 @@ class EndpointSession implements Session {
     this.binding = hit?.binding ?? null;
     this.deps.overlay.setBindTarget(hit ? this.deps.store.boundsOf(hit.target.id) : null);
     const g = this.geometry();
-    if (g) this.deps.overlay.setStroke(worldPoints(g), { color: '#6366f1', width: 2 / zoom() });
+    if (g) this.deps.overlay.setStroke(worldPoints(g), { color: '#9b6bdf', width: 2 / zoom() });
   }
 
   end(): void {

@@ -240,7 +240,7 @@ function CropFrame({ el, actions }: { el: ImageElement; actions: BoardActions })
       </div>
 
       <div
-        className="absolute bottom-16 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-xl border bg-background/95 p-1 text-sm shadow-lg backdrop-blur"
+        className="floating-panel absolute bottom-16 left-1/2 z-30 flex -translate-x-1/2 animate-appear items-center gap-1 p-1"
         role="toolbar"
         aria-label={t('Обрезка изображения')}
         onPointerDown={(e) => e.stopPropagation()}

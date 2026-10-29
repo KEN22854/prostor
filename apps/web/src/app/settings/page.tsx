@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { ThemePicker } from '@/components/theme-toggle';
 import { ApiKeysCard } from '@/components/settings/api-keys-card';
 import { ChangePasswordForm } from '@/components/settings/change-password-form';
 import { EmailNotificationsToggle } from '@/components/settings/email-notifications-toggle';
@@ -107,6 +108,15 @@ export default async function AccountSettingsPage() {
           </CardHeader>
           <CardContent>
             <LanguageSwitcher />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('Тема оформления')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ThemePicker />
           </CardContent>
         </Card>
 

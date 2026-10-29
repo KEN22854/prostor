@@ -14,19 +14,25 @@ export async function BoardCard({ board }: { board: BoardListItem }) {
     locale: (await getLocale()) === 'en' ? enUS : ru,
   });
   return (
-    <article className="group relative overflow-hidden rounded-xl border bg-card transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md">
+    <article className="lift shadow-soft group relative overflow-hidden rounded-2xl border bg-card focus-within:ring-2 focus-within:ring-ring">
       <Link
         href={`/board/${board.id}`}
         className="block focus:outline-none"
         aria-label={t('Открыть «{title}»', { title: board.title })}
       >
-        <BoardThumbnail
-          id={board.id}
-          templateKey={board.templateKey}
-          thumbnailUrl={board.thumbnailUrl}
-        />
+        <div className="overflow-hidden">
+          <div className="transition-transform duration-500 ease-smooth group-hover:scale-[1.04]">
+            <BoardThumbnail
+              id={board.id}
+              templateKey={board.templateKey}
+              thumbnailUrl={board.thumbnailUrl}
+            />
+          </div>
+        </div>
         <div className="space-y-1 p-3 pr-16">
-          <h2 className="truncate font-medium">{board.title}</h2>
+          <h2 className="truncate font-medium transition-colors group-hover:text-primary">
+            {board.title}
+          </h2>
           <p className="truncate text-xs text-muted-foreground">
             {board.isOwner ? t('Вы') : (board.owner.name ?? t('Пользователь'))} ·{' '}
             {t('изменена {time}', { time: updated })}

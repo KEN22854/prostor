@@ -205,7 +205,7 @@ export function buildAudio(
     title: p.title,
     mimeType: p.mimeType,
     ...(p.durationMs !== undefined ? { durationMs: p.durationMs } : {}),
-    color: '#6366f1',
+    color: '#9b6bdf',
   };
 }
 

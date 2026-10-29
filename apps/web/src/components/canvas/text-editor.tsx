@@ -355,7 +355,7 @@ function EditorBox({
   return (
     <div style={box} data-testid="text-editor" onPointerDown={(e) => e.stopPropagation()}>
       <div
-        className="absolute -top-11 left-0 flex items-center gap-0.5 rounded-lg border bg-background/95 p-0.5 shadow-md backdrop-blur"
+        className="floating-panel absolute -top-11 left-0 flex items-center gap-0.5 p-0.5 duration-300 animate-in fade-in-0 zoom-in-95"
         role="toolbar"
         aria-label={t('Форматирование текста')}
         // Кнопки не забирают фокус у редактора
