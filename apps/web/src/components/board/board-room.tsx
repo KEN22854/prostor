@@ -54,10 +54,19 @@ interface BoardRoomProps {
   isAuthenticated: boolean;
   /** ИИ-функции, включённые на сервере */
   ai: AiCapabilities;
+  /** Закреплённые инструменты панели из профиля */
+  pinnedTools?: readonly string[];
 }
 
 /** Комната доски: шапка (статус, присутствие, undo/redo) + холст */
-export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: BoardRoomProps) {
+export function BoardRoom({
+  boardId,
+  title,
+  initialRole,
+  isAuthenticated,
+  ai,
+  pinnedTools,
+}: BoardRoomProps) {
   const t = useT();
   const tp = usePlural();
   const locale = useLocale();
@@ -232,6 +241,7 @@ export function BoardRoom({ boardId, title, initialRole, isAuthenticated, ai }: 
             // IndexedDB новой доски — ещё не повод выставлять камеру.
             contentReady={Boolean(preview) || status === 'synced' || (localReady && count > 0)}
             ai={ai}
+            pinnedTools={pinnedTools}
           />
           {preview ? (
             <VersionPreviewBar

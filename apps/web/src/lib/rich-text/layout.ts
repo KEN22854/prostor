@@ -1,10 +1,12 @@
 import type { RichParagraph, RichRun } from '@prostor/shared';
+import { HEADING_SCALE } from '@/lib/rich-text/schema';
 
 /**
  * Раскладка форматированного текста по строкам — общая для холста
  * (Konva.Shape) и экспорта в SVG. Повторяет поведение Konva.Text:
- * перенос по словам, межстрочный интервал = размер шрифта, многоточие
+ * перенос по словам, межстрочный интервал = размер шрифта строки, многоточие
  * при нехватке высоты, выравнивание по горизонтали и вертикали.
+ * Заголовки крупнее и жирнее, у пунктов списков — маркер и отступ.
  */
 export type MeasureFont = (text: string, font: string) => number;
 
@@ -26,18 +28,39 @@ export interface RichSegment {
   x: number;
   width: number;
   font: string;
+  /** Размер шрифта сегмента (у заголовков больше базового) */
+  size: number;
   bold: boolean;
   italic: boolean;
   underline: boolean;
   strike: boolean;
+  /** Свой цвет текста (иначе — цвет элемента) */
+  color?: string;
+  /** Цвет маркера под текстом */
+  highlight?: string;
+}
+
+export interface RichMarker {
+  kind: 'bullet' | 'number' | 'check';
+  x: number;
+  /** «3.» у нумерованного списка */
+  label?: string;
+  checked?: boolean;
+  size: number;
 }
 
 export interface RichLine {
   /** Центр строки по вертикали (textBaseline = middle) */
   y: number;
+  /** Высота строки = размер шрифта строки */
+  height: number;
   segments: RichSegment[];
   /** Маркер списка — у первой строки пункта */
+  marker?: RichMarker;
+  /** Маркер маркированного списка (то же, что marker.x у bullet) */
   bulletX?: number;
+  /** Отмеченный пункт чек-листа — текст рисуется приглушённым */
+  dim?: boolean;
 }
 
 interface Token {
@@ -45,21 +68,29 @@ interface Token {
   run: RichRun;
 }
 
+interface ParaStyle {
+  size: number;
+  bold: boolean;
+}
+
 export function fontOf(
   opts: Pick<RichLayoutOptions, 'fontSize' | 'family' | 'bold' | 'italic'>,
   run: RichRun,
+  size = opts.fontSize,
 ): string {
   const italic = opts.italic || run.italic;
   const bold = opts.bold || run.bold;
-  return `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${opts.fontSize}px ${opts.family}`;
+  return `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${size}px ${opts.family}`;
 }
 
-function sameStyle(a: RichRun, b: RichRun): boolean {
+function sameStyle(a: RichSegment, b: RichRun): boolean {
   return (
-    Boolean(a.bold) === Boolean(b.bold) &&
-    Boolean(a.italic) === Boolean(b.italic) &&
-    Boolean(a.underline) === Boolean(b.underline) &&
-    Boolean(a.strike) === Boolean(b.strike)
+    a.bold === Boolean(b.bold) &&
+    a.italic === Boolean(b.italic) &&
+    a.underline === Boolean(b.underline) &&
+    a.strike === Boolean(b.strike) &&
+    a.color === b.color &&
+    a.highlight === b.highlight
   );
 }
 
@@ -72,39 +103,58 @@ function tokenize(runs: readonly RichRun[]): Token[] {
   return tokens;
 }
 
+function paraStyle(p: RichParagraph, opts: RichLayoutOptions): ParaStyle {
+  if (!p.heading) return { size: opts.fontSize, bold: opts.bold };
+  return { size: Math.round(opts.fontSize * HEADING_SCALE[p.heading]), bold: true };
+}
+
+const isListed = (p: RichParagraph) => Boolean(p.list || p.bullet);
+
 export function layoutRich(
   paragraphs: readonly RichParagraph[],
   opts: RichLayoutOptions,
   measure: MeasureFont,
 ): RichLine[] {
-  const lh = opts.fontSize;
   const indent = Math.round(opts.fontSize * 1.1);
   /** wrapped — строка-продолжение абзаца после переноса */
   type Draft = {
     tokens: Token[];
     width: number;
-    bullet: boolean;
     indent: number;
     wrapped: boolean;
+    style: ParaStyle;
+    marker?: Omit<RichMarker, 'x'>;
+    dim: boolean;
   };
   const drafts: Draft[] = [];
+  let number = 0;
 
   for (const p of paragraphs) {
-    const offset = p.bullet ? indent : 0;
+    number = p.list === 'number' ? number + 1 : 0;
+    const style = paraStyle(p, opts);
+    const runOpts = { ...opts, bold: style.bold };
+    // Номера длиннее «9.» не помещаются в обычный отступ
+    const numberIndent =
+      p.list === 'number'
+        ? Math.max(indent, measure(`${number}. `, fontOf(runOpts, { text: '' }, style.size)))
+        : 0;
+    const offset = !isListed(p) ? 0 : p.list === 'number' ? numberIndent : indent;
     const max = Math.max(1, opts.width - offset);
-    let line: Draft = {
-      tokens: [],
-      width: 0,
-      bullet: Boolean(p.bullet),
-      indent: offset,
-      wrapped: false,
-    };
+    const marker: Draft['marker'] = p.list
+      ? p.list === 'number'
+        ? { kind: 'number', label: `${number}.`, size: style.size }
+        : { kind: 'check', checked: Boolean(p.checked), size: style.size }
+      : p.bullet
+        ? { kind: 'bullet', size: style.size }
+        : undefined;
+    const dim = p.list === 'check' && Boolean(p.checked);
+    let line: Draft = { tokens: [], width: 0, indent: offset, wrapped: false, style, marker, dim };
     const push = () => {
       drafts.push(line);
-      line = { tokens: [], width: 0, bullet: false, indent: offset, wrapped: true };
+      line = { tokens: [], width: 0, indent: offset, wrapped: true, style, dim };
     };
     for (const token of tokenize(p.runs)) {
-      const font = fontOf(opts, token.run);
+      const font = fontOf(runOpts, token.run, style.size);
       const w = measure(token.text, font);
       const visible = measure(token.text.trimEnd(), font);
       // Пробелы в начале перенесённой строки не рисуем (как Konva)
@@ -130,12 +180,24 @@ export function layoutRich(
     push();
   }
 
+  // Сколько строк помещается по высоте (у заголовков строки выше)
   let visibleDrafts = drafts;
-  const maxLines = Math.floor(opts.height / lh);
-  const truncated = opts.ellipsis && drafts.length > maxLines;
-  if (truncated) visibleDrafts = drafts.slice(0, Math.max(0, maxLines));
+  let truncated = false;
+  if (opts.ellipsis) {
+    let used = 0;
+    let count = 0;
+    for (const d of drafts) {
+      if (used + d.style.size > opts.height + 0.001) break;
+      used += d.style.size;
+      count++;
+    }
+    if (count < drafts.length) {
+      truncated = true;
+      visibleDrafts = drafts.slice(0, count);
+    }
+  }
 
-  const total = visibleDrafts.length * lh;
+  const total = visibleDrafts.reduce((sum, d) => sum + d.style.size, 0);
   const top =
     opts.verticalAlign === 'middle'
       ? (opts.height - total) / 2
@@ -143,36 +205,29 @@ export function layoutRich(
         ? opts.height - total
         : 0;
 
+  let cursorY = top;
   return visibleDrafts.map((d, i) => {
+    const runOpts = { ...opts, bold: d.style.bold };
     // Склеиваем соседние токены одного стиля; хвостовой пробел строки не учитываем
     const segments: RichSegment[] = [];
     for (const t of d.tokens) {
       const last = segments[segments.length - 1];
       const run = t.run;
-      if (
-        last &&
-        sameStyle(
-          {
-            bold: last.bold,
-            italic: last.italic,
-            underline: last.underline,
-            strike: last.strike,
-            text: '',
-          },
-          run,
-        )
-      ) {
+      if (last && sameStyle(last, run)) {
         last.text += t.text;
       } else {
         segments.push({
           text: t.text,
           x: 0,
           width: 0,
-          font: fontOf(opts, run),
+          font: fontOf(runOpts, run, d.style.size),
+          size: d.style.size,
           bold: Boolean(run.bold),
           italic: Boolean(run.italic),
           underline: Boolean(run.underline),
           strike: Boolean(run.strike),
+          ...(run.color ? { color: run.color } : {}),
+          ...(run.highlight ? { highlight: run.highlight } : {}),
         });
       }
     }
@@ -198,6 +253,14 @@ export function layoutRich(
       s.x = x;
       x += s.width;
     }
-    return { y: top + i * lh + lh / 2, segments, ...(d.bullet ? { bulletX: start } : {}) };
+    const height = d.style.size;
+    const line: RichLine = { y: cursorY + height / 2, height, segments };
+    cursorY += height;
+    if (d.marker) {
+      line.marker = { ...d.marker, x: start };
+      if (d.marker.kind === 'bullet') line.bulletX = start;
+    }
+    if (d.dim) line.dim = true;
+    return line;
   });
 }

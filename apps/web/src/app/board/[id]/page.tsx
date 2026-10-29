@@ -6,6 +6,7 @@ import { BoardRoom } from '@/components/board/board-room';
 import { aiCapabilities } from '@/lib/ai/capabilities';
 import { getSessionUser } from '@/lib/session';
 import { touchBoardVisit } from '@/services/boards';
+import { getPinnedTools } from '@/services/profile';
 import { orgRequires2faFor } from '@/services/orgs';
 import { getT } from '@/lib/i18n/server';
 
@@ -65,6 +66,7 @@ export default async function BoardPage({ params }: BoardPageProps) {
       initialRole={access.role}
       isAuthenticated={user !== null}
       ai={aiCapabilities()}
+      pinnedTools={user ? await getPinnedTools(user.id) : undefined}
     />
   );
 }

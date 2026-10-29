@@ -93,9 +93,19 @@ export const richRunSchema = z.object({
   italic: z.boolean().optional(),
   underline: z.boolean().optional(),
   strike: z.boolean().optional(),
+  /** Цвет текста фрагмента (поверх цвета элемента) */
+  color: color.optional(),
+  /** Выделение маркером — цвет фона под текстом */
+  highlight: color.optional(),
 });
 export const richParagraphSchema = z.object({
   bullet: z.boolean().optional(),
+  /** Нумерованный список или чек-лист (bullet — маркированный, для совместимости) */
+  list: z.enum(['number', 'check']).optional(),
+  /** Пункт чек-листа отмечен */
+  checked: z.boolean().optional(),
+  /** Заголовок: 1 — крупный, 2 — средний */
+  heading: z.union([z.literal(1), z.literal(2)]).optional(),
   runs: z.array(richRunSchema).max(2_000),
 });
 export const richTextSchema = z.array(richParagraphSchema).max(5_000);
@@ -104,16 +114,31 @@ export type RichParagraph = z.infer<typeof richParagraphSchema>;
 
 /** Плоский текст из абзацев (маркеры списков — «• ») */
 export function richToPlain(paragraphs: readonly RichParagraph[]): string {
+  let n = 0;
   return paragraphs
-    .map((p) => (p.bullet ? '• ' : '') + p.runs.map((r) => r.text).join(''))
+    .map((p) => {
+      n = p.list === 'number' ? n + 1 : 0;
+      return listMarker(p, n) + p.runs.map((r) => r.text).join('');
+    })
     .join('\n');
+}
+
+/** Маркер абзаца в плоском тексте: «• », «3. », «☐ » / «☑ » */
+export function listMarker(p: RichParagraph, index: number): string {
+  if (p.list === 'number') return `${index}. `;
+  if (p.list === 'check') return p.checked ? '☑ ' : '☐ ';
+  return p.bullet ? '• ' : '';
 }
 
 /** Есть ли в тексте что-то кроме обычного (иначе рисуем быстрым Konva.Text) */
 export function isRichFormatted(paragraphs: readonly RichParagraph[] | undefined): boolean {
   return Boolean(
     paragraphs?.some(
-      (p) => p.bullet || p.runs.some((r) => r.bold || r.italic || r.underline || r.strike),
+      (p) =>
+        p.bullet ||
+        p.list ||
+        p.heading ||
+        p.runs.some((r) => r.bold || r.italic || r.underline || r.strike || r.color || r.highlight),
     ),
   );
 }

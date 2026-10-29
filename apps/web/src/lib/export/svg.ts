@@ -144,23 +144,58 @@ function richBlock(
   );
   const parts: string[] = [];
   for (const line of lines) {
-    if (line.bulletX !== undefined) {
-      const x = box.x + line.bulletX + style.fontSize * 0.15;
-      parts.push(`<text ${attrs({ x, y: box.y + line.y })}>•</text>`);
+    const y = box.y + line.y;
+    const lineParts: string[] = [];
+    for (const seg of line.segments) {
+      if (!seg.highlight || !seg.text) continue;
+      lineParts.push(
+        `<rect ${attrs({ x: box.x + seg.x - 1, y: y - line.height * 0.55, width: seg.width + 2, height: line.height * 1.1, fill: seg.highlight })}/>`,
+      );
+    }
+    const m = line.marker;
+    if (m) {
+      const x = box.x + m.x;
+      if (m.kind === 'bullet')
+        lineParts.push(`<text ${attrs({ x: x + m.size * 0.15, y, 'font-size': m.size })}>•</text>`);
+      else if (m.kind === 'number')
+        lineParts.push(
+          `<text ${attrs({ x, y, 'font-size': m.size })}>${escapeXml(m.label ?? '')}</text>`,
+        );
+      else {
+        const size = m.size * 0.7;
+        const left = x + m.size * 0.05;
+        const top = y - size / 2;
+        lineParts.push(
+          `<rect ${attrs({ x: left, y: top, width: size, height: size, rx: size * 0.22, fill: m.checked ? '#9b6bdf' : 'none', stroke: m.checked ? '#9b6bdf' : style.color, 'stroke-width': Math.max(1, m.size / 12) })}/>`,
+        );
+        if (m.checked)
+          lineParts.push(
+            `<path ${attrs({ d: `M${n(left + size * 0.22)} ${n(top + size * 0.52)} L${n(left + size * 0.43)} ${n(top + size * 0.72)} L${n(left + size * 0.78)} ${n(top + size * 0.3)}`, fill: 'none', stroke: '#ffffff', 'stroke-width': Math.max(1, m.size / 12), 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })}/>`,
+          );
+      }
     }
     for (const seg of line.segments) {
-      const decoration = [seg.underline ? 'underline' : '', seg.strike ? 'line-through' : '']
+      const decoration = [
+        seg.underline ? 'underline' : '',
+        seg.strike || line.dim ? 'line-through' : '',
+      ]
         .filter(Boolean)
         .join(' ');
       const a = attrs({
         x: box.x + seg.x,
-        y: box.y + line.y,
-        'font-weight': seg.bold || style.fontWeight === 'bold' ? 'bold' : undefined,
+        y,
+        'font-size': seg.size !== style.fontSize ? seg.size : undefined,
+        'font-weight':
+          seg.bold || seg.font.includes('bold ') || style.fontWeight === 'bold'
+            ? 'bold'
+            : undefined,
         'font-style': seg.italic || style.fontStyle === 'italic' ? 'italic' : undefined,
         'text-decoration': decoration || undefined,
+        fill: seg.color,
       });
-      parts.push(`<text ${a}>${escapeXml(seg.text)}</text>`);
+      lineParts.push(`<text ${a}>${escapeXml(seg.text)}</text>`);
     }
+    parts.push(line.dim ? `<g opacity="0.5">${lineParts.join('')}</g>` : lineParts.join(''));
   }
   const group = attrs({
     'font-family': family,

@@ -123,6 +123,9 @@ model User {
   /// Письма об упоминаниях и ответах в комментариях (если не прочитано в приложении)
   emailNotifications Boolean @default(true)
 
+  /// Закреплённые инструменты на панели доски (пусто — набор по умолчанию)
+  toolbarTools String[] @default([])
+
   locale     String    @default("ru")
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt

@@ -1,11 +1,33 @@
 'use client';
 
-import { Bold, Italic, List, Strikethrough, Underline, type LucideIcon } from 'lucide-react';
-import { baseKeymap, chainCommands, splitBlockAs, toggleMark } from 'prosemirror-commands';
+import {
+  Baseline,
+  Bold,
+  Heading1,
+  Heading2,
+  Highlighter,
+  Italic,
+  List,
+  ListChecks,
+  ListOrdered,
+  Strikethrough,
+  Underline,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
+import { TEXT_COLORS } from '@/components/canvas/text-style-controls';
+import { baseKeymap, chainCommands, toggleMark } from 'prosemirror-commands';
 import { keymap } from 'prosemirror-keymap';
 import { EditorState, Selection, type Command } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import type { Awareness } from 'y-protocols/awareness';
 import { redo, undo, yCursorPlugin, ySyncPlugin, ySyncPluginKey, yUndoPlugin } from 'y-prosemirror';
 import type * as Y from 'yjs';
@@ -20,7 +42,18 @@ import type { BoardActions } from '@/lib/canvas/board-actions';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import { canvasFont } from '@/lib/canvas/fonts';
 import { worldToScreen } from '@/lib/canvas/viewport';
-import { richSchema, type RichMark } from '@/lib/rich-text/schema';
+import {
+  exitEmptyListItem,
+  listKindOf,
+  markdownShortcut,
+  setColorMark,
+  splitKeepingList,
+  toggleCheckedAt,
+  toggleHeading,
+  toggleList,
+  type ListKind,
+} from '@/lib/rich-text/commands';
+import { richSchema, type RichMark, type RichValueMark } from '@/lib/rich-text/schema';
 import { textCursorAwareness } from '@/lib/rich-text/cursor-awareness';
 import { fragmentToRich } from '@/lib/rich-text/yjs-convert';
 import { cn } from '@/lib/utils';
@@ -74,24 +107,6 @@ export function TextEditor({ store, actions, awareness, undoManager }: TextEdito
   );
 }
 
-/** Пункт списка: включить/выключить для всех абзацев выделения */
-const toggleBullet: Command = (state, dispatch) => {
-  const { from, to } = state.selection;
-  let allBullets = true;
-  state.doc.nodesBetween(from, to, (node) => {
-    if (node.type.name === 'paragraph' && !node.attrs.bullet) allBullets = false;
-  });
-  if (dispatch) {
-    const tr = state.tr;
-    state.doc.nodesBetween(from, to, (node, pos) => {
-      if (node.type.name === 'paragraph')
-        tr.setNodeMarkup(pos, undefined, { ...node.attrs, bullet: !allBullets });
-    });
-    dispatch(tr);
-  }
-  return true;
-};
-
 /**
  * Ctrl+Home / Ctrl+End явно: штатная команда браузера внутри холста
  * (absolute-позиционированный редактор с transform) каретку не двигает.
@@ -107,27 +122,99 @@ const caretTo =
     return true;
   };
 
-/** Enter в пустом пункте списка выходит из списка, в непустом — новый пункт */
-const exitEmptyBullet: Command = (state, dispatch) => {
-  const { $from, empty } = state.selection;
-  const node = $from.parent;
-  if (!empty || node.type.name !== 'paragraph' || !node.attrs.bullet || node.content.size > 0)
-    return false;
-  dispatch?.(state.tr.setNodeMarkup($from.before(), undefined, { ...node.attrs, bullet: false }));
-  return true;
-};
-const splitKeepingBullet = splitBlockAs((node) =>
-  node.type.name === 'paragraph'
-    ? { type: richSchema.nodes.paragraph!, attrs: { bullet: node.attrs.bullet } }
-    : null,
-);
-
 const MARK_BUTTONS: Array<{ mark: RichMark; icon: LucideIcon; label: string; hotkey: string }> = [
   { mark: 'bold', icon: Bold, label: 'Жирный', hotkey: 'Ctrl+B' },
   { mark: 'italic', icon: Italic, label: 'Курсив', hotkey: 'Ctrl+I' },
   { mark: 'underline', icon: Underline, label: 'Подчёркнутый', hotkey: 'Ctrl+U' },
   { mark: 'strike', icon: Strikethrough, label: 'Зачёркнутый', hotkey: 'Ctrl+Shift+X' },
 ];
+
+type BlockState = { list: ListKind | null; heading: number };
+
+const BLOCK_BUTTONS: Array<{
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  hotkey: string;
+  command: Command;
+  isActive: (b: BlockState) => boolean;
+}> = [
+  {
+    key: 'h1',
+    icon: Heading1,
+    label: 'Заголовок',
+    hotkey: '# пробел',
+    command: toggleHeading(1),
+    isActive: (b) => b.heading === 1,
+  },
+  {
+    key: 'h2',
+    icon: Heading2,
+    label: 'Подзаголовок',
+    hotkey: '## пробел',
+    command: toggleHeading(2),
+    isActive: (b) => b.heading === 2,
+  },
+  {
+    key: 'bullet',
+    icon: List,
+    label: 'Маркированный список',
+    hotkey: '- пробел',
+    command: toggleList('bullet'),
+    isActive: (b) => b.list === 'bullet',
+  },
+  {
+    key: 'number',
+    icon: ListOrdered,
+    label: 'Нумерованный список',
+    hotkey: '1. пробел',
+    command: toggleList('number'),
+    isActive: (b) => b.list === 'number',
+  },
+  {
+    key: 'check',
+    icon: ListChecks,
+    label: 'Чек-лист',
+    hotkey: '[] пробел',
+    command: toggleList('check'),
+    isActive: (b) => b.list === 'check',
+  },
+];
+
+/** Цвета маркера — мягкие, чтобы текст оставался читаемым */
+const HIGHLIGHT_COLORS = ['#fef08a', '#bbf7d0', '#bfdbfe', '#fbcfe8', '#ddd6fe', '#fed7aa'];
+
+function FormatButton({
+  label,
+  hotkey,
+  active,
+  onClick,
+  children,
+}: {
+  label: string;
+  hotkey?: string;
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={hotkey ? `${label} (${hotkey})` : label}
+      aria-label={label}
+      aria-pressed={active}
+      className={cn(
+        'rounded-lg p-1.5 text-foreground transition-colors hover:bg-muted',
+        active && 'bg-accent text-primary',
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+const Sep = () => <span className="mx-0.5 h-4 w-px bg-border" aria-hidden />;
 
 interface EditorBoxProps {
   element: Editable;
@@ -156,6 +243,13 @@ function EditorBox({
   const [generation, setGeneration] = useState(0);
   // Активные метки под курсором — подсветка кнопок панели
   const [active, setActive] = useState<Set<string>>(new Set());
+  // Вид абзаца под курсором (список, заголовок) — подсветка кнопок
+  const [block, setBlock] = useState<{ list: ListKind | null; heading: number }>({
+    list: null,
+    heading: 0,
+  });
+  // Открытая палитра цвета текста или маркера
+  const [palette, setPalette] = useState<RichValueMark | null>(null);
 
   /** Высота текстового блока подстраивается под содержимое */
   const contentHeight = (): number | null => {
@@ -221,10 +315,14 @@ function EditorBox({
           'Mod-i': toggleMark(richSchema.marks.italic!),
           'Mod-u': toggleMark(richSchema.marks.underline!),
           'Mod-Shift-x': toggleMark(richSchema.marks.strike!),
-          'Mod-Shift-8': toggleBullet,
+          'Mod-Shift-8': toggleList('bullet'),
+          'Mod-Shift-7': toggleList('number'),
+          'Mod-Shift-9': toggleList('check'),
+          'Mod-Alt-1': toggleHeading(1),
+          'Mod-Alt-2': toggleHeading(2),
           'Mod-Home': caretTo('start'),
           'Mod-End': caretTo('end'),
-          Enter: chainCommands(exitEmptyBullet, splitKeepingBullet),
+          Enter: chainCommands(exitEmptyListItem, splitKeepingList),
           Escape: done,
           'Mod-Enter': done,
         }),
@@ -239,20 +337,12 @@ function EditorBox({
         'aria-multiline': 'true',
         spellcheck: 'true',
       },
-      // «- » или «* » в начале абзаца — пункт списка, как в мессенджерах и Markdown
+      // «- », «1. », «[] », «# » в начале абзаца — список, чек-лист, заголовок (как в Markdown)
       handleTextInput(v, from, _to, text) {
         if (text !== ' ') return false;
-        const $from = v.state.doc.resolve(from);
-        const para = $from.parent;
-        const before = para.textBetween(0, $from.parentOffset);
-        if (para.type.name !== 'paragraph' || para.attrs.bullet || !/^[-*•]$/.test(before))
-          return false;
-        const start = $from.start();
-        v.dispatch(
-          v.state.tr
-            .delete(start, start + before.length)
-            .setNodeMarkup($from.before(), undefined, { ...para.attrs, bullet: true }),
-        );
+        const tr = markdownShortcut(v.state, from);
+        if (!tr) return false;
+        v.dispatch(tr);
         return true;
       },
       // this, а не замыкание на view: ySyncPlugin диспатчит ещё из конструктора EditorView
@@ -266,6 +356,8 @@ function EditorBox({
           (next.storedMarks ?? next.selection.$from.marks()).map((m) => m.type.name),
         );
         setActive(marks);
+        const para = next.selection.$from.parent;
+        setBlock({ list: listKindOf(para), heading: Number(para.attrs.heading) || 0 });
         if (tr.docChanged && el.type === 'text') {
           if (heightTimer.current) clearTimeout(heightTimer.current);
           heightTimer.current = setTimeout(() => {
@@ -276,6 +368,19 @@ function EditorBox({
         }
       },
       handleDOMEvents: {
+        // Клик по квадратику чек-листа (слева от текста пункта) — отметить пункт
+        mousedown: (v, event) => {
+          const target = (event.target as HTMLElement).closest?.('p[data-list="check"]');
+          if (!(target instanceof HTMLElement)) return false;
+          const left = target.getBoundingClientRect().left;
+          const indent = parseFloat(getComputedStyle(target).paddingLeft) || 0;
+          if ((event as MouseEvent).clientX - left > indent) return false;
+          const tr = toggleCheckedAt(v.state, v.posAtDOM(target, 0) - 1);
+          if (!tr) return false;
+          event.preventDefault();
+          v.dispatch(tr);
+          return true;
+        },
         blur: (_v, event) => {
           // Клик по кнопке панели форматирования не закрывает редактор
           const related = (event as FocusEvent).relatedTarget;
@@ -344,6 +449,8 @@ function EditorBox({
     width: '100%',
     fontFamily: canvasFont(el.fontFamily),
     fontSize: el.fontSize * camera.zoom,
+    // Базовый размер — для отступов списков (у заголовков свой font-size)
+    ['--base' as string]: `${el.fontSize * camera.zoom}px`,
     lineHeight: 1,
     fontWeight: el.fontWeight === 'bold' ? 700 : 400,
     fontStyle: el.fontStyle,
@@ -362,30 +469,72 @@ function EditorBox({
         onMouseDown={(e) => e.preventDefault()}
       >
         {MARK_BUTTONS.map(({ mark, icon: Icon, label, hotkey }) => (
-          <button
+          <FormatButton
             key={mark}
-            type="button"
-            title={`${label} (${hotkey})`}
-            aria-label={label}
-            aria-pressed={active.has(mark)}
-            className={cn(
-              'rounded p-1.5 text-foreground hover:bg-muted',
-              active.has(mark) && 'bg-accent text-accent-foreground',
-            )}
+            label={t(label)}
+            hotkey={hotkey}
+            active={active.has(mark)}
             onClick={() => run(toggleMark(richSchema.marks[mark]!))}
           >
             <Icon className="size-3.5" />
-          </button>
+          </FormatButton>
         ))}
-        <button
-          type="button"
-          title={t('Список (Ctrl+Shift+8, или «- » в начале строки)')}
-          aria-label={t('Список')}
-          className="rounded p-1.5 text-foreground hover:bg-muted"
-          onClick={() => run(toggleBullet)}
+        <Sep />
+        {BLOCK_BUTTONS.map(({ key, icon: Icon, label, hotkey, command, isActive }) => (
+          <FormatButton
+            key={key}
+            label={t(label)}
+            hotkey={hotkey}
+            active={isActive(block)}
+            onClick={() => run(command)}
+          >
+            <Icon className="size-3.5" />
+          </FormatButton>
+        ))}
+        <Sep />
+        <FormatButton
+          label={t('Цвет текста')}
+          active={palette === 'color' || active.has('color')}
+          onClick={() => setPalette(palette === 'color' ? null : 'color')}
         >
-          <List className="size-3.5" />
-        </button>
+          <Baseline className="size-3.5" />
+        </FormatButton>
+        <FormatButton
+          label={t('Маркер')}
+          active={palette === 'highlight' || active.has('highlight')}
+          onClick={() => setPalette(palette === 'highlight' ? null : 'highlight')}
+        >
+          <Highlighter className="size-3.5" />
+        </FormatButton>
+        {palette ? (
+          <div className="floating-panel absolute left-0 top-full mt-1 flex items-center gap-1 p-1.5 animate-in fade-in-0 slide-in-from-top-1">
+            {(palette === 'color' ? TEXT_COLORS : HIGHLIGHT_COLORS).map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={c}
+                className="size-5 rounded-full border border-black/10 transition-transform hover:scale-110"
+                style={{ background: c }}
+                onClick={() => {
+                  run(setColorMark(palette, c));
+                  setPalette(null);
+                }}
+              />
+            ))}
+            <button
+              type="button"
+              title={t('Убрать')}
+              aria-label={t('Убрать')}
+              className="flex size-5 items-center justify-center rounded-full border text-muted-foreground hover:bg-muted"
+              onClick={() => {
+                run(setColorMark(palette, null));
+                setPalette(null);
+              }}
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+        ) : null}
       </div>
       <div
         ref={hostRef}

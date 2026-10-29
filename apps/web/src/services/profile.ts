@@ -1,6 +1,11 @@
 import 'server-only';
 import { prisma } from '@prostor/db';
-import type { ChangePasswordInput, UpdateProfileInput } from '@prostor/shared';
+import {
+  resolvePinnedTools,
+  type ChangePasswordInput,
+  type ToolbarToolId,
+  type UpdateProfileInput,
+} from '@prostor/shared';
 import { ApiError } from '@/lib/api';
 import { invalidateSessionCache } from '@/lib/auth/session-guard';
 import { passwordChangedEmail } from '@/lib/email-templates';
@@ -112,4 +117,17 @@ export async function setEmailNotifications(user: SessionUser, enabled: boolean)
     actorId: user.id,
     metadata: { fields: ['emailNotifications'], enabled },
   });
+}
+
+/** Закреплённые инструменты панели доски (пустой список — набор по умолчанию) */
+export async function getPinnedTools(userId: string): Promise<ToolbarToolId[]> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { toolbarTools: true },
+  });
+  return resolvePinnedTools(user?.toolbarTools);
+}
+
+export async function setPinnedTools(user: SessionUser, pinned: ToolbarToolId[]): Promise<void> {
+  await prisma.user.update({ where: { id: user.id }, data: { toolbarTools: pinned } });
 }

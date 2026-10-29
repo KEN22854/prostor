@@ -80,6 +80,8 @@ interface BoardCanvasProps {
   contentReady: boolean;
   /** Включённые ИИ-функции (по настройкам сервера) */
   ai: AiCapabilities;
+  /** Инструменты, закреплённые на панели (настройка профиля) */
+  pinnedTools?: readonly string[];
   onStoreReady?: (store: ElementStore | null) => void;
 }
 
@@ -122,6 +124,7 @@ export function BoardCanvas({
   user,
   contentReady,
   ai,
+  pinnedTools,
   onStoreReady,
 }: BoardCanvasProps) {
   const t = useT();
@@ -468,6 +471,8 @@ export function BoardCanvas({
       ) : null}
       {actions?.canEdit && !presenting ? (
         <ToolPalette
+          pinned={pinnedTools}
+          canCustomize={isAuthenticated}
           onPickImage={() => openImagePicker()}
           onGenerateImage={ai.generateImage ? () => setGenerateOpen(true) : undefined}
           onImportPdf={() => pdfInputRef.current?.click()}

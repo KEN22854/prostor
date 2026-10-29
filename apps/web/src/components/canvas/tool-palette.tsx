@@ -19,6 +19,7 @@ import {
   MoreHorizontal,
   MousePointer2,
   Pencil,
+  Settings2,
   Sparkles,
   Square,
   Star,
@@ -28,8 +29,9 @@ import {
   Type,
   type LucideIcon,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Fragment, type ReactNode } from 'react';
-import type { ShapeElement } from '@prostor/shared';
+import { DEFAULT_PINNED_TOOLS, type ShapeElement } from '@prostor/shared';
 import { ColorSwatches } from '@/components/canvas/color-swatches';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -54,20 +56,6 @@ const SHAPES: Array<{ kind: ShapeElement['shape']; icon: LucideIcon; label: stri
 ];
 
 const PEN_WIDTHS = [2, 4, 8, 14] as const;
-
-/** Инструменты на панели по умолчанию; остальные — в меню «…» */
-export const PINNED_TOOLS: readonly string[] = [
-  'select',
-  'hand',
-  'sticky',
-  'shape',
-  'arrow',
-  'text',
-  'pen',
-  'frame',
-  'image',
-  'comment',
-];
 
 interface PaletteEntry {
   id: string;
@@ -171,6 +159,10 @@ interface ToolPaletteProps {
   onOpenFeed?: () => void;
   /** Кнопка аудио (загрузка и запись) */
   audio?: ReactNode;
+  /** Закреплённые инструменты из профиля; без них — набор по умолчанию */
+  pinned?: readonly string[];
+  /** Показать ссылку «Настроить панель» (только вошедшим) */
+  canCustomize?: boolean;
 }
 
 export function ToolPalette({
@@ -181,6 +173,8 @@ export function ToolPalette({
   stickers,
   onOpenFeed,
   audio,
+  pinned: pinnedIds = DEFAULT_PINNED_TOOLS,
+  canCustomize = false,
 }: ToolPaletteProps) {
   const t = useT();
   const options = useCanvasStore((s) => s.toolOptions);
@@ -479,8 +473,8 @@ export function ToolPalette({
       : []),
   ];
 
-  const pinned = entries.filter((e) => PINNED_TOOLS.includes(e.id));
-  const more = entries.filter((e) => !PINNED_TOOLS.includes(e.id));
+  const pinned = entries.filter((e) => pinnedIds.includes(e.id));
+  const more = entries.filter((e) => !pinnedIds.includes(e.id));
   // Выбран инструмент из «…» — подсвечиваем саму кнопку «…»
   const moreActive = more.some((e) => e.tool !== undefined && e.tool === currentTool);
 
@@ -556,6 +550,18 @@ export function ToolPalette({
               </Button>
             </div>
           </Section>
+          {canCustomize ? (
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-muted-foreground"
+            >
+              <Link href="/settings#toolbar" target="_blank">
+                <Settings2 /> {t('Настроить панель…')}
+              </Link>
+            </Button>
+          ) : null}
         </PopoverContent>
       </Popover>
     </div>

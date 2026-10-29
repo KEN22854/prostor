@@ -8,13 +8,14 @@ import { ApiKeysCard } from '@/components/settings/api-keys-card';
 import { ChangePasswordForm } from '@/components/settings/change-password-form';
 import { EmailNotificationsToggle } from '@/components/settings/email-notifications-toggle';
 import { ProfileForm } from '@/components/settings/profile-form';
+import { ToolbarSettings } from '@/components/settings/toolbar-settings';
 import { SignOutEverywhere } from '@/components/settings/sign-out-everywhere';
 import { TwoFactorCard } from '@/components/settings/two-factor-card';
 import { WebhooksCard } from '@/components/settings/webhooks-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getSessionUser } from '@/lib/session';
-import { getAccountOverview } from '@/services/profile';
+import { getAccountOverview, getPinnedTools } from '@/services/profile';
 import { twoFactorStatus } from '@/services/two-factor';
 import { getT } from '@/lib/i18n/server';
 
@@ -34,9 +35,10 @@ export default async function AccountSettingsPage() {
   const t = await getT();
   const user = await getSessionUser();
   if (!user) redirect('/login?callbackUrl=/settings');
-  const [account, twoFactor] = await Promise.all([
+  const [account, twoFactor, pinnedTools] = await Promise.all([
     getAccountOverview(user.id),
     twoFactorStatus(user.id),
+    getPinnedTools(user.id),
   ]);
   const dateFmt = new Intl.DateTimeFormat('ru', { dateStyle: 'long', timeStyle: 'short' });
 
@@ -117,6 +119,18 @@ export default async function AccountSettingsPage() {
           </CardHeader>
           <CardContent>
             <ThemePicker />
+          </CardContent>
+        </Card>
+
+        <Card id="toolbar">
+          <CardHeader>
+            <CardTitle>{t('Панель инструментов')}</CardTitle>
+            <CardDescription>
+              {t('Выберите инструменты, которые всегда видны на доске. Остальные будут в меню «…»')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ToolbarSettings initial={pinnedTools} />
           </CardContent>
         </Card>
 

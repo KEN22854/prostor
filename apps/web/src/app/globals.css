@@ -277,6 +277,60 @@
   position: absolute;
   left: 0.15em;
 }
+/* Заголовки — те же множители, что в раскладке холста (HEADING_SCALE) */
+.rich-text-editor .ProseMirror p[data-heading='1'] {
+  font-size: 1.6em;
+  font-weight: 700;
+}
+.rich-text-editor .ProseMirror p[data-heading='2'] {
+  font-size: 1.3em;
+  font-weight: 700;
+}
+/* Нумерация сбрасывается любым абзацем, который не пункт нумерованного списка */
+.rich-text-editor .ProseMirror {
+  counter-reset: rich-num;
+}
+.rich-text-editor .ProseMirror p:not([data-list='number']) {
+  counter-reset: rich-num;
+}
+.rich-text-editor .ProseMirror p[data-list] {
+  position: relative;
+  padding-left: calc(var(--base, 1em) * 1.1);
+}
+.rich-text-editor .ProseMirror p[data-list='number'] {
+  counter-increment: rich-num;
+}
+.rich-text-editor .ProseMirror p[data-list='number']::before {
+  content: counter(rich-num) '.';
+  position: absolute;
+  left: 0;
+}
+/* Квадратик чек-листа; клик по нему отмечает пункт (text-editor.tsx) */
+.rich-text-editor .ProseMirror p[data-list='check']::before {
+  content: '';
+  position: absolute;
+  left: 0.05em;
+  top: 50%;
+  width: 0.7em;
+  height: 0.7em;
+  transform: translateY(-50%);
+  border: max(1px, 0.08em) solid currentColor;
+  border-radius: 0.16em;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.rich-text-editor .ProseMirror p[data-list='check'][data-checked='true']::before {
+  border-color: #9b6bdf;
+  background: #9b6bdf
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2.2 5.2 4.3 7.2 7.8 3' fill='none' stroke='white' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 100% no-repeat;
+}
+.rich-text-editor .ProseMirror p[data-list='check'][data-checked='true'] {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
 /* Курсоры коллег (y-prosemirror yCursorPlugin) */
 .rich-text-editor .ProseMirror-yjs-cursor {
   position: relative;

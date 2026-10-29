@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import type { BoardElement, LineElement, TableElement } from '@prostor/shared';
 import { ColorSwatches } from '@/components/canvas/color-swatches';
 import { FrameTitleInput } from '@/components/canvas/frame-title-input';
+import { isTextStyled, TextStyleControls } from '@/components/canvas/text-style-controls';
 import { FontPicker } from '@/components/canvas/font-picker';
 import { LineControls } from '@/components/canvas/line-controls';
 import { TableControls } from '@/components/canvas/table-controls';
@@ -184,6 +185,9 @@ export function SelectionToolbar({
               <span className="mx-1 h-5 w-px bg-border" aria-hidden />
               <TableControls table={elements[0] as TableElement} actions={actions} />
             </>
+          ) : null}
+          {texty.length > 0 && texty.length === texty.filter(isTextStyled).length ? (
+            <TextStyleControls elements={texty.filter(isTextStyled)} actions={actions} />
           ) : null}
           {texty.length > 0 ? (
             <FontPicker
