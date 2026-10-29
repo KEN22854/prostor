@@ -4,14 +4,15 @@ import { Map as MapIcon, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { Bounds } from '@prostor/shared';
 import { Button } from '@/components/ui/button';
-import { NEUTRAL_FILL } from '@/lib/canvas/constants';
+import { compareRenderOrder } from '@/lib/canvas/frames';
+import { drawMinimapElement, MinimapImages } from '@/lib/canvas/minimap-render';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import { centerOn, unionBounds, visibleBounds } from '@/lib/canvas/viewport';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useT } from '@/lib/i18n/client';
 
-const WIDTH = 200;
-const HEIGHT = 130;
+const WIDTH = 232;
+const HEIGHT = 150;
 const PAD = 8;
 
 interface Mapping {
@@ -49,11 +50,26 @@ export function Minimap({ store }: { store: ElementStore | null }) {
     if (!canvas || !open) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    // Картинка догрузилась — перерисовать содержимое
+    const images = new MinimapImages(() => {
+      imagesVersion++;
+      schedule();
+    });
 
     const dpr = window.devicePixelRatio || 1;
     canvas.width = WIDTH * dpr;
     canvas.height = HEIGHT * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Содержимое доски — в отдельный холст: перерисовывается только когда меняется
+    // доска или масштаб карты; при панорамировании просто копируется
+    const content = document.createElement('canvas');
+    content.width = canvas.width;
+    content.height = canvas.height;
+    const cctx = content.getContext('2d');
+    let contentKey = '';
+    let storeVersion = -1;
+    let imagesVersion = 0;
 
     let frame = 0;
     const draw = () => {
@@ -64,43 +80,49 @@ export function Minimap({ store }: { store: ElementStore | null }) {
       const m = mappingFor(world);
       mappingRef.current = m;
 
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
-      store?.forEachBounds((b, el) => {
-        // Линии и росчерки — тонкими штрихами: их габарит залитым прямоугольником
-        // выглядел бы на мини-карте как большой серый блок
-        if ('points' in el && Array.isArray(el.points)) {
-          const pts = el.points;
-          ctx.strokeStyle =
-            'stroke' in el && typeof el.stroke === 'string' ? el.stroke : NEUTRAL_FILL;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          for (let i = 0; i + 1 < pts.length; i += 2) {
-            const x = m.offsetX + (el.x + (pts[i] ?? 0) - world.minX) * m.scale;
-            const y = m.offsetY + (el.y + (pts[i + 1] ?? 0) - world.minY) * m.scale;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.stroke();
-          return;
-        }
-        ctx.fillStyle = 'fill' in el && typeof el.fill === 'string' ? el.fill : NEUTRAL_FILL;
-        ctx.fillRect(
-          m.offsetX + (b.minX - world.minX) * m.scale,
-          m.offsetY + (b.minY - world.minY) * m.scale,
-          Math.max(1, (b.maxX - b.minX) * m.scale),
-          Math.max(1, (b.maxY - b.minY) * m.scale),
+      const key = [m.scale, m.offsetX, m.offsetY, world.minX, world.minY]
+        .map((v) => v.toFixed(3))
+        .join(':');
+      const version = store?.getVersion() ?? 0;
+      if (cctx && (key !== contentKey || version !== storeVersion || imagesVersion > 0)) {
+        contentKey = key;
+        storeVersion = version;
+        imagesVersion = 0;
+        cctx.setTransform(1, 0, 0, 1, 0, 0);
+        cctx.clearRect(0, 0, content.width, content.height);
+        cctx.setTransform(
+          dpr * m.scale,
+          0,
+          0,
+          dpr * m.scale,
+          dpr * (m.offsetX - world.minX * m.scale),
+          dpr * (m.offsetY - world.minY * m.scale),
         );
-      });
+        // Порядок как на холсте: фреймы снизу, дальше по zIndex
+        const elements = store ? [...store.values()].sort(compareRenderOrder) : [];
+        for (const el of elements) drawMinimapElement(cctx, el, m.scale, images);
+      }
 
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+      ctx.drawImage(content, 0, 0, WIDTH, HEIGHT);
+
+      // Затемняем всё вне видимой области — так рамка «окна» читается сразу
+      const vx = m.offsetX + (view.minX - world.minX) * m.scale;
+      const vy = m.offsetY + (view.minY - world.minY) * m.scale;
+      const vw = (view.maxX - view.minX) * m.scale;
+      const vh = (view.maxY - view.minY) * m.scale;
       const styles = getComputedStyle(canvas);
-      ctx.strokeStyle = `hsl(${styles.getPropertyValue('--primary').trim() || '246 70% 56%'})`;
+      const primary = styles.getPropertyValue('--primary').trim() || '265 72% 62%';
+      ctx.fillStyle = `hsl(${primary} / 0.07)`;
+      ctx.beginPath();
+      ctx.rect(0, 0, WIDTH, HEIGHT);
+      ctx.rect(vx, vy, vw, vh);
+      ctx.fill('evenodd');
+      ctx.strokeStyle = `hsl(${primary})`;
       ctx.lineWidth = 1.5;
-      ctx.strokeRect(
-        m.offsetX + (view.minX - world.minX) * m.scale,
-        m.offsetY + (view.minY - world.minY) * m.scale,
-        (view.maxX - view.minX) * m.scale,
-        (view.maxY - view.minY) * m.scale,
-      );
+      ctx.beginPath();
+      ctx.roundRect(vx, vy, vw, vh, 3);
+      ctx.stroke();
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(draw);
@@ -178,7 +200,7 @@ export function Minimap({ store }: { store: ElementStore | null }) {
       <canvas
         ref={canvasRef}
         style={{ width: WIDTH, height: HEIGHT }}
-        className="block cursor-pointer touch-none"
+        className="block cursor-pointer touch-none bg-canvas"
         aria-label={t('Мини-карта доски')}
         data-testid="minimap"
       />
