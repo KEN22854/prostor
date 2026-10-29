@@ -27,6 +27,7 @@ function imageAssetIds(elements: readonly BoardElement[]): string[] {
   for (const el of elements) {
     if (el.type === 'image' && 'assetId' in el) ids.push(el.assetId);
     if (el.type === 'embed' && el.imageAssetId) ids.push(el.imageAssetId);
+    if (el.type === 'video' && el.posterAssetId) ids.push(el.posterAssetId);
   }
   return ids;
 }

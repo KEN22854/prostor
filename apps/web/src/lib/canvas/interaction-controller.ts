@@ -310,6 +310,10 @@ export class InteractionController {
       // Двойной клик по диаграмме — её данные
       state().select([hit.id]);
       state().setChartEditor(hit.id);
+    } else if (hit.type === 'video') {
+      // Двойной клик по видео — плеер поверх карточки
+      state().select([hit.id]);
+      state().setPlayingVideo(state().playingVideoId === hit.id ? null : hit.id);
     } else if (hit.type === 'audio') {
       // Двойной клик по аудио — воспроизвести / остановить
       state().select([hit.id]);

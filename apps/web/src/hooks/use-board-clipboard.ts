@@ -27,6 +27,7 @@ interface ClipboardDeps {
   insertFeedImage?: (img: FeedImage, at: Point) => Promise<void>;
   /** Аудиофайл, брошенный на холст */
   insertAudio?: (file: Blob, at: Point) => Promise<void>;
+  insertVideo?: (file: Blob, at: Point) => Promise<void>;
 }
 
 const MAX_PLAIN_TEXT = 10_000;
@@ -52,6 +53,7 @@ export function useBoardClipboard({
   insertEmbed,
   insertFeedImage,
   insertAudio,
+  insertVideo,
 }: ClipboardDeps): void {
   useEffect(() => {
     const el = containerRef.current;
@@ -169,7 +171,13 @@ export function useBoardClipboard({
       files
         .filter((f) => f.type.startsWith('audio/'))
         .forEach((f, i) => void insertAudio?.(f, { x: at.x, y: at.y + i * 96 }));
-      const images = files.filter((f) => !isPdf(f) && !f.type.startsWith('audio/'));
+      // Видео — карточками с обложкой
+      files
+        .filter((f) => f.type.startsWith('video/'))
+        .forEach((f, i) => void insertVideo?.(f, { x: at.x + i * 40, y: at.y + i * 40 }));
+      const images = files.filter(
+        (f) => !isPdf(f) && !f.type.startsWith('audio/') && !f.type.startsWith('video/'),
+      );
       if (images.length > 0) void insertImages(images, at);
       // Если бросили у самого края — подвинем камеру, чтобы картинка была видна
       if (e.clientX - rect.left < 40 || e.clientY - rect.top < 40)
@@ -204,5 +212,6 @@ export function useBoardClipboard({
     insertEmbed,
     insertFeedImage,
     insertAudio,
+    insertVideo,
   ]);
 }

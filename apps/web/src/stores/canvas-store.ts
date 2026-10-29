@@ -113,6 +113,8 @@ interface CanvasState {
   croppingId: string | null;
   /** Аудио, которое сейчас играет */
   playingAudioId: string | null;
+  /** Видео, которое сейчас играет (плеер поверх карточки) */
+  playingVideoId: string | null;
   /** Редактор диаграммы: id существующей, 'new' — новая */
   chartEditor: string | null;
   /** Открытая панель доски (экспорт, история версий) — кнопки в шапке живут вне холста */
@@ -134,6 +136,7 @@ interface CanvasState {
   setCropping: (id: string | null) => void;
   setPlayingAudio: (id: string | null) => void;
   setChartEditor: (id: string | null) => void;
+  setPlayingVideo: (id: string | null) => void;
   setPanel: (panel: BoardPanel | null) => void;
   setFollow: (follow: FollowTarget | null) => void;
   reset: () => void;
@@ -178,6 +181,7 @@ export const useCanvasStore = create<CanvasState>()((set) => ({
   croppingId: null,
   playingAudioId: null,
   chartEditor: null,
+  playingVideoId: null,
   panel: null,
   follow: null,
 
@@ -208,6 +212,7 @@ export const useCanvasStore = create<CanvasState>()((set) => ({
   setCropping: (croppingId) => set({ croppingId }),
   setPlayingAudio: (playingAudioId) => set({ playingAudioId }),
   setChartEditor: (chartEditor) => set({ chartEditor }),
+  setPlayingVideo: (playingVideoId) => set({ playingVideoId }),
   setPanel: (panel) => set({ panel }),
   setFollow: (follow) => set({ follow }),
   reset: () =>

@@ -25,6 +25,7 @@ export const TOOLBAR_TOOL_IDS = [
   'import',
   'stickers',
   'audio',
+  'video',
   'feed',
   'link',
   'ai-image',

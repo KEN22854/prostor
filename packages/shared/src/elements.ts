@@ -40,6 +40,7 @@ export const ELEMENT_TYPES = [
   'embed',
   'audio',
   'chart',
+  'video',
 ] as const;
 export const elementTypeSchema = z.enum(ELEMENT_TYPES);
 export type ElementType = z.infer<typeof elementTypeSchema>;
@@ -319,6 +320,17 @@ export const embedSchema = baseElementSchema.extend({
   imageAssetId: z.string().max(64).nullable().optional(),
 });
 
+/** Видео на доске: файл или запись экрана (ассет доски) с кадром-обложкой */
+export const videoSchema = baseElementSchema.extend({
+  type: z.literal('video'),
+  assetId: z.string().max(64),
+  title: z.string().max(200),
+  mimeType: z.string().max(100),
+  durationMs: z.number().int().nonnegative().optional(),
+  /** Кадр-обложка (картинка доски); нет — карточка с градиентом */
+  posterAssetId: z.string().max(64).optional(),
+});
+
 export const CHART_TYPES = ['column', 'bar', 'line', 'area', 'pie', 'donut'] as const;
 export const CHART_LIMITS = { maxLabels: 200, maxSeries: 12 } as const;
 
@@ -382,6 +394,7 @@ export const boardElementSchema = z.discriminatedUnion('type', [
   embedSchema,
   audioSchema,
   chartSchema,
+  videoSchema,
   generic('mindmapNode'),
   generic('kanban'),
   generic('document'),
@@ -404,6 +417,7 @@ export type TableElement = z.infer<typeof tableSchema>;
 export type EmbedElement = z.infer<typeof embedSchema>;
 export type AudioElement = z.infer<typeof audioSchema>;
 export type ChartElement = z.infer<typeof chartSchema>;
+export type VideoElement = z.infer<typeof videoSchema>;
 export type ChartType = (typeof CHART_TYPES)[number];
 export type GenericElement = z.infer<typeof genericElementSchema>;
 export type BoardElement =
@@ -418,6 +432,7 @@ export type BoardElement =
   | EmbedElement
   | AudioElement
   | ChartElement
+  | VideoElement
   | GenericElement;
 
 /** Axis-aligned bounding box в мировых координатах */

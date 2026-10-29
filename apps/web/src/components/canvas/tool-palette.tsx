@@ -149,6 +149,8 @@ interface ToolPaletteProps {
   onOpenFeed?: () => void;
   /** Кнопка аудио (загрузка и запись) */
   audio?: ReactNode;
+  /** Видео: загрузка и запись экрана */
+  video?: ReactNode;
   /** Диаграмма из данных */
   onAddChart?: () => void;
   /** Импорт из других досок (draw.io, Excalidraw, Mermaid, Miro) */
@@ -169,6 +171,7 @@ export function ToolPalette({
   stickers,
   onOpenFeed,
   audio,
+  video,
   shapeLibrary,
   onAddChart,
   importer,
@@ -450,6 +453,7 @@ export function ToolPalette({
     ...(importer ? [{ id: 'import', node: importer }] : []),
     ...(stickers ? [{ id: 'stickers', node: stickers }] : []),
     ...(audio ? [{ id: 'audio', node: audio }] : []),
+    ...(video ? [{ id: 'video', node: video }] : []),
     ...(onOpenFeed
       ? [
           {

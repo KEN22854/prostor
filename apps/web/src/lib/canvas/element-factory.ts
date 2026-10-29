@@ -17,6 +17,7 @@ import {
   type StickyElement,
   type TableElement,
   type TextElement,
+  type VideoElement,
 } from '@prostor/shared';
 import { richToFragment } from '@/lib/rich-text/yjs-convert';
 import { TABLE_DEFAULT, cellsToFields, tableFields } from '@/lib/canvas/table';
@@ -213,6 +214,31 @@ export function buildChart(
     showLegend: true,
     showValues: false,
     fill: '#ffffff',
+  };
+}
+
+/** Ширина нового видео на доске; высота — по пропорциям кадра */
+export const VIDEO_WIDTH = 480;
+
+export function buildVideo(
+  p: BaseParams & {
+    assetId: string;
+    title: string;
+    mimeType: string;
+    width: number;
+    height: number;
+    durationMs?: number;
+    posterAssetId?: string;
+  },
+): VideoElement {
+  return {
+    ...baseFields(p, p.width, p.height),
+    type: 'video',
+    assetId: p.assetId,
+    title: p.title,
+    mimeType: p.mimeType,
+    ...(p.durationMs !== undefined ? { durationMs: p.durationMs } : {}),
+    ...(p.posterAssetId ? { posterAssetId: p.posterAssetId } : {}),
   };
 }
 

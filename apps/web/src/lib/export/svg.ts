@@ -1,6 +1,7 @@
 import type {
   AudioElement,
   ChartElement,
+  VideoElement,
   BoardElement,
   EmbedElement,
   Bounds,
@@ -618,6 +619,26 @@ function audio(el: AudioElement, opts: SvgExportOptions): string {
   ].join('');
 }
 
+/** Видео: кадр-обложка (или градиент) и кнопка ▶ — в SVG видео не проигрывается */
+function video(el: VideoElement, opts: SvgExportOptions): string {
+  const href = el.posterAssetId ? opts.images.get(el.posterAssetId) : undefined;
+  const r = Math.min(36, el.width / 8, el.height / 4);
+  const cx = el.width / 2;
+  const cy = el.height / 2;
+  const clip = `clip-${el.id}`;
+  return [
+    `<clipPath id="${escapeXml(clip)}"><rect ${attrs({ width: el.width, height: el.height, rx: 14 })}/></clipPath>`,
+    `<g clip-path="url(#${escapeXml(clip)})">`,
+    `<rect ${attrs({ width: el.width, height: el.height, fill: '#d8c7fb' })}/>`,
+    href
+      ? `<image ${attrs({ width: el.width, height: el.height, href, preserveAspectRatio: 'none' })}/>`
+      : '',
+    '</g>',
+    `<circle ${attrs({ cx, cy, r, fill: '#ffffff', 'fill-opacity': 0.92 })}/>`,
+    `<polygon ${attrs({ points: `${n(cx - r * 0.3)},${n(cy - r * 0.4)} ${n(cx - r * 0.3)},${n(cy + r * 0.4)} ${n(cx + r * 0.45)},${n(cy)}`, fill: '#9b6bdf' })}/>`,
+  ].join('');
+}
+
 function placeholder(el: BoardElement): string {
   return `<rect ${attrs({ width: el.width, height: el.height, rx: 8, fill: '#f8fafc', stroke: '#94a3b8', 'stroke-dasharray': '6 4' })}/>`;
 }
@@ -645,6 +666,8 @@ export function elementToSvg(el: BoardElement, opts: SvgExportOptions): string {
       return wrapElement(el, embed(el as EmbedElement, opts));
     case 'audio':
       return wrapElement(el, audio(el as AudioElement, opts));
+    case 'video':
+      return wrapElement(el, video(el as VideoElement, opts));
     case 'chart': {
       const chart = el as ChartElement;
       const bg = `<rect width="${n(chart.width)}" height="${n(chart.height)}" rx="14" fill="${escapeXml(chart.fill)}" stroke="#e2e8f0"/>`;

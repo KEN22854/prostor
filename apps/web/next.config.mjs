@@ -82,7 +82,11 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           // Микрофон — только своему домену: голосовые заметки на доске
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' },
+          {
+            key: 'Permissions-Policy',
+            // Камера, микрофон и захват экрана — для созвонов и записи экрана на доске
+            value: 'camera=(self), microphone=(self), display-capture=(self), geolocation=()',
+          },
         ],
       },
     ];

@@ -14,6 +14,7 @@ import type {
   StickyElement,
   TableElement,
   TextElement,
+  VideoElement,
 } from '@prostor/shared';
 import { AudioShape } from '@/components/canvas/shapes/audio-shape';
 import { BasicShape } from '@/components/canvas/shapes/basic-shape';
@@ -27,6 +28,7 @@ import { PathShape } from '@/components/canvas/shapes/path-shape';
 import { PlaceholderShape } from '@/components/canvas/shapes/placeholder-shape';
 import { StickyShape } from '@/components/canvas/shapes/sticky-shape';
 import { TextShape } from '@/components/canvas/shapes/text-shape';
+import { VideoShape } from '@/components/canvas/shapes/video-shape';
 import { animateAppear } from '@/lib/canvas/appear-animation';
 import type { DetailLevel } from '@/lib/canvas/constants';
 
@@ -74,6 +76,8 @@ export const ElementNode = memo(function ElementNode({
       return <ImageShape element={element as ImageElement} detail={detail} />;
     case 'frame':
       return <FrameShape element={element as FrameElement} />;
+    case 'video':
+      return <VideoShape element={element as VideoElement} detail={detail} />;
     case 'chart':
       return <ChartShape element={element as ChartElement} detail={detail} />;
     case 'audio':

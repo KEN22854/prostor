@@ -21,6 +21,7 @@ import {
   StickyNote,
   Table2,
   Type,
+  Video,
   Zap,
   type LucideIcon,
 } from 'lucide-react';
@@ -48,6 +49,7 @@ export const TOOLBAR_META: Record<ToolbarToolId, { icon: LucideIcon; label: stri
   import: { icon: Import, label: 'Импорт из других досок' },
   stickers: { icon: Smile, label: 'Стикеры' },
   audio: { icon: Music, label: 'Аудио' },
+  video: { icon: Video, label: 'Видео' },
   feed: { icon: Images, label: 'Лента картинок' },
   link: { icon: Link2, label: 'Ссылка или видео' },
   'ai-image': { icon: Sparkles, label: 'Генерация картинки' },

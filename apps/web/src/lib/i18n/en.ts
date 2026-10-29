@@ -808,4 +808,19 @@ export const EN: Readonly<Record<string, string>> = {
   'CSV-экспорт стикеров Miro или строки текста': 'Miro sticky CSV export or lines of text',
   'flowchart TD\n  A[Идея] --> B{Проверка}\n  B -->|да| C[Готово]\n\nили список стикеров — по строке на стикер':
     'flowchart TD\n  A[Idea] --> B{Ready?}\n  B -->|yes| C[Done]\n\nor a list of stickies — one line per sticky',
+  'Запись экрана отменена или не разрешена': 'Screen recording was cancelled or not allowed',
+  'Микрофон недоступен — запись без голоса': 'Microphone unavailable — recording without voice',
+  'Камера недоступна — запись без кружка': 'Camera unavailable — recording without the bubble',
+  'Запись экрана {time}': 'Screen recording {time}',
+  Видео: 'Video',
+  'Видео: файл или запись экрана': 'Video: file or screen recording',
+  'Записать экран': 'Record screen',
+  Микрофон: 'Microphone',
+  Камера: 'Camera',
+  'Загрузить видео': 'Upload video',
+  'MP4, WebM, MOV до 300 МБ; видео можно и просто перетащить на доску':
+    'MP4, WebM, MOV up to 300 MB; you can also drag a video onto the board',
+  Продолжить: 'Resume',
+  'Загружаем видео…': 'Uploading video…',
+  'Не удалось загрузить видео': "Couldn't upload the video",
 };

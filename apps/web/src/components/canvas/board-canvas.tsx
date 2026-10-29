@@ -32,6 +32,9 @@ import { SelectionLayer } from '@/components/canvas/selection-layer';
 import { SelectionToolbar } from '@/components/canvas/selection-toolbar';
 import { TextEditor } from '@/components/canvas/text-editor';
 import { ChartEditor } from '@/components/canvas/chart-editor';
+import { VideoButton } from '@/components/canvas/video-button';
+import { VideoPlayer } from '@/components/canvas/video-player';
+import { useVideoInsert } from '@/hooks/use-video-insert';
 import { ImportDialog } from '@/components/canvas/import-dialog';
 import { ShapeLibraryPanel } from '@/components/canvas/shape-library-panel';
 import { ToolPalette } from '@/components/canvas/tool-palette';
@@ -324,6 +327,7 @@ export function BoardCanvas({
   const insertEmbed = useEmbedInsert({ boardId, doc, actions, userId: user?.id ?? null });
   const insertFeedImage = useFeedInsert({ boardId, doc, actions, userId: user?.id ?? null });
   const insertAudio = useAudioInsert({ boardId, doc, actions, userId: user?.id ?? null });
+  const insertVideo = useVideoInsert({ boardId, doc, actions, userId: user?.id ?? null });
   const [feedOpen, setFeedOpen] = useState(false);
   const [linkDialog, askLink] = usePrompt();
   const addLink = async () => {
@@ -395,6 +399,7 @@ export function BoardCanvas({
     insertEmbed,
     insertFeedImage,
     insertAudio,
+    insertVideo,
   });
 
   const cursor = isPanning
@@ -462,6 +467,7 @@ export function BoardCanvas({
       ) : null}
       {store && !presenting ? <EmbedPlayer store={store} /> : null}
       {store ? <AudioPlayer store={store} /> : null}
+      {store ? <VideoPlayer store={store} /> : null}
       {feedOpen && !presenting ? (
         <ImageFeedPanel
           onClose={() => setFeedOpen(false)}
@@ -494,6 +500,7 @@ export function BoardCanvas({
             ) : null
           }
           audio={<AudioButton onInsert={insertAudio} />}
+          video={<VideoButton onInsert={insertVideo} />}
           shapeLibrary={
             user ? (
               <ShapeLibraryPanel boardId={boardId} doc={doc} actions={actions} userId={user.id} />

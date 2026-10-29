@@ -311,6 +311,19 @@ export function drawMinimapElement(
       ctx.fillRect(76, h / 2 - 3, w - 92, 6);
       break;
     }
+    case 'video': {
+      const img = el.posterAssetId ? images.get(el.posterAssetId) : null;
+      ctx.fillStyle = '#d8c7fb';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, w, h, 14);
+      ctx.fill();
+      if (img) ctx.drawImage(img, 0, 0, w, h);
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, Math.min(36, w / 8, h / 4), 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
     case 'chart': {
       ctx.fillStyle = el.fill;
       ctx.beginPath();
