@@ -4,6 +4,7 @@ import type * as Y from 'yjs';
 import {
   BringToFront,
   Crop,
+  Sheet,
   Copy,
   Group,
   Lock,
@@ -213,6 +214,14 @@ export function SelectionToolbar({
               icon={Wand2}
               label={t('Убрать фон')}
               onClick={() => onRemoveBg(ids[0] ?? '')}
+            />
+          ) : null}
+          {elements.length === 1 && elements[0]?.type === 'chart' && !elements[0].locked ? (
+            <IconAction
+              icon={Sheet}
+              label={t('Данные диаграммы')}
+              hotkey={t('двойной клик')}
+              onClick={() => useCanvasStore.getState().setChartEditor(ids[0] ?? null)}
             />
           ) : null}
           {elements.length === 1 && elements[0]?.type === 'image' && !elements[0].locked ? (

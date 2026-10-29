@@ -5,7 +5,7 @@ import { readyRedis } from '@/lib/redis';
 import { rateLimit } from '@/lib/rate-limit';
 import { safeFetch } from '@/lib/safe-fetch';
 import type { SessionUser } from '@/lib/session';
-import { STICKER_PREFIXES, isStickerId, stickerQuery } from '@/lib/stickers';
+import { STICKER_PREFIXES, isLibraryIconId, isStickerId, stickerQuery } from '@/lib/stickers';
 import { storeBoardImage } from '@/services/assets';
 import { requireBoardAccess } from '@/services/boards';
 
@@ -86,7 +86,7 @@ export function iconToSvg(icon: IconData, set: IconSet): string | null {
 
 /** SVG нескольких стикеров: из кэша, остальное — пакетами по набору */
 export async function stickerSvgs(ids: string[]): Promise<Record<string, string>> {
-  const valid = [...new Set(ids.filter(isStickerId))];
+  const valid = [...new Set(ids.filter(isLibraryIconId))];
   const result: Record<string, string> = {};
   if (valid.length === 0) return result;
   const redis = await readyRedis().catch(() => null);

@@ -21,6 +21,7 @@ const ANIMATED: ReadonlySet<BoardElement['type']> = new Set([
   'table',
   'audio',
   'embed',
+  'chart',
 ]);
 
 let burstStart = 0;

@@ -6,6 +6,7 @@ import {
   richTextSchema,
   type AudioElement,
   type BoardElement,
+  type ChartElement,
   type EmbedElement,
   type EmbedPreview,
   type FrameElement,
@@ -193,6 +194,29 @@ export function buildLine(
 }
 
 /** Карточка аудио */
+/** Размер новой диаграммы */
+export const CHART_DEFAULT = { width: 480, height: 320 } as const;
+
+export function buildChart(
+  p: BaseParams &
+    Pick<ChartElement, 'chartType' | 'title' | 'labels' | 'series'> & {
+      width?: number;
+      height?: number;
+    },
+): ChartElement {
+  return {
+    ...baseFields(p, p.width ?? CHART_DEFAULT.width, p.height ?? CHART_DEFAULT.height),
+    type: 'chart',
+    chartType: p.chartType,
+    title: p.title,
+    labels: p.labels,
+    series: p.series,
+    showLegend: true,
+    showValues: false,
+    fill: '#ffffff',
+  };
+}
+
 export const AUDIO_CARD = { width: 320, height: 76 } as const;
 
 export function buildAudio(

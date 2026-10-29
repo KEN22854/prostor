@@ -1,5 +1,6 @@
 import type {
   AudioElement,
+  ChartElement,
   BoardElement,
   EmbedElement,
   Bounds,
@@ -19,6 +20,8 @@ import { EMBED_CARD } from '@/lib/canvas/element-factory';
 import { isRichFormatted } from '@prostor/shared';
 import { compareRenderOrder } from '@/lib/canvas/frames';
 import { layoutRich } from '@/lib/rich-text/layout';
+import { shapePathData } from '@/lib/canvas/shape-paths';
+import { chartScene, chartSceneToSvg } from '@/lib/charts/scene';
 import { layoutText, type Measure } from '@/lib/export/text-layout';
 
 /**
@@ -236,6 +239,8 @@ function shapeOutline(el: ShapeElement): string {
       }
       return `<polygon points="${pts.join(' ')}" ${paint}/>`;
     }
+    default:
+      return `<path ${attrs({ d: shapePathData(el.shape, w, h) })} ${paint}/>`;
   }
 }
 
@@ -640,6 +645,14 @@ export function elementToSvg(el: BoardElement, opts: SvgExportOptions): string {
       return wrapElement(el, embed(el as EmbedElement, opts));
     case 'audio':
       return wrapElement(el, audio(el as AudioElement, opts));
+    case 'chart': {
+      const chart = el as ChartElement;
+      const bg = `<rect width="${n(chart.width)}" height="${n(chart.height)}" rx="14" fill="${escapeXml(chart.fill)}" stroke="#e2e8f0"/>`;
+      return wrapElement(
+        el,
+        bg + chartSceneToSvg(chartScene(chart, chart.width, chart.height), FONT),
+      );
+    }
     default:
       return wrapElement(el, placeholder(el));
   }

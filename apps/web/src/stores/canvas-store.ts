@@ -113,6 +113,8 @@ interface CanvasState {
   croppingId: string | null;
   /** Аудио, которое сейчас играет */
   playingAudioId: string | null;
+  /** Редактор диаграммы: id существующей, 'new' — новая */
+  chartEditor: string | null;
   /** Открытая панель доски (экспорт, история версий) — кнопки в шапке живут вне холста */
   panel: BoardPanel | null;
   follow: FollowTarget | null;
@@ -131,6 +133,7 @@ interface CanvasState {
   setPlayingEmbed: (id: string | null) => void;
   setCropping: (id: string | null) => void;
   setPlayingAudio: (id: string | null) => void;
+  setChartEditor: (id: string | null) => void;
   setPanel: (panel: BoardPanel | null) => void;
   setFollow: (follow: FollowTarget | null) => void;
   reset: () => void;
@@ -174,6 +177,7 @@ export const useCanvasStore = create<CanvasState>()((set) => ({
   playingEmbedId: null,
   croppingId: null,
   playingAudioId: null,
+  chartEditor: null,
   panel: null,
   follow: null,
 
@@ -203,6 +207,7 @@ export const useCanvasStore = create<CanvasState>()((set) => ({
   setPlayingEmbed: (playingEmbedId) => set({ playingEmbedId }),
   setCropping: (croppingId) => set({ croppingId }),
   setPlayingAudio: (playingAudioId) => set({ playingAudioId }),
+  setChartEditor: (chartEditor) => set({ chartEditor }),
   setPanel: (panel) => set({ panel }),
   setFollow: (follow) => set({ follow }),
   reset: () =>

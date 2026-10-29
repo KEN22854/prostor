@@ -39,6 +39,7 @@ export const ELEMENT_TYPES = [
   'bpmn',
   'embed',
   'audio',
+  'chart',
 ] as const;
 export const elementTypeSchema = z.enum(ELEMENT_TYPES);
 export type ElementType = z.infer<typeof elementTypeSchema>;
@@ -160,7 +161,25 @@ export const textSchema = baseElementSchema.extend({
   ...textStyleSchema.shape,
 });
 
-export const SHAPE_KINDS = ['rect', 'roundRect', 'ellipse', 'triangle', 'diamond', 'star'] as const;
+export const SHAPE_KINDS = [
+  'rect',
+  'roundRect',
+  'ellipse',
+  'triangle',
+  'diamond',
+  'star',
+  // Блок-схемы и диаграммы (геометрия — путь SVG, см. apps/web/src/lib/canvas/shape-paths.ts)
+  'pill',
+  'parallelogram',
+  'trapezoid',
+  'hexagon',
+  'cylinder',
+  'document',
+  'cloud',
+  'callout',
+  'blockArrow',
+  'plus',
+] as const;
 
 export const shapeSchema = baseElementSchema.extend({
   type: z.literal('shape'),
@@ -300,6 +319,30 @@ export const embedSchema = baseElementSchema.extend({
   imageAssetId: z.string().max(64).nullable().optional(),
 });
 
+export const CHART_TYPES = ['column', 'bar', 'line', 'area', 'pie', 'donut'] as const;
+export const CHART_LIMITS = { maxLabels: 200, maxSeries: 12 } as const;
+
+/** Диаграмма из данных: подписи категорий и ряды значений (вставка из таблицы или CSV) */
+export const chartSchema = baseElementSchema.extend({
+  type: z.literal('chart'),
+  chartType: z.enum(CHART_TYPES),
+  title: z.string().max(200).default(''),
+  labels: z.array(z.string().max(100)).max(CHART_LIMITS.maxLabels),
+  series: z
+    .array(
+      z.object({
+        name: z.string().max(100),
+        color: color,
+        values: z.array(finite).max(CHART_LIMITS.maxLabels),
+      }),
+    )
+    .min(1)
+    .max(CHART_LIMITS.maxSeries),
+  showLegend: z.boolean().default(true),
+  showValues: z.boolean().default(false),
+  fill: color.default('#ffffff'),
+});
+
 /**
  * Элементы, ещё не реализованные в итерациях 1–4, описаны «мягко»:
  * общие поля + произвольный payload. Схемы ужесточаются в своих итерациях.
@@ -338,6 +381,7 @@ export const boardElementSchema = z.discriminatedUnion('type', [
   tableSchema,
   embedSchema,
   audioSchema,
+  chartSchema,
   generic('mindmapNode'),
   generic('kanban'),
   generic('document'),
@@ -359,6 +403,8 @@ export type FrameElement = z.infer<typeof frameSchema>;
 export type TableElement = z.infer<typeof tableSchema>;
 export type EmbedElement = z.infer<typeof embedSchema>;
 export type AudioElement = z.infer<typeof audioSchema>;
+export type ChartElement = z.infer<typeof chartSchema>;
+export type ChartType = (typeof CHART_TYPES)[number];
 export type GenericElement = z.infer<typeof genericElementSchema>;
 export type BoardElement =
   | StickyElement
@@ -371,6 +417,7 @@ export type BoardElement =
   | TableElement
   | EmbedElement
   | AudioElement
+  | ChartElement
   | GenericElement;
 
 /** Axis-aligned bounding box в мировых координатах */

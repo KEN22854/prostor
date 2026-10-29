@@ -273,3 +273,16 @@ export function stickerQuery(raw: string): string {
     .filter(Boolean)
     .join(' ');
 }
+
+/**
+ * Наборы иконок для библиотеки фигур (сеть, облака, технологии):
+ * logos — логотипы сервисов (CC0), mdi — Material Design Icons (Apache 2.0).
+ * Поиск по ним не нужен — библиотека показывает подобранный список.
+ */
+export const DIAGRAM_ICON_PREFIXES = new Set(['logos', 'mdi']);
+
+/** id иконки, которую можно добавить на доску: стикер или иконка библиотеки фигур */
+export function isLibraryIconId(id: string): boolean {
+  const m = /^([a-z0-9-]+):([a-z0-9-]+)$/.exec(id);
+  return Boolean(m && (STICKER_PREFIXES.has(m[1]!) || DIAGRAM_ICON_PREFIXES.has(m[1]!)));
+}

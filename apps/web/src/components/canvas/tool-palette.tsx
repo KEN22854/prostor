@@ -2,11 +2,10 @@
 
 import {
   ArrowUpRight,
+  ChartColumn,
   Images,
   Link2,
   Table2,
-  Circle,
-  Diamond,
   Eraser,
   FileUp,
   Frame,
@@ -21,17 +20,16 @@ import {
   Pencil,
   Settings2,
   Sparkles,
-  Square,
-  Star,
   StickyNote,
   Zap,
-  Triangle,
   Type,
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Fragment, type ReactNode } from 'react';
-import { DEFAULT_PINNED_TOOLS, type ShapeElement } from '@prostor/shared';
+import { Fragment, type ComponentType, type ReactNode } from 'react';
+import { DEFAULT_PINNED_TOOLS, SHAPE_KINDS } from '@prostor/shared';
+import { ShapeGlyph, shapeIcon } from '@/components/canvas/shape-glyph';
+import { SHAPE_LABELS } from '@/lib/canvas/shape-paths';
 import { ColorSwatches } from '@/components/canvas/color-swatches';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -46,14 +44,7 @@ import {
 } from '@/stores/canvas-store';
 import { useT } from '@/lib/i18n/client';
 
-const SHAPES: Array<{ kind: ShapeElement['shape']; icon: LucideIcon; label: string }> = [
-  { kind: 'rect', icon: Square, label: 'Прямоугольник' },
-  { kind: 'roundRect', icon: Square, label: 'Скруглённый' },
-  { kind: 'ellipse', icon: Circle, label: 'Эллипс' },
-  { kind: 'triangle', icon: Triangle, label: 'Треугольник' },
-  { kind: 'diamond', icon: Diamond, label: 'Ромб' },
-  { kind: 'star', icon: Star, label: 'Звезда' },
-];
+const SHAPES = SHAPE_KINDS.map((kind) => ({ kind, label: SHAPE_LABELS[kind] }));
 
 const PEN_WIDTHS = [2, 4, 8, 14] as const;
 
@@ -66,7 +57,7 @@ interface PaletteEntry {
 
 interface ToolButtonProps {
   tool: CanvasTool;
-  icon: LucideIcon;
+  icon: ComponentType<{ className?: string }>;
   label: string;
   hotkey: string;
   onSelect?: () => void;
@@ -159,6 +150,10 @@ interface ToolPaletteProps {
   onOpenFeed?: () => void;
   /** Кнопка аудио (загрузка и запись) */
   audio?: ReactNode;
+  /** Диаграмма из данных */
+  onAddChart?: () => void;
+  /** Библиотека фигур (блок-схемы, UML, ER, сеть) */
+  shapeLibrary?: ReactNode;
   /** Закреплённые инструменты из профиля; без них — набор по умолчанию */
   pinned?: readonly string[];
   /** Показать ссылку «Настроить панель» (только вошедшим) */
@@ -173,6 +168,8 @@ export function ToolPalette({
   stickers,
   onOpenFeed,
   audio,
+  shapeLibrary,
+  onAddChart,
   pinned: pinnedIds = DEFAULT_PINNED_TOOLS,
   canCustomize = false,
 }: ToolPaletteProps) {
@@ -184,7 +181,7 @@ export function ToolPalette({
   const snapToObjects = useCanvasStore((s) => s.snapToObjects);
   const setSnap = useCanvasStore((s) => s.setSnap);
   const currentTool = useCanvasStore((s) => s.tool);
-  const ShapeIcon = SHAPES.find((s) => s.kind === options.shapeKind)?.icon ?? Square;
+  const ShapeIcon = shapeIcon(options.shapeKind);
 
   const iconButton = (label: string, icon: ReactNode, onClick: () => void, tip?: ReactNode) => (
     <Tooltip>
@@ -237,20 +234,24 @@ export function ToolPalette({
       node: (
         <ToolWithOptions tool="shape" icon={ShapeIcon} label={t('Фигура')} hotkey="R / O">
           <Section title={t('Фигура')}>
-            <div className="grid grid-cols-6 gap-1">
-              {SHAPES.map(({ kind, icon: Icon, label }) => (
+            <div className="grid grid-cols-8 gap-1">
+              {SHAPES.map(({ kind, label }) => (
                 <Button
                   key={kind}
                   variant="ghost"
                   size="icon"
-                  className={cn('size-8', options.shapeKind === kind && 'bg-accent')}
-                  aria-label={label}
+                  className={cn(
+                    'size-8 rounded-lg',
+                    options.shapeKind === kind && 'bg-accent text-primary',
+                  )}
+                  aria-label={t(label)}
+                  title={t(label)}
                   onClick={() => {
                     setOptions({ shapeKind: kind });
                     setTool('shape');
                   }}
                 >
-                  <Icon className={kind === 'roundRect' ? 'rounded' : undefined} />
+                  <ShapeGlyph kind={kind} />
                 </Button>
               ))}
             </div>
@@ -274,6 +275,7 @@ export function ToolPalette({
         </ToolWithOptions>
       ),
     },
+    ...(shapeLibrary ? [{ id: 'shapes', node: shapeLibrary }] : []),
     {
       id: 'arrow',
       tool: 'arrow',
@@ -326,6 +328,19 @@ export function ToolPalette({
       tool: 'text',
       node: <ToolButton tool="text" icon={Type} label={t('Текст')} hotkey="T" />,
     },
+    ...(onAddChart
+      ? [
+          {
+            id: 'chart',
+            node: iconButton(
+              t('Диаграмма'),
+              <ChartColumn />,
+              onAddChart,
+              t('Диаграмма из данных: вставьте таблицу или CSV'),
+            ),
+          },
+        ]
+      : []),
     {
       id: 'table',
       tool: 'table',

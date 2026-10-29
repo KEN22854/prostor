@@ -1,6 +1,8 @@
 import { assetUrl, type BoardElement } from '@prostor/shared';
 import { NEUTRAL_FILL } from '@/lib/canvas/constants';
+import { PATH_SHAPES, shapePathData } from '@/lib/canvas/shape-paths';
 import { tableLayout } from '@/lib/canvas/table';
+import { chartScene, drawChartScene } from '@/lib/charts/scene';
 
 /**
  * Отрисовка объектов на мини-карте — «как на доске, но в меру»:
@@ -178,15 +180,18 @@ export function drawMinimapElement(
       break;
     }
     case 'shape': {
-      shapePath(ctx, el.shape, w, h);
+      const path = PATH_SHAPES.has(el.shape) ? new Path2D(shapePathData(el.shape, w, h)) : null;
+      if (!path) shapePath(ctx, el.shape, w, h);
       if (el.fill !== 'transparent') {
         ctx.fillStyle = el.fill;
-        ctx.fill();
+        if (path) ctx.fill(path);
+        else ctx.fill();
       }
       if (el.strokeWidth > 0) {
         ctx.strokeStyle = el.stroke;
         ctx.lineWidth = Math.max(el.strokeWidth, px);
-        ctx.stroke();
+        if (path) ctx.stroke(path);
+        else ctx.stroke();
       }
       if (el.text)
         drawText(
@@ -304,6 +309,17 @@ export function drawMinimapElement(
       ctx.fill();
       ctx.globalAlpha *= 0.5;
       ctx.fillRect(76, h / 2 - 3, w - 92, 6);
+      break;
+    }
+    case 'chart': {
+      ctx.fillStyle = el.fill;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, w, h, 14);
+      ctx.fill();
+      drawChartScene(ctx, chartScene(el, w, h), {
+        text: 12 * scale >= TEXT_MIN_PX,
+        family: 'Inter, system-ui, sans-serif',
+      });
       break;
     }
     case 'embed': {

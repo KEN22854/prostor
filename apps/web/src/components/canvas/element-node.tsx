@@ -3,6 +3,7 @@
 import { memo, useLayoutEffect } from 'react';
 import type {
   AudioElement,
+  ChartElement,
   BoardElement,
   EmbedElement,
   FrameElement,
@@ -16,6 +17,7 @@ import type {
 } from '@prostor/shared';
 import { AudioShape } from '@/components/canvas/shapes/audio-shape';
 import { BasicShape } from '@/components/canvas/shapes/basic-shape';
+import { ChartShape } from '@/components/canvas/shapes/chart-shape';
 import { EmbedShape } from '@/components/canvas/shapes/embed-shape';
 import { FrameShape } from '@/components/canvas/shapes/frame-shape';
 import { ImageShape } from '@/components/canvas/shapes/image-shape';
@@ -72,6 +74,8 @@ export const ElementNode = memo(function ElementNode({
       return <ImageShape element={element as ImageElement} detail={detail} />;
     case 'frame':
       return <FrameShape element={element as FrameElement} />;
+    case 'chart':
+      return <ChartShape element={element as ChartElement} detail={detail} />;
     case 'audio':
       return <AudioShape element={element as AudioElement} detail={detail} />;
     case 'embed':

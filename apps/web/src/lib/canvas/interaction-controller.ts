@@ -306,6 +306,10 @@ export class InteractionController {
       // Двойной клик по картинке — обрезка
       state().select([hit.id]);
       state().setCropping(hit.id);
+    } else if (hit.type === 'chart' && actions?.canEdit && !hit.locked) {
+      // Двойной клик по диаграмме — её данные
+      state().select([hit.id]);
+      state().setChartEditor(hit.id);
     } else if (hit.type === 'audio') {
       // Двойной клик по аудио — воспроизвести / остановить
       state().select([hit.id]);

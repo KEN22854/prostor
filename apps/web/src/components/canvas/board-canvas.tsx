@@ -31,6 +31,8 @@ import { PresentationMode } from '@/components/canvas/presentation-mode';
 import { SelectionLayer } from '@/components/canvas/selection-layer';
 import { SelectionToolbar } from '@/components/canvas/selection-toolbar';
 import { TextEditor } from '@/components/canvas/text-editor';
+import { ChartEditor } from '@/components/canvas/chart-editor';
+import { ShapeLibraryPanel } from '@/components/canvas/shape-library-panel';
 import { ToolPalette } from '@/components/canvas/tool-palette';
 import { ZoomControls } from '@/components/canvas/zoom-controls';
 import { useBoardClipboard } from '@/hooks/use-board-clipboard';
@@ -478,7 +480,13 @@ export function BoardCanvas({
           onImportPdf={() => pdfInputRef.current?.click()}
           onAddLink={() => void addLink()}
           onOpenFeed={() => setFeedOpen((v) => !v)}
+          onAddChart={() => useCanvasStore.getState().setChartEditor('new')}
           audio={<AudioButton onInsert={insertAudio} />}
+          shapeLibrary={
+            user ? (
+              <ShapeLibraryPanel boardId={boardId} doc={doc} actions={actions} userId={user.id} />
+            ) : null
+          }
           stickers={
             user ? (
               <StickerLibrary boardId={boardId} doc={doc} actions={actions} userId={user.id} />
@@ -504,6 +512,9 @@ export function BoardCanvas({
         onRemoveBg={(id) => void removeBg(id)}
         onFit={fit}
       />
+      {store && actions?.canEdit && doc && user ? (
+        <ChartEditor store={store} actions={actions} doc={doc} userId={user.id} />
+      ) : null}
       {ai.generateImage && actions?.canEdit ? (
         <GenerateImageDialog
           open={generateOpen}

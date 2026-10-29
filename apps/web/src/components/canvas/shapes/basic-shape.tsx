@@ -1,10 +1,11 @@
 'use client';
 
-import { Ellipse, Group, Line, Rect, Star, Text } from 'react-konva';
+import { Ellipse, Group, Line, Path, Rect, Star, Text } from 'react-konva';
 import { isRichFormatted, type ShapeElement } from '@prostor/shared';
 import { RichText } from '@/components/canvas/shapes/rich-text';
 import type { DetailLevel } from '@/lib/canvas/constants';
 import { canvasFont } from '@/lib/canvas/fonts';
+import { shapePathData } from '@/lib/canvas/shape-paths';
 
 interface BasicShapeProps {
   element: ShapeElement;
@@ -46,6 +47,8 @@ function Outline({ el }: { el: ShapeElement }) {
           {...common}
         />
       );
+    default:
+      return <Path data={shapePathData(el.shape, w, h)} {...common} />;
   }
 }
 
