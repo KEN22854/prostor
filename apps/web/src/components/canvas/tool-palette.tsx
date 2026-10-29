@@ -23,7 +23,6 @@ import {
   StickyNote,
   Zap,
   Type,
-  type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, type ComponentType, type ReactNode } from 'react';
