@@ -85,9 +85,125 @@ export function topmostAt(
   return null;
 }
 
-/** Элементы, пересекающие рамку выделения (по габаритам) */
+/** Пересекаются ли выпуклые многоугольники (теорема о разделяющей оси); отрезок — тоже многоугольник */
+function convexOverlap(a: readonly Point[], b: readonly Point[]): boolean {
+  for (const poly of [a, b]) {
+    for (let i = 0; i < poly.length; i++) {
+      const p = poly[i]!;
+      const q = poly[(i + 1) % poly.length]!;
+      const ax = p.y - q.y;
+      const ay = q.x - p.x;
+      if (ax === 0 && ay === 0) continue;
+      let minA = Infinity;
+      let maxA = -Infinity;
+      for (const v of a) {
+        const d = v.x * ax + v.y * ay;
+        minA = Math.min(minA, d);
+        maxA = Math.max(maxA, d);
+      }
+      let minB = Infinity;
+      let maxB = -Infinity;
+      for (const v of b) {
+        const d = v.x * ax + v.y * ay;
+        minB = Math.min(minB, d);
+        maxB = Math.max(maxB, d);
+      }
+      if (maxA < minB || maxB < minA) return false;
+    }
+  }
+  return true;
+}
+
+const rectPolygon = (r: Bounds): Point[] => [
+  { x: r.minX, y: r.minY },
+  { x: r.maxX, y: r.minY },
+  { x: r.maxX, y: r.maxY },
+  { x: r.minX, y: r.maxY },
+];
+
+/** Выпуклый контур элемента в его локальных координатах */
+function outlineOf(el: BoardElement): Point[] {
+  const w = el.width;
+  const h = el.height;
+  if (el.type === 'shape') {
+    switch (el.shape) {
+      case 'ellipse':
+        return Array.from({ length: 32 }, (_, i) => {
+          const t = (i / 32) * Math.PI * 2;
+          return { x: w / 2 + (Math.cos(t) * w) / 2, y: h / 2 + (Math.sin(t) * h) / 2 };
+        });
+      case 'triangle':
+        return [
+          { x: w / 2, y: 0 },
+          { x: w, y: h },
+          { x: 0, y: h },
+        ];
+      case 'diamond':
+        return [
+          { x: w / 2, y: 0 },
+          { x: w, y: h / 2 },
+          { x: w / 2, y: h },
+          { x: 0, y: h / 2 },
+        ];
+      case 'hexagon': {
+        const o = Math.min(w * 0.2, h / 2);
+        return [
+          { x: o, y: 0 },
+          { x: w - o, y: 0 },
+          { x: w, y: h / 2 },
+          { x: w - o, y: h },
+          { x: o, y: h },
+          { x: 0, y: h / 2 },
+        ];
+      }
+    }
+  }
+  return rectPolygon({ minX: 0, minY: 0, maxX: w, maxY: h });
+}
+
+/**
+ * Касается ли рамка выделения самого объекта: линии и росчерки — по их
+ * отрезкам с толщиной, фигуры — по настоящему контуру с учётом поворота.
+ * Габариты (с запасом на ручки) — только быстрый отсев.
+ */
+export function touchesRect(el: BoardElement, rect: Bounds): boolean {
+  if (!intersects(boundsOf(el), rect)) return false;
+  const rad = ((el.rotation ?? 0) * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const world = (x: number, y: number): Point => ({
+    x: el.x + x * cos - y * sin,
+    y: el.y + x * sin + y * cos,
+  });
+
+  const points = pointsOf(el);
+  if (points && points.length >= 2) {
+    const half = strokeOf(el) / 2;
+    const area = {
+      minX: rect.minX - half,
+      minY: rect.minY - half,
+      maxX: rect.maxX + half,
+      maxY: rect.maxY + half,
+    };
+    const box = rectPolygon(area);
+    let prev = world(points[0] ?? 0, points[1] ?? 0);
+    if (points.length < 4) return convexOverlap([prev], box);
+    for (let i = 2; i + 1 < points.length; i += 2) {
+      const next = world(points[i] ?? 0, points[i + 1] ?? 0);
+      if (convexOverlap([prev, next], box)) return true;
+      prev = next;
+    }
+    return false;
+  }
+  return convexOverlap(
+    outlineOf(el).map((p) => world(p.x, p.y)),
+    rectPolygon(rect),
+  );
+}
+
+/** Элементы, которых касается рамка выделения */
 export function elementsInRect(candidates: readonly BoardElement[], rect: Bounds): BoardElement[] {
-  return candidates.filter((el) => intersects(boundsOf(el), rect));
+  return candidates.filter((el) => touchesRect(el, rect));
 }
 
 /** Область запроса к R-tree для точки */

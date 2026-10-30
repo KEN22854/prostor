@@ -1,32 +1,37 @@
+import Image from 'next/image';
 import Link from 'next/link';
+import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
-/** Знак «Простора»: сиреневый градиентный квадрат с тремя «стикерами» */
+/** Сиреневая искра логотипа — четырёхлучевая звезда с вогнутыми сторонами */
+const sparkle = (cx: number, cy: number, r: number) =>
+  `M${cx} ${cy - r}Q${cx} ${cy} ${cx + r} ${cy}Q${cx} ${cy} ${cx} ${cy + r}Q${cx} ${cy} ${cx - r} ${cy}Q${cx} ${cy} ${cx} ${cy - r}Z`;
+
+/** Знак «Простора» — буква «о» из логотипа: круг со стрелкой-курсором и искрой */
 export function LogoMark({ className }: { className?: string }) {
+  const mask = useId();
   return (
-    <span
-      className={cn(
-        'bg-brand-gradient shadow-glow relative inline-flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-[10px]',
-        className,
-      )}
-      aria-hidden
-    >
-      <svg viewBox="0 0 24 24" className="size-[62%]" fill="none">
-        <rect x="3" y="3" width="8" height="8" rx="2.2" fill="white" />
-        <rect x="13" y="3" width="8" height="8" rx="2.2" fill="white" fillOpacity="0.65" />
-        <rect x="3" y="13" width="8" height="8" rx="2.2" fill="white" fillOpacity="0.65" />
-        <path
-          d="M14 17.2c1.6-2.6 4.4-2.6 6 0"
-          stroke="white"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-        />
+    <span className={cn('relative inline-flex size-8 shrink-0', className)} aria-hidden>
+      <svg viewBox="0 0 32 32" className="size-full">
+        <mask id={mask}>
+          <rect width="32" height="32" fill="white" />
+          <path
+            d="M18.07 12.44L8.1 17.09L12.34 18.83L13.58 23.15Z"
+            fill="black"
+            stroke="black"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+        </mask>
+        <circle cx="14" cy="18" r="13" fill="none" stroke="#a98fe3" strokeWidth="1.6" />
+        <circle cx="14" cy="18" r="10.8" className="fill-foreground" mask={`url(#${mask})`} />
+        <path d={sparkle(27.5, 4.5, 4.5)} fill="#a98fe3" />
       </svg>
     </span>
   );
 }
 
-/** Логотип со словом — ссылка на главную или дашборд */
+/** Логотип-надпись Prostor — ссылка на главную или дашборд; своя версия для тёмной темы */
 export function Logo({
   href = '/',
   label,
@@ -36,16 +41,29 @@ export function Logo({
   label: string;
   className?: string;
 }) {
+  const img = 'h-12 w-auto transition-transform duration-500 ease-smooth group-hover:scale-105';
   return (
     <Link
       href={href}
-      className={cn(
-        'group inline-flex items-center gap-2.5 text-lg font-semibold tracking-tight',
-        className,
-      )}
+      aria-label={label}
+      className={cn('group inline-flex items-center', className)}
     >
-      <LogoMark className="transition-transform duration-500 ease-smooth group-hover:rotate-[8deg] group-hover:scale-110" />
-      <span>{label}</span>
+      <Image
+        src="/brand/logo.png"
+        alt={label}
+        width={485}
+        height={240}
+        priority
+        className={cn(img, 'dark:hidden')}
+      />
+      <Image
+        src="/brand/logo-dark.png"
+        alt={label}
+        width={485}
+        height={240}
+        priority
+        className={cn(img, 'hidden dark:block')}
+      />
     </Link>
   );
 }
