@@ -6,7 +6,7 @@ An infinite canvas for teams: sticky notes, shapes, mind maps, kanban, documents
 comments, presentations and an AI assistant. Real-time on Yjs (CRDT), offline mode,
 version history, SaaS and on-premise.
 
-> **Status:** all 9 planned iterations are done — from authentication and real-time to enterprise features, performance measurements and deployment — plus a 10th round of extras.
+> **Status:** all 9 planned iterations are done — from authentication and real-time to enterprise features, performance measurements and deployment — plus the 10th (extras) and 11th (design, calls, pricing, PWA).
 > The iteration plan is in the [Roadmap](#roadmap) section.
 
 ## Architecture
@@ -286,6 +286,10 @@ The full commented list is in [.env.example](.env.example). Key ones:
 | `AI_PROVIDER_IMAGE`, `POLLINATIONS_TOKEN` | image generation: pollinations (free), replicate, mock |
 | `RATE_LIMIT_MULTIPLIER` | rate-limit multiplier (1 in production; 50 for the e2e environment) |
 | `AI_PROVIDER_REMOVE_BG`, `REMBG_URL`, `REPLICATE_API_TOKEN`, `LLM_*` | AI |
+| `BILLING_ENABLED`, `BILLING_MOCK` | pricing and limits (SaaS); test payments for development |
+| `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY` | payments via YooKassa (rubles), webhook `/api/billing/webhooks/yookassa` |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | payments via Stripe (dollars), webhook `/api/billing/webhooks/stripe` |
+| `RTC_ICE_SERVERS` | your own STUN/TURN servers for calls (JSON) |
 
 ## Authentication
 
@@ -544,6 +548,47 @@ Objects created before iteration 7 get a `Y.XmlFragment` the first time the edit
   the test `lib/i18n/i18n.test.ts` checks that every string has an English translation.
   API error messages are Russian only for now.
 
+## Design, text, shapes, calls and pricing (iteration 11)
+
+- **Lilac interface** — soft lavender palette, glass panels, smooth animations: page transitions,
+  scroll-reveal blocks, new objects "popping" onto the canvas, button shine, loading skeletons.
+  The light theme is the default; dark and "system" are available via the sun/moon button (the
+  theme change reveals in a circle) or in settings.
+- **Your own toolbar** — only the main tools stay on the toolbar, the rest go to the "…" menu.
+  Choose the set in "Settings → Toolbar" (stored in the profile, `User.toolbarTools`).
+- **Text** — font size, horizontal and vertical alignment, color and style of the object ("Aa"
+  in the selection toolbar); inside the text — headings, numbered lists, checklists (click the
+  box to check), per-word color and highlighter. "Live Markdown": `# `, `## `, `- `, `1. `, `[] `
+  at the start of a line. Canvas and SVG export share one layout (`lib/rich-text/layout.ts`).
+- **Minimap** shows the board as it is: shapes, colors, images, arrows, text as letters when it is
+  readable. Content is drawn into a cached canvas and redrawn only when the board changes.
+- **Shape library** — flowcharts, basic shapes, UML (classes, interfaces, use cases), ER diagrams
+  (entity tables, relationships) and network & cloud icons (AWS, Google Cloud, Azure, Kubernetes,
+  Docker, PostgreSQL…). 10 new shape kinds (pill, cylinder, document, cloud, callout…) with one
+  geometry for the canvas, SVG and minimap (`lib/canvas/shape-paths.ts`).
+- **Charts from data** — columns, bars, lines, areas, pie and donut. Paste data from Excel /
+  Google Sheets or CSV (Russian number formats like "1 234,5" work too); the preview updates
+  instantly. Double-click a chart to edit its data.
+- **Your own templates** — "Save as template" in the board header: for yourself or for the whole
+  organization. Templates appear in the "New board" dialog with a live preview.
+- **Import from other boards** — draw.io / diagrams.net (compressed files too), Excalidraw,
+  Mermaid (flowcharts with automatic layout), Miro stickies (CSV) and any lists, PDF. The format is
+  detected automatically, the import lands in free space and a single Ctrl+Z undoes it.
+- **Video on the board** — MP4, WebM, MOV up to 300 MB with a poster frame; the player opens right
+  on top of the card. **Loom-style screen recording** — screen, system audio and microphone, a
+  camera bubble over the page, pause; the recording lands on the board.
+- **Calls on the board (WebRTC)** — voice, camera, screen sharing, active speaker highlight.
+  Participants connect directly (mesh, up to 6–8 people); the server only relays signals —
+  addressed, including across WS instances via Redis. Custom STUN/TURN — `RTC_ICE_SERVERS`.
+- **Pricing** (SaaS, `BILLING_ENABLED=true`): Free — 3 personal boards and 20 AI tasks a month,
+  Pro and Team — unlimited boards; a 14-day Pro trial. Pay per month or year (a year costs 10
+  months) via YooKassa (rubles) or Stripe (dollars); a webhook confirms the payment and a repeated
+  notification never credits twice. For development — test payments with `BILLING_MOCK=true`.
+  Without `BILLING_ENABLED` there are no limits — by design for self-hosted installs.
+- **PWA and phones** — Prostor installs as an app (manifest, icons, offline shell, static and image
+  cache; the worker is `/prostor-sw.js`, enabled in production). On phones — a bottom toolbar,
+  compact headers and gestures: long press — menu, two-finger tap — undo, three-finger tap — redo.
+
 ## Public API and webhooks
 
 **API keys** are created in "Settings → API keys" (the key is shown once; only its
@@ -676,3 +721,4 @@ web gives `WS_PUBLIC_URL` to the client at runtime, so changing the WS domain do
 - [x] **8. Enterprise** — organizations, folders with inherited permissions, policies (with server-side protection against deleting others' objects), audit log with CSV, 2FA (TOTP), SSO (OIDC)
 - [x] **9. Performance and tests** — budgets for 10,000 objects (unit and browser), freeze-free export (Web Worker for PDF), WS load test, Docker images for the whole stack, deploy configs (Fly.io, nginx)
 - [x] **10. Extras** — attached arrows, presentations, search, tables, embeds, public API and webhooks, English interface, all Google fonts and custom fonts, sticker library, image cropping, image feed, audio
+- [x] **11. Design and platform** — lilac redesign and animations, light/dark theme, customizable toolbar, headings/lists/checklists/color in text, accurate minimap, shape libraries, charts from data, custom templates, import from draw.io/Excalidraw/Mermaid/Miro, video and screen recording, WebRTC calls, pricing with YooKassa/Stripe, PWA and mobile
