@@ -26,6 +26,7 @@ export async function BoardCard({ board }: { board: BoardListItem }) {
               id={board.id}
               templateKey={board.templateKey}
               thumbnailUrl={board.thumbnailUrl}
+              version={board.lastActivityAt}
             />
           </div>
         </div>

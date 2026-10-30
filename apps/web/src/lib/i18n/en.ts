@@ -785,6 +785,7 @@ export const EN: Readonly<Record<string, string>> = {
   'Импортировано объектов: {n}, пропущено: {skipped} (картинки и неподдерживаемые)':
     'Imported objects: {n}, skipped: {skipped} (images and unsupported)',
   'Импортировано объектов: {n}': 'Imported objects: {n}',
+  'Вставлено объектов: {n}, пропущено: {skipped}': 'Pasted objects: {n}, skipped: {skipped}',
   'Не удалось прочитать файл — формат не распознан':
     "Couldn't read the file — format not recognized",
   'Файл больше 20 МБ': 'The file is larger than 20 MB',

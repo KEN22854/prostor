@@ -21,6 +21,12 @@ export default auth((req) => {
   const { pathname, search } = req.nextUrl;
   const isLoggedIn = Boolean(req.auth?.user);
 
+  // Dev-прогрев (scripts/warmup.mjs): страница должна скомпилироваться, а не уйти
+  // в редирект. Права проверяет сама страница — без входа она всё равно отправит на /login
+  if (process.env.NODE_ENV === 'development' && req.headers.get('x-prostor-warmup') === '1') {
+    return NextResponse.next();
+  }
+
   if (matches(pathname, PROTECTED_PREFIXES) && !isLoggedIn) {
     const url = new URL('/login', req.nextUrl.origin);
     url.searchParams.set('callbackUrl', `${pathname}${search}`);

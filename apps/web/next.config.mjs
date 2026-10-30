@@ -31,6 +31,17 @@ const nextConfig = {
   devIndicators: false,
   poweredByHeader: false,
 
+  // Dev на Turbopack (`next dev --turbopack`): страницы компилируются в разы быстрее
+  // webpack. Webpack-настройки ниже действуют для production-сборки.
+  turbopack: {
+    resolveAlias: {
+      canvas: './empty-module.cjs',
+      // Одна копия Yjs: y-protocols подключает её через require (yjs.cjs), наш код — через
+      // import (yjs.mjs). Две копии ломают проверки instanceof Y.Map в данных доски.
+      yjs: '../../node_modules/yjs/dist/yjs.mjs',
+    },
+  },
+
   experimental: {
     // Tree-shaking «бочек» — lucide-react иначе тянет тысячи иконок в dev-сборку.
     optimizePackageImports: ['lucide-react', 'date-fns'],

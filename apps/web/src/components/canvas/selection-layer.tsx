@@ -63,7 +63,7 @@ export function SelectionLayer({
 
     const wanted = new Set(selection);
     const nodes: Konva.Node[] = [];
-    if (detail !== 'lod' && tool === 'select' && !editingId) {
+    if (tool === 'select' && !editingId) {
       for (const node of layer.getChildren()) {
         const id = node.id();
         if (!wanted.has(id)) continue;
@@ -80,7 +80,7 @@ export function SelectionLayer({
     tr.getLayer()?.batchDraw();
 
     const box =
-      selection.length > 0 && !lineId && (nodes.length < selection.length || detail === 'lod')
+      selection.length > 0 && !lineId && nodes.length < selection.length
         ? (store?.boundsOfIds(selection) ?? null)
         : null;
     overlay?.setSelectionBox(editingId ? null : box);

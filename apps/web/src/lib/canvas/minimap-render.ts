@@ -1,4 +1,16 @@
-import { assetUrl, type BoardElement } from '@prostor/shared';
+import {
+  assetUrl,
+  isRichFormatted,
+  type BoardElement,
+  type RichParagraph,
+  type ShapeElement,
+  type StickyElement,
+  type TextElement,
+} from '@prostor/shared';
+import { canvasFont } from '@/lib/canvas/fonts';
+import { measureText } from '@/lib/canvas/measure-text';
+import { drawRichLines } from '@/lib/rich-text/draw';
+import { layoutRich, type RichLayoutOptions, type RichLine } from '@/lib/rich-text/layout';
 import { NEUTRAL_FILL } from '@/lib/canvas/constants';
 import { PATH_SHAPES, shapePathData } from '@/lib/canvas/shape-paths';
 import { tableLayout } from '@/lib/canvas/table';
@@ -120,6 +132,57 @@ function drawText(
   ctx.restore();
 }
 
+/** Раскладка текста объекта: элементы неизменяемы, поэтому кэш по самому объекту */
+const layouts = new WeakMap<BoardElement, RichLine[]>();
+
+/**
+ * Текст объекта со всем форматированием (шрифт, начертание, цвета, выделение,
+ * списки, заголовки) — той же раскладкой, что на холсте. Пока буквы не читаются —
+ * штрихи-строки.
+ */
+function drawElementText(
+  ctx: CanvasRenderingContext2D,
+  el: StickyElement | ShapeElement | TextElement,
+  box: { x: number; y: number; w: number; h: number },
+  opts: Pick<RichLayoutOptions, 'align' | 'verticalAlign' | 'ellipsis'>,
+  scale: number,
+): void {
+  if (!el.text || box.w <= 0 || box.h <= 0) return;
+  if (el.fontSize * scale < TEXT_MIN_PX) {
+    drawText(ctx, el.text, box, el.fontSize, el.textColor, opts.align, scale);
+    return;
+  }
+  const family = canvasFont(el.fontFamily);
+  let lines = layouts.get(el);
+  if (!lines) {
+    const paragraphs: readonly RichParagraph[] =
+      isRichFormatted(el.rich) && el.rich
+        ? el.rich
+        : el.text.split('\n').map((text) => ({ runs: text ? [{ text }] : [] }));
+    lines = layoutRich(
+      paragraphs,
+      {
+        ...opts,
+        width: box.w,
+        height: box.h,
+        fontSize: el.fontSize,
+        family,
+        bold: el.fontWeight === 'bold',
+        italic: el.fontStyle === 'italic',
+      },
+      measureText,
+    );
+    layouts.set(el, lines);
+  }
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(box.x, box.y, box.w, box.h);
+  ctx.clip();
+  ctx.translate(box.x, box.y);
+  drawRichLines(ctx, lines, family, el.textColor);
+  ctx.restore();
+}
+
 function polyline(ctx: CanvasRenderingContext2D, pts: readonly number[]): void {
   ctx.beginPath();
   for (let i = 0; i + 1 < pts.length; i += 2) {
@@ -168,13 +231,11 @@ export function drawMinimapElement(
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = 'rgba(0,0,0,0.08)';
       ctx.fillRect(0, h - Math.max(px, h * 0.03), w, Math.max(px, h * 0.03));
-      drawText(
+      drawElementText(
         ctx,
-        el.text,
-        { x: 14, y: 14, w: w - 28, h: h - 28 },
-        el.fontSize,
-        el.textColor,
-        el.align,
+        el,
+        { x: 14, y: 14, w: w - 28, h: h - 28 - (el.authorName ? 16 : 0) },
+        { align: el.align, verticalAlign: el.verticalAlign, ellipsis: true },
         scale,
       );
       break;
@@ -193,26 +254,21 @@ export function drawMinimapElement(
         if (path) ctx.stroke(path);
         else ctx.stroke();
       }
-      if (el.text)
-        drawText(
-          ctx,
-          el.text,
-          { x: 8, y: 8, w: w - 16, h: h - 16 },
-          el.fontSize,
-          el.textColor,
-          'center',
-          scale,
-        );
+      drawElementText(
+        ctx,
+        el,
+        { x: 8, y: 8, w: w - 16, h: h - 16 },
+        { align: 'center', verticalAlign: 'middle', ellipsis: true },
+        scale,
+      );
       break;
     }
     case 'text':
-      drawText(
+      drawElementText(
         ctx,
-        el.text,
+        el,
         { x: 0, y: 0, w, h: Math.max(h, el.fontSize) },
-        el.fontSize,
-        el.textColor,
-        el.align,
+        { align: el.align, verticalAlign: el.verticalAlign, ellipsis: false },
         scale,
       );
       break;

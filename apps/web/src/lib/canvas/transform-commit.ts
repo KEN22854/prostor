@@ -1,4 +1,4 @@
-import type { BoardElement } from '@prostor/shared';
+import { FONT_SIZE_MIN, type BoardElement } from '@prostor/shared';
 import type { ElementPatch } from '@/lib/canvas/board-actions';
 
 export interface NodeTransform {
@@ -41,8 +41,12 @@ export function patchFromTransform(el: BoardElement, t: NodeTransform): ElementP
     width: round(Math.max(MIN_SIZE, el.width * sx)),
     height: round(Math.max(MIN_SIZE, el.height * sy)),
   };
-  if (el.type === 'text' && Math.abs(sx - 1) > 0.001 && Math.abs(sy - 1) > 0.001) {
-    patch.fontSize = Math.max(4, Math.min(512, Math.round(el.fontSize * sy)));
+  // Растяжение за угол (меняются обе стороны) — шрифт масштабируется вместе с объектом:
+  // у текста — по высоте, у фигур, стикеров и таблиц — по среднему из двух сторон.
+  // За боковую ручку меняется только ширина: текст переносится, размер прежний.
+  if ('fontSize' in el && Math.abs(sx - 1) > 0.001 && Math.abs(sy - 1) > 0.001) {
+    const factor = el.type === 'text' ? sy : Math.sqrt(sx * sy);
+    patch.fontSize = Math.max(FONT_SIZE_MIN, Math.round(el.fontSize * factor * 10) / 10);
   }
   return patch;
 }

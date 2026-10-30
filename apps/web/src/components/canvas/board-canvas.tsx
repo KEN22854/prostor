@@ -107,6 +107,9 @@ const TOOL_CURSOR: Partial<Record<CanvasTool, string>> = {
   vote: 'pointer',
 };
 
+/** Сколько выделенных объектов на дальнем масштабе остаются редактируемыми нодами */
+const LOD_EDITABLE_LIMIT = 300;
+
 /** Курсор ластика — квадрат его настоящего размера, как в Paint */
 function eraserCursor(size: number): string {
   const d = Math.min(size + 2, 126);
@@ -160,6 +163,7 @@ export function BoardCanvas({
   const size = useCanvasStore((s) => s.size);
   const detail = useCanvasStore((s) => detailLevel(s.camera.zoom));
   const tool = useCanvasStore((s) => s.tool);
+  const selection = useCanvasStore((s) => s.selection);
   const eraserArea = useCanvasStore((s) =>
     s.toolOptions.eraserMode === 'area' ? s.toolOptions.eraserSize : 0,
   );
@@ -169,6 +173,17 @@ export function BoardCanvas({
 
   const store = useElementStore(doc);
   const elements = useVisibleElements(store);
+  // На дальнем масштабе выделенное рисуется отдельными нодами (до разумного числа —
+  // иначе тысячи нод вернули бы тормоза, ради которых и есть LOD)
+  const [lodElements, lodSelected] = useMemo(() => {
+    if (detail !== 'lod' || selection.length === 0 || selection.length > LOD_EDITABLE_LIMIT)
+      return [elements, []];
+    const picked = new Set(selection);
+    return [
+      elements.filter((el) => !picked.has(el.id)),
+      elements.filter((el) => picked.has(el.id)),
+    ];
+  }, [elements, selection, detail]);
   const restored = useCameraPersistence(boardId);
   const [overlay, setOverlay] = useState<OverlayRenderer | null>(null);
   // Konva измеряет текст при создании ноды: после загрузки веб-шрифта (display: swap)
@@ -449,7 +464,19 @@ export function BoardCanvas({
           {/* Элементы без hit-графа: попадания считает собственный hit-test (lib/canvas/hit-test) */}
           <Layer key={fontEpoch} ref={elementsLayerRef} listening={false}>
             {detail === 'lod' ? (
-              <LodShape elements={elements} />
+              <>
+                <LodShape elements={lodElements} />
+                {/* Выделенные — настоящими нодами поверх: к ним цепляется рамка с ручками */}
+                {lodSelected.map((el) => (
+                  <ElementNode
+                    key={el.id}
+                    element={el}
+                    detail="full"
+                    editing={el.id === editingId}
+                    editingCell={editingCell?.id === el.id ? editingCell : null}
+                  />
+                ))}
+              </>
             ) : (
               elements.map((el) => (
                 <ElementNode

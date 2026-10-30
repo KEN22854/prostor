@@ -1,3 +1,5 @@
+'use client';
+
 import {
   GitBranch,
   KanbanSquare,
@@ -9,6 +11,9 @@ import {
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { boardPreview } from '@/lib/export/board-preview';
+import { cn } from '@/lib/utils';
 
 const ICONS: Record<string, LucideIcon> = {
   blank: Square,
@@ -32,13 +37,59 @@ interface BoardThumbnailProps {
   id: string;
   templateKey: string | null;
   thumbnailUrl: string | null;
+  /** Время последней правки доски: есть — рисуем её настоящее содержимое */
+  version?: string;
 }
 
 /**
- * Превью доски. Пока worker не рендерит настоящие миниатюры (итерация 7),
- * показываем градиент с иконкой шаблона.
+ * Превью доски: её содержимое, нарисованное тем же рендером, что экспорт в PNG.
+ * Рисуется, когда карточка появляется на экране, и кэшируется до следующей правки.
+ * Пустая доска и шаблоны в окне создания — градиент с иконкой шаблона.
  */
-export function BoardThumbnail({ id, templateKey, thumbnailUrl }: BoardThumbnailProps) {
+export function BoardThumbnail({ id, templateKey, thumbnailUrl, version }: BoardThumbnailProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [preview, setPreview] = useState<string | null | undefined>(version ? undefined : null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!version || !el || thumbnailUrl) return;
+    let cancelled = false;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        observer.disconnect();
+        void boardPreview(id, version).then((url) => !cancelled && setPreview(url));
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(el);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
+  }, [id, version, thumbnailUrl]);
+
+  if (version && !thumbnailUrl && preview !== null) {
+    return (
+      <div ref={ref} className="relative aspect-[16/10] w-full overflow-hidden bg-canvas">
+        {!loaded ? <div className="skeleton absolute inset-0" aria-hidden /> : null}
+        {preview ? (
+          // eslint-disable-next-line @next/next/no-img-element -- object URL нарисованного в браузере превью
+          <img
+            src={preview}
+            alt=""
+            onLoad={() => setLoaded(true)}
+            className={cn(
+              'absolute inset-0 size-full object-contain transition-opacity duration-500 ease-smooth',
+              loaded ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
   if (thumbnailUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- превью отдаёт /api/assets с проверкой прав, оптимизатор next/image тут не нужен

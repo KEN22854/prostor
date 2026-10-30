@@ -14,7 +14,7 @@ import {
   Type,
   type LucideIcon,
 } from 'lucide-react';
-import type { BoardElement } from '@prostor/shared';
+import { FONT_SIZE_MIN, type BoardElement } from '@prostor/shared';
 import { ColorSwatches } from '@/components/canvas/color-swatches';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -36,7 +36,10 @@ export const TEXT_COLORS = [
   '#ffffff',
 ] as const;
 
-const SIZES = [12, 14, 16, 20, 24, 32, 48, 64, 96] as const;
+const SIZES = [8, 12, 14, 16, 20, 24, 32, 48, 64, 96, 128, 200] as const;
+
+/** Дробный размер после растяжения объекта — до десятых, без хвоста нулей */
+const formatSize = (size: number) => String(Math.round(size * 10) / 10);
 
 type TextStyled = BoardElement & {
   fontSize: number;
@@ -112,8 +115,9 @@ export function TextStyleControls({
   const step = (dir: 1 | -1) => {
     const next =
       dir > 0
-        ? (SIZES.find((s) => s > size) ?? Math.min(512, size + 16))
-        : ([...SIZES].reverse().find((s) => s < size) ?? Math.max(4, size - 2));
+        ? (SIZES.find((s) => s > size) ?? Math.round(size * 1.25))
+        : ([...SIZES].reverse().find((s) => s < size) ??
+          Math.max(FONT_SIZE_MIN, Math.ceil(size) - 1));
     setSize(next);
   };
 
@@ -129,7 +133,7 @@ export function TextStyleControls({
               aria-label={t('Стиль текста')}
             >
               <Type />
-              <span className="text-xs tabular-nums">{size}</span>
+              <span className="text-xs tabular-nums">{formatSize(size)}</span>
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
@@ -154,13 +158,13 @@ export function TextStyleControls({
             </Button>
             <input
               type="number"
-              min={4}
-              max={512}
-              value={size}
+              min={FONT_SIZE_MIN}
+              step="any"
+              value={formatSize(size)}
               aria-label={t('Размер шрифта')}
               onChange={(e) => {
                 const v = Number(e.target.value);
-                if (Number.isFinite(v) && v >= 4 && v <= 512) setSize(v);
+                if (Number.isFinite(v) && v >= FONT_SIZE_MIN) setSize(v);
               }}
               className="h-8 w-16 rounded-lg border bg-background text-center text-sm tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />

@@ -63,6 +63,37 @@ describe('patchFromTransform', () => {
     );
   });
 
+  it('шрифт растёт вместе с фигурой без верхнего предела и не меньше 1', () => {
+    const el = {
+      ...base,
+      type: 'shape',
+      shape: 'rect',
+      width: 100,
+      height: 100,
+      fontSize: 200,
+    } as unknown as BoardElement;
+    const grow = { x: 0, y: 0, rotation: 0, scaleX: 8, scaleY: 8 };
+    expect(patchFromTransform(el, grow).fontSize).toBe(1600);
+    const shrink = { x: 0, y: 0, rotation: 0, scaleX: 0.001, scaleY: 0.001 };
+    expect(patchFromTransform(el, shrink).fontSize).toBe(1);
+    // Только ширина — подпись прежнего размера
+    const wide = { x: 0, y: 0, rotation: 0, scaleX: 2, scaleY: 1 };
+    expect(patchFromTransform(el, wide).fontSize).toBeUndefined();
+  });
+
+  it('стикер за угол: шрифт по среднему из двух сторон', () => {
+    const el = {
+      ...base,
+      type: 'sticky',
+      width: 200,
+      height: 200,
+      fontSize: 18,
+    } as unknown as BoardElement;
+    expect(patchFromTransform(el, { x: 0, y: 0, rotation: 0, scaleX: 2, scaleY: 8 }).fontSize).toBe(
+      72,
+    );
+  });
+
   it('размер не меньше минимума', () => {
     const el = { ...base, type: 'sticky', width: 100, height: 100 } as unknown as BoardElement;
     const patch = patchFromTransform(el, { x: 0, y: 0, rotation: 0, scaleX: 0.01, scaleY: 0.01 });

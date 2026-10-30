@@ -1,33 +1,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
-/** Сиреневая искра логотипа — четырёхлучевая звезда с вогнутыми сторонами */
-const sparkle = (cx: number, cy: number, r: number) =>
-  `M${cx} ${cy - r}Q${cx} ${cy} ${cx + r} ${cy}Q${cx} ${cy} ${cx} ${cy + r}Q${cx} ${cy} ${cx - r} ${cy}Q${cx} ${cy} ${cx} ${cy - r}Z`;
-
-/** Знак «Простора» — буква «о» из логотипа: круг со стрелкой-курсором и искрой */
+/** Знак «Простора» — иконка приложения: буква P со стрелкой-курсором, орбитой и искрой */
 export function LogoMark({ className }: { className?: string }) {
-  const mask = useId();
   return (
-    <span className={cn('relative inline-flex size-8 shrink-0', className)} aria-hidden>
-      <svg viewBox="0 0 32 32" className="size-full">
-        <mask id={mask}>
-          <rect width="32" height="32" fill="white" />
-          <path
-            d="M18.07 12.44L8.1 17.09L12.34 18.83L13.58 23.15Z"
-            fill="black"
-            stroke="black"
-            strokeWidth="1.2"
-            strokeLinejoin="round"
-          />
-        </mask>
-        <circle cx="14" cy="18" r="13" fill="none" stroke="#a98fe3" strokeWidth="1.6" />
-        <circle cx="14" cy="18" r="10.8" className="fill-foreground" mask={`url(#${mask})`} />
-        <path d={sparkle(27.5, 4.5, 4.5)} fill="#a98fe3" />
-      </svg>
-    </span>
+    <Image
+      src="/brand/icon.svg"
+      alt=""
+      width={32}
+      height={32}
+      unoptimized
+      aria-hidden
+      className={cn('size-8 shrink-0', className)}
+    />
   );
 }
 

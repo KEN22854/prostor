@@ -16,6 +16,9 @@ import { EMBED_PROVIDERS } from './embeds';
  */
 
 const finite = z.number().finite();
+
+/** Наименьший размер шрифта; верхнего предела нет — шрифт масштабируется вместе с объектом */
+export const FONT_SIZE_MIN = 1;
 const color = z.string().max(64);
 
 export const ELEMENT_TYPES = [
@@ -75,7 +78,8 @@ export const baseElementSchema = z.object({
 
 const textStyleSchema = z.object({
   fontFamily: z.string().max(64).default('Inter'),
-  fontSize: finite.min(4).max(512).default(16),
+  /** Размер шрифта: от 1 и без верхнего предела — растёт вместе с объектом */
+  fontSize: finite.min(FONT_SIZE_MIN).default(16),
   fontWeight: z.enum(['normal', 'bold']).default('normal'),
   fontStyle: z.enum(['normal', 'italic']).default('normal'),
   align: z.enum(['left', 'center', 'right']).default('left'),
@@ -293,7 +297,7 @@ export const tableSchema = baseElementSchema.extend({
   headerFill: color.default('#f1f5f9'),
   stroke: color.default('#cbd5e1'),
   color: color.default('#1f2937'),
-  fontSize: finite.min(6).max(96).default(14),
+  fontSize: finite.min(FONT_SIZE_MIN).default(14),
   cells: z.array(z.array(z.string().max(TABLE_LIMITS.maxCellLength))).optional(),
 });
 
