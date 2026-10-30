@@ -27,6 +27,7 @@ import { useVotingSync } from '@/hooks/use-voting-sync';
 import { useYjs } from '@/hooks/use-yjs';
 import { useCall } from '@/hooks/use-call';
 import { CallButton, CallPanel } from '@/components/board/call-panel';
+import { BoardMobileMenu } from '@/components/board/board-mobile-menu';
 
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useCommentsStore } from '@/stores/comments-store';
@@ -97,7 +98,7 @@ export function BoardRoom({
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex h-dvh flex-col">
-        <header className="glass z-10 flex h-14 shrink-0 animate-appear items-center gap-3 border-x-0 border-t-0 px-3">
+        <header className="glass z-10 flex h-14 shrink-0 animate-appear items-center gap-1 border-x-0 border-t-0 px-1.5 sm:gap-3 sm:px-3">
           <Button asChild variant="ghost" size="icon" aria-label={t('К списку досок')}>
             <Link href={isAuthenticated ? '/dashboard' : '/'}>
               <ArrowLeft />
@@ -122,15 +123,18 @@ export function BoardRoom({
             {count.toLocaleString(locale)} {tp(count, ['объект', 'объекта', 'объектов'])}
           </span>
 
-          <div className="ml-auto flex items-center gap-2">
-            {canEdit && isAuthenticated && !preview ? (
-              <StartVotingButton boardId={boardId} />
-            ) : null}
-            <BoardTimerControl
-              doc={connection?.doc ?? null}
-              canControl={canEdit && !preview}
-              userName={user?.name ?? ''}
-            />
+          <div className="ml-auto flex items-center gap-0.5 sm:gap-2">
+            {/* На телефоне второстепенное — в меню «⋯» (BoardMobileMenu) */}
+            <div className="hidden md:contents">
+              {canEdit && isAuthenticated && !preview ? (
+                <StartVotingButton boardId={boardId} />
+              ) : null}
+              <BoardTimerControl
+                doc={connection?.doc ?? null}
+                canControl={canEdit && !preview}
+                userName={user?.name ?? ''}
+              />
+            </div>
             {canEdit ? (
               <>
                 <Tooltip>
@@ -174,6 +178,7 @@ export function BoardRoom({
                     variant="ghost"
                     size="icon"
                     aria-label={t('Экспорт')}
+                    className="hidden md:inline-flex"
                     onClick={() => useCanvasStore.getState().setPanel('export')}
                   >
                     <Download />
@@ -207,7 +212,9 @@ export function BoardRoom({
               <TooltipContent>{t('Обсуждения')}</TooltipContent>
             </Tooltip>
             {isAuthenticated && can(effectiveRole, 'copy', policy) && !preview ? (
-              <SaveTemplateDialog boardId={boardId} title={title} org={org} />
+              <div className="hidden md:contents">
+                <SaveTemplateDialog boardId={boardId} title={title} org={org} />
+              </div>
             ) : null}
             {canEdit && isAuthenticated ? (
               <Tooltip>
@@ -216,6 +223,7 @@ export function BoardRoom({
                     variant="ghost"
                     size="icon"
                     aria-label={t('История версий')}
+                    className="hidden md:inline-flex"
                     onClick={() => {
                       const s = useCanvasStore.getState();
                       s.setPanel(s.panel === 'history' ? null : 'history');
@@ -227,10 +235,20 @@ export function BoardRoom({
                 <TooltipContent>{t('История версий')}</TooltipContent>
               </Tooltip>
             ) : null}
+            <BoardMobileMenu
+              canExport={can(effectiveRole, 'export', policy)}
+              canHistory={canEdit && isAuthenticated}
+            />
             {!preview ? <CallButton call={call} /> : null}
-            <PresenceAvatars users={presence} awareness={preview ? null : awareness} />
+            <div className="hidden sm:contents">
+              <PresenceAvatars users={presence} awareness={preview ? null : awareness} />
+            </div>
             <ThemeToggle className="hidden sm:inline-flex" />
-            {isAuthenticated ? <NotificationsBell /> : null}
+            {isAuthenticated ? (
+              <div className="hidden sm:contents">
+                <NotificationsBell />
+              </div>
+            ) : null}
             {isAuthenticated ? <ShareDialog boardId={boardId} title={title} /> : null}
           </div>
         </header>

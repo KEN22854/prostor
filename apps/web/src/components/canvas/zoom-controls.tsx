@@ -42,7 +42,7 @@ export function ZoomControls({
 
   return (
     <div
-      className="floating-panel absolute bottom-4 left-4 z-10 flex items-center gap-1 p-1 duration-300 animate-in fade-in-0 zoom-in-95"
+      className="floating-panel absolute bottom-4 left-4 z-10 hidden items-center gap-1 p-1 duration-300 animate-in fade-in-0 zoom-in-95 sm:flex"
       onPointerDown={(e) => e.stopPropagation()}
     >
       {showNavTools ? (

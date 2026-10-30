@@ -35,6 +35,7 @@ import { ChartEditor } from '@/components/canvas/chart-editor';
 import { VideoButton } from '@/components/canvas/video-button';
 import { VideoPlayer } from '@/components/canvas/video-player';
 import { useVideoInsert } from '@/hooks/use-video-insert';
+import { useTouchGestures } from '@/hooks/use-touch-gestures';
 import { ImportDialog } from '@/components/canvas/import-dialog';
 import { ShapeLibraryPanel } from '@/components/canvas/shape-library-panel';
 import { ToolPalette } from '@/components/canvas/tool-palette';
@@ -388,6 +389,13 @@ export function BoardCanvas({
   }, [store, overlay, doc, openImagePicker, t]);
 
   useCanvasInteractions(containerRef, controllerDeps);
+  const touchUndo = useCallback(() => {
+    if (actions?.canEdit) undoManager?.undo();
+  }, [actions, undoManager]);
+  const touchRedo = useCallback(() => {
+    if (actions?.canEdit) undoManager?.redo();
+  }, [actions, undoManager]);
+  useTouchGestures(containerRef, { onUndo: touchUndo, onRedo: touchRedo });
   useBoardHotkeys({ actions, store, undoManager, openImagePicker: () => openImagePicker() });
   useBoardClipboard({
     containerRef,

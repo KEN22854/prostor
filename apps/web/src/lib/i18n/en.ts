@@ -902,4 +902,5 @@ export const EN: Readonly<Record<string, string>> = {
   'Оплата картой или СБП через ЮKassa, за рубежом — через Stripe. Без автосписаний: продлевайте, когда удобно':
     'Pay by card or SBP via YooKassa, or via Stripe abroad. No auto-renewal: extend whenever you like',
   'Тариф вашей организации': 'Your organization plan',
+  Ещё: 'More',
 };

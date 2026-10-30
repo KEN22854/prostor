@@ -15,7 +15,7 @@ interface UserMenuProps {
 export async function UserMenu({ name, email }: UserMenuProps) {
   const t = await getT();
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1 sm:gap-3">
       <div className="hidden text-right text-sm sm:block">
         <div className="font-medium leading-tight">{name ?? email}</div>
         {name ? <div className="text-xs text-muted-foreground">{email}</div> : null}
@@ -34,9 +34,9 @@ export async function UserMenu({ name, email }: UserMenuProps) {
         </Link>
       </Button>
       <form action={signOutAction}>
-        <Button type="submit" variant="ghost" size="sm">
+        <Button type="submit" variant="ghost" size="sm" aria-label={t('Выйти')}>
           <LogOut />
-          {t('Выйти')}
+          <span className="hidden sm:inline">{t('Выйти')}</span>
         </Button>
       </form>
     </div>

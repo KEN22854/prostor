@@ -70,7 +70,9 @@ export function ConnectionStatusIndicator({
           )}
         >
           <StatusIcon status={status} />
-          <span>{pending ? t('Офлайн · есть несохранённое') : t(view.label)}</span>
+          <span className="hidden sm:inline">
+            {pending ? t('Офлайн · есть несохранённое') : t(view.label)}
+          </span>
         </div>
       </TooltipTrigger>
       <TooltipContent side="bottom">

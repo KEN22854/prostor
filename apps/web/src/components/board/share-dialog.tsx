@@ -22,8 +22,8 @@ export function ShareDialog({ boardId, title }: { boardId: string; title: string
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">
-          <Share2 /> {t('Поделиться')}
+        <Button size="sm" aria-label={t('Поделиться')}>
+          <Share2 /> <span className="hidden sm:inline">{t('Поделиться')}</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-xl">

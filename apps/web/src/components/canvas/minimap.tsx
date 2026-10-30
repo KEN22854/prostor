@@ -186,7 +186,7 @@ export function Minimap({ store }: { store: ElementStore | null }) {
       <Button
         variant="outline"
         size="icon"
-        className="absolute bottom-4 right-4 bg-background shadow-sm"
+        className="absolute bottom-4 right-4 hidden bg-background shadow-sm sm:inline-flex"
         onClick={() => setOpen(true)}
         aria-label={t('Показать мини-карту')}
       >
@@ -196,7 +196,7 @@ export function Minimap({ store }: { store: ElementStore | null }) {
   }
 
   return (
-    <div className="floating-panel absolute bottom-4 right-4 overflow-hidden duration-300 animate-in fade-in-0 zoom-in-95">
+    <div className="floating-panel absolute bottom-4 right-4 hidden overflow-hidden duration-300 animate-in fade-in-0 zoom-in-95 sm:block">
       <canvas
         ref={canvasRef}
         style={{ width: WIDTH, height: HEIGHT }}

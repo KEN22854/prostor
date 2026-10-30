@@ -25,7 +25,8 @@ import {
   Type,
 } from 'lucide-react';
 import Link from 'next/link';
-import { Fragment, type ComponentType, type ReactNode } from 'react';
+import { createContext, Fragment, useContext, type ComponentType, type ReactNode } from 'react';
+import { COMPACT_QUERY, useMediaQuery } from '@/hooks/use-media-query';
 import { DEFAULT_PINNED_TOOLS, SHAPE_KINDS } from '@prostor/shared';
 import { ShapeGlyph, shapeIcon } from '@/components/canvas/shape-glyph';
 import { SHAPE_LABELS } from '@/lib/canvas/shape-paths';
@@ -44,6 +45,9 @@ import {
 import { useT } from '@/lib/i18n/client';
 
 const SHAPES = SHAPE_KINDS.map((kind) => ({ kind, label: SHAPE_LABELS[kind] }));
+
+/** С какой стороны открывать подсказки и меню: справа от панели или над нижней полосой */
+const PaletteSide = createContext<'right' | 'top'>('right');
 
 const PEN_WIDTHS = [2, 4, 8, 14] as const;
 
@@ -96,7 +100,7 @@ function ToolButton({ tool, icon: Icon, label, hotkey, onSelect }: ToolButtonPro
           ) : null}
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="right">
+      <TooltipContent side={useContext(PaletteSide)}>
         {label} <kbd className="ml-1 opacity-70">{hotkey}</kbd>
       </TooltipContent>
     </Tooltip>
@@ -115,7 +119,7 @@ function ToolWithOptions({ children, ...props }: ToolButtonProps & { children: R
         </div>
       </PopoverTrigger>
       <PopoverContent
-        side="right"
+        side={useContext(PaletteSide)}
         align="start"
         className="w-56 space-y-3"
         onOpenAutoFocus={(e) => e.preventDefault()}
@@ -179,6 +183,11 @@ export function ToolPalette({
   canCustomize = false,
 }: ToolPaletteProps) {
   const t = useT();
+  const compact = useMediaQuery(COMPACT_QUERY);
+  const side = compact ? 'top' : 'right';
+  const separator = compact
+    ? 'mx-0.5 my-1.5 w-px shrink-0 bg-border'
+    : 'mx-1.5 my-0.5 h-px bg-border';
   const options = useCanvasStore((s) => s.toolOptions);
   const setOptions = useCanvasStore((s) => s.setToolOptions);
   const setTool = useCanvasStore((s) => s.setTool);
@@ -201,7 +210,7 @@ export function ToolPalette({
           {icon}
         </Button>
       </TooltipTrigger>
-      <TooltipContent side="right">{tip ?? label}</TooltipContent>
+      <TooltipContent side={side}>{tip ?? label}</TooltipContent>
     </Tooltip>
   );
 
@@ -495,97 +504,106 @@ export function ToolPalette({
       : []),
   ];
 
-  const pinned = entries.filter((e) => pinnedIds.includes(e.id));
-  const more = entries.filter((e) => !pinnedIds.includes(e.id));
+  // На телефоне — нижняя полоса с пятью первыми закреплёнными, остальное в «…»
+  const visibleIds = compact ? pinnedIds.slice(0, 5) : pinnedIds;
+  const pinned = entries.filter((e) => visibleIds.includes(e.id));
+  const more = entries.filter((e) => !visibleIds.includes(e.id));
   // Выбран инструмент из «…» — подсвечиваем саму кнопку «…»
   const moreActive = more.some((e) => e.tool !== undefined && e.tool === currentTool);
 
   return (
-    <div
-      className="floating-panel absolute left-3 top-1/2 z-10 flex max-h-[calc(100%-1.5rem)] -translate-y-1/2 animate-appear flex-col gap-0.5 overflow-y-auto p-1 [scrollbar-width:none]"
-      role="toolbar"
-      aria-label={t('Инструменты')}
-      aria-orientation="vertical"
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      {pinned.map((e, i) => (
-        <Fragment key={e.id}>
-          {i === 2 ? <span className="mx-1.5 my-0.5 h-px bg-border" aria-hidden /> : null}
-          {e.node}
-        </Fragment>
-      ))}
+    <PaletteSide.Provider value={side}>
+      <div
+        className={cn(
+          'floating-panel absolute z-10 flex animate-appear gap-0.5 p-1 [scrollbar-width:none]',
+          compact
+            ? 'bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-1/2 max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-row overflow-x-auto'
+            : 'left-3 top-1/2 max-h-[calc(100%-1.5rem)] -translate-y-1/2 flex-col overflow-y-auto',
+        )}
+        role="toolbar"
+        aria-label={t('Инструменты')}
+        aria-orientation={compact ? 'horizontal' : 'vertical'}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {pinned.map((e, i) => (
+          <Fragment key={e.id}>
+            {i === 2 ? <span className={separator} aria-hidden /> : null}
+            {e.node}
+          </Fragment>
+        ))}
 
-      <span className="mx-1.5 my-0.5 h-px bg-border" aria-hidden />
-      <Popover>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
+        <span className={separator} aria-hidden />
+        <Popover>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    'size-9 rounded-xl transition-all duration-200 hover:scale-105 data-[state=open]:bg-accent data-[state=open]:text-primary',
+                    moreActive && 'bg-brand-gradient shadow-glow text-white hover:text-white',
+                  )}
+                  aria-label={t('Ещё инструменты')}
+                >
+                  <MoreHorizontal />
+                </Button>
+              </PopoverTrigger>
+            </TooltipTrigger>
+            <TooltipContent side={side}>{t('Ещё инструменты')}</TooltipContent>
+          </Tooltip>
+          <PopoverContent
+            side={side}
+            align="end"
+            className="w-auto space-y-3 p-3"
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <Section title={t('Ещё инструменты')}>
+              <div className="grid grid-cols-4 gap-1">
+                {more.map((e) => (
+                  <Fragment key={e.id}>{e.node}</Fragment>
+                ))}
+              </div>
+            </Section>
+            <Section title={t('Привязка')}>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn('h-8 rounded-lg', snapToObjects && 'bg-accent text-primary')}
+                  aria-pressed={snapToObjects}
+                  onClick={() => setSnap({ snapToObjects: !snapToObjects })}
+                  title={t('Привязка к объектам (Alt — временно выключить)')}
+                >
+                  <Magnet /> {t('К объектам')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn('h-8 rounded-lg', snapToGrid && 'bg-accent text-primary')}
+                  aria-pressed={snapToGrid}
+                  onClick={() => setSnap({ snapToGrid: !snapToGrid })}
+                  title={t('Привязка к сетке')}
+                >
+                  <Grid3x3 /> {t('К сетке')}
+                </Button>
+              </div>
+            </Section>
+            {canCustomize ? (
               <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  'size-9 rounded-xl transition-all duration-200 hover:scale-105 data-[state=open]:bg-accent data-[state=open]:text-primary',
-                  moreActive && 'bg-brand-gradient shadow-glow text-white hover:text-white',
-                )}
-                aria-label={t('Ещё инструменты')}
-              >
-                <MoreHorizontal />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="right">{t('Ещё инструменты')}</TooltipContent>
-        </Tooltip>
-        <PopoverContent
-          side="right"
-          align="end"
-          className="w-auto space-y-3 p-3"
-          onPointerDown={(e) => e.stopPropagation()}
-        >
-          <Section title={t('Ещё инструменты')}>
-            <div className="grid grid-cols-4 gap-1">
-              {more.map((e) => (
-                <Fragment key={e.id}>{e.node}</Fragment>
-              ))}
-            </div>
-          </Section>
-          <Section title={t('Привязка')}>
-            <div className="flex gap-1">
-              <Button
+                asChild
                 variant="ghost"
                 size="sm"
-                className={cn('h-8 rounded-lg', snapToObjects && 'bg-accent text-primary')}
-                aria-pressed={snapToObjects}
-                onClick={() => setSnap({ snapToObjects: !snapToObjects })}
-                title={t('Привязка к объектам (Alt — временно выключить)')}
+                className="w-full justify-start text-muted-foreground"
               >
-                <Magnet /> {t('К объектам')}
+                <Link href="/settings#toolbar" target="_blank">
+                  <Settings2 /> {t('Настроить панель…')}
+                </Link>
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn('h-8 rounded-lg', snapToGrid && 'bg-accent text-primary')}
-                aria-pressed={snapToGrid}
-                onClick={() => setSnap({ snapToGrid: !snapToGrid })}
-                title={t('Привязка к сетке')}
-              >
-                <Grid3x3 /> {t('К сетке')}
-              </Button>
-            </div>
-          </Section>
-          {canCustomize ? (
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-muted-foreground"
-            >
-              <Link href="/settings#toolbar" target="_blank">
-                <Settings2 /> {t('Настроить панель…')}
-              </Link>
-            </Button>
-          ) : null}
-        </PopoverContent>
-      </Popover>
-    </div>
+            ) : null}
+          </PopoverContent>
+        </Popover>
+      </div>
+    </PaletteSide.Provider>
   );
 }

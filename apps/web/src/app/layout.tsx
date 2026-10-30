@@ -23,14 +23,20 @@ export async function generateMetadata(): Promise<Metadata> {
       ? 'Infinite online whiteboard: stickies, diagrams, mind maps, kanban and docs — with your team in real time.'
       : 'Бесконечная онлайн-доска: стикеры, схемы, mind map, канбан и документы — вместе с командой в реальном времени.',
     applicationName: en ? 'Prostor' : 'Простор',
+    // Установленное приложение на iOS: полноэкранный режим и подпись под иконкой
+    appleWebApp: { capable: true, title: en ? 'Prostor' : 'Простор', statusBarStyle: 'default' },
   };
 }
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#12141c' },
+    { media: '(prefers-color-scheme: light)', color: '#fbf9fe' },
+    { media: '(prefers-color-scheme: dark)', color: '#140f1d' },
   ],
+  // Телефон: без автозума страницы (холст масштабируется жестами сам) и под «чёлкой»
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
