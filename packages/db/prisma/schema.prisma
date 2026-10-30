@@ -45,6 +45,8 @@ enum Plan {
 enum PaymentProvider {
   YOOKASSA
   STRIPE
+  /// Тестовая оплата для разработки (BILLING_MOCK), без денег
+  MOCK
 }
 
 enum PaymentStatus {

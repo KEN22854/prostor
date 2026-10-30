@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { apiRequest } from '@/lib/fetcher';
-import { errorMessage } from '@/lib/utils';
+import { toastApiError } from '@/lib/plan-limit';
 import { useT } from '@/lib/i18n/client';
 
 export function BoardCardMenu({ board }: { board: BoardListItem }) {
@@ -34,7 +34,8 @@ export function BoardCardMenu({ board }: { board: BoardListItem }) {
       toast.success(t('Копия создана'), { id: toastId });
       router.refresh();
     } catch (error: unknown) {
-      toast.error(errorMessage(error, t('Не удалось скопировать доску')), { id: toastId });
+      toast.dismiss(toastId);
+      toastApiError(error, t('Не удалось скопировать доску'), { plans: t('Тарифы') });
     }
   }
 

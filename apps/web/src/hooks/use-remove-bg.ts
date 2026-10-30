@@ -1,5 +1,6 @@
 'use client';
 
+import { toastApiError } from '@/lib/plan-limit';
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { AiJobDto, ImageElement } from '@prostor/shared';
@@ -8,7 +9,6 @@ import type { BoardActions } from '@/lib/canvas/board-actions';
 import { buildImage, nextZIndex } from '@/lib/canvas/element-factory';
 import type { ElementStore } from '@/lib/canvas/element-store';
 import { apiRequest } from '@/lib/fetcher';
-import { errorMessage } from '@/lib/utils';
 import { useAiStore } from '@/stores/ai-store';
 import { useCanvasStore } from '@/stores/canvas-store';
 import type * as Y from 'yjs';
@@ -126,7 +126,7 @@ export function useRemoveBg({ boardId, doc, store, actions, userId }: RemoveBgDe
           toast.success('Изображение изменилось во время обработки — результат добавлен рядом');
         }
       } catch (error: unknown) {
-        if (!isAbort(error)) toast.error(errorMessage(error, 'Не удалось удалить фон'));
+        if (!isAbort(error)) toastApiError(error, 'Не удалось удалить фон', { plans: 'Тарифы' });
       } finally {
         useAiStore.getState().finish(key);
       }

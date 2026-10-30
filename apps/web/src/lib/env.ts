@@ -89,6 +89,23 @@ const serverEnvSchema = z.object({
   OPENAI_API_KEY: optionalSecret,
   LLM_BASE_URL: optional(z.string().url()),
   LLM_MODEL: optional(z.string()),
+
+  /** Тарифы и лимиты (SaaS). Не задано — без ограничений (установка на своём сервере) */
+  BILLING_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  /** ЮKassa: идентификатор магазина и секретный ключ (оплата в рублях) */
+  YOOKASSA_SHOP_ID: optionalSecret,
+  YOOKASSA_SECRET_KEY: optionalSecret,
+  /** Stripe: секретный ключ и секрет подписи вебхука (оплата в долларах) */
+  STRIPE_SECRET_KEY: optionalSecret,
+  STRIPE_WEBHOOK_SECRET: optionalSecret,
+  /** Тестовая оплата без денег — только для разработки и демо */
+  BILLING_MOCK: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

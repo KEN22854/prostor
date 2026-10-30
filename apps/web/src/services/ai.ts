@@ -15,6 +15,7 @@ import { aiQueue } from '@/lib/queue';
 import { rateLimit } from '@/lib/rate-limit';
 import type { SessionUser } from '@/lib/session';
 import { audit } from '@/services/audit';
+import { requireAiQuota } from '@/services/billing';
 import { requireBoardAccess } from '@/services/boards';
 
 /** Лимиты: ИИ дорогой (деньги у Replicate, GPU/CPU у локального rembg) */
@@ -58,6 +59,7 @@ async function guardLimits(
       },
     );
   }
+  await requireAiQuota(user.id);
   const active = await prisma.aiJob.count({
     where: { userId: user.id, status: { in: ['QUEUED', 'RUNNING'] } },
   });

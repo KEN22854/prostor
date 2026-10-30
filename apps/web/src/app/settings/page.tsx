@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Gem } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -43,8 +43,8 @@ export default async function AccountSettingsPage() {
   const dateFmt = new Intl.DateTimeFormat('ru', { dateStyle: 'long', timeStyle: 'short' });
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/40">
+      <header className="glass sticky top-0 z-30 border-x-0 border-t-0">
         <div className="container flex h-14 items-center gap-2">
           <Button asChild variant="ghost" size="icon" aria-label={t('К списку досок')}>
             <Link href="/dashboard">
@@ -56,6 +56,24 @@ export default async function AccountSettingsPage() {
       </header>
 
       <main className="container max-w-2xl space-y-6 py-8">
+        <Link
+          href="/settings/billing"
+          className="lift shadow-soft group flex items-center justify-between gap-3 rounded-2xl border bg-card p-5"
+        >
+          <span className="flex items-center gap-3">
+            <span className="bg-brand-gradient shadow-glow flex size-10 items-center justify-center rounded-xl text-white">
+              <Gem className="size-5" />
+            </span>
+            <span>
+              <span className="block font-semibold">{t('Тариф и оплата')}</span>
+              <span className="block text-sm text-muted-foreground">
+                {t('Лимиты, пробный период Pro, история платежей')}
+              </span>
+            </span>
+          </span>
+          <ChevronRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+        </Link>
+
         <Card>
           <CardHeader>
             <CardTitle>{t('Профиль')}</CardTitle>

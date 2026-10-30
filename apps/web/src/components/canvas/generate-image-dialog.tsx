@@ -20,8 +20,9 @@ import type { BoardActions } from '@/lib/canvas/board-actions';
 import { buildImage, nextZIndex } from '@/lib/canvas/element-factory';
 import { displaySize } from '@/lib/canvas/image-upload';
 import { visibleBounds } from '@/lib/canvas/viewport';
-import { ApiClientError, apiRequest } from '@/lib/fetcher';
-import { cn, errorMessage } from '@/lib/utils';
+import { apiRequest } from '@/lib/fetcher';
+import { toastApiError } from '@/lib/plan-limit';
+import { cn } from '@/lib/utils';
 import { useAiStore } from '@/stores/ai-store';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useT } from '@/lib/i18n/client';
@@ -130,11 +131,7 @@ export function GenerateImageDialog({
       useCanvasStore.getState().select(actions.create([el]));
     } catch (error: unknown) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
-      toast.error(
-        error instanceof ApiClientError
-          ? error.message
-          : errorMessage(error, t('Не удалось сгенерировать изображение')),
-      );
+      toastApiError(error, t('Не удалось сгенерировать изображение'), { plans: t('Тарифы') });
     } finally {
       setSubmitting(false);
       if (key) useAiStore.getState().finish(key);

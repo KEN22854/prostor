@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/fetcher';
+import { toastApiError } from '@/lib/plan-limit';
 import { cn, errorMessage } from '@/lib/utils';
 import { useT } from '@/lib/i18n/client';
 
@@ -99,7 +100,7 @@ export function CreateBoardDialog({ orgId = null, folderId = null }: CreateBoard
       form.reset();
       router.push(`/board/${board.id}`);
     } catch (error: unknown) {
-      toast.error(errorMessage(error, t('Не удалось создать доску')));
+      toastApiError(error, t('Не удалось создать доску'), { plans: t('Тарифы') });
     }
   }
 

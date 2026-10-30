@@ -46,6 +46,9 @@ export default async function HomePage() {
           <LanguageSwitcher className="hidden sm:flex" />
           <ThemeToggle />
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
+            <Link href="/pricing">{t('Тарифы')}</Link>
+          </Button>
+          <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link href="/login">{t('Войти')}</Link>
           </Button>
           <Button asChild variant="gradient">

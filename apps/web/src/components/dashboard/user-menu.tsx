@@ -1,4 +1,4 @@
-import { LogOut, Settings } from 'lucide-react';
+import { Gem, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -21,6 +21,11 @@ export async function UserMenu({ name, email }: UserMenuProps) {
         {name ? <div className="text-xs text-muted-foreground">{email}</div> : null}
       </div>
       <LanguageSwitcher className="hidden md:flex" />
+      <Button asChild variant="ghost" size="icon" aria-label={t('Тариф и оплата')}>
+        <Link href="/settings/billing">
+          <Gem />
+        </Link>
+      </Button>
       <ThemeToggle />
       <NotificationsBell />
       <Button asChild variant="ghost" size="icon" aria-label={t('Настройки аккаунта')}>

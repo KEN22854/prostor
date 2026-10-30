@@ -178,6 +178,8 @@ export async function createBoard(
     orgId = data.orgId;
   }
 
+  await (await import('@/services/billing')).requireBoardQuota(user.id, orgId);
+
   // Свой шаблон: копия его содержимого (доступ проверяется в сервисе шаблонов)
   const custom = data.customTemplateId
     ? await (await import('@/services/templates')).templateForBoard(user, data.customTemplateId)
@@ -286,6 +288,8 @@ export async function duplicateBoard(user: SessionUser, boardId: string): Promis
     },
   });
 
+  const copyOrgId = access.ownerId === user.id ? access.orgId : null;
+  await (await import('@/services/billing')).requireBoardQuota(user.id, copyOrgId);
   const copy = await prisma.board.create({
     data: {
       title: `${source.title} (копия)`.slice(0, 120),
@@ -295,7 +299,7 @@ export async function duplicateBoard(user: SessionUser, boardId: string): Promis
       objectCount: source.objectCount,
       ownerId: user.id,
       // Копия чужой доски не попадает в чужую организацию
-      orgId: access.ownerId === user.id ? access.orgId : null,
+      orgId: copyOrgId,
       members: { create: { userId: user.id, role: 'OWNER', lastVisitedAt: new Date() } },
       ...(source.document
         ? {
