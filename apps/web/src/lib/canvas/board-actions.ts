@@ -310,6 +310,31 @@ export class BoardActions {
     return { deleted: deletable.length, skipped: all.length - deletable.length };
   }
 
+  /**
+   * Ластик «как в Paint»: росчерк заменяется оставшимися кусками (первый сохраняет
+   * его id, остальные — новые элементы), без кусков — удаляется. Пишется с merge:
+   * весь жест после beginGesture() — один шаг отмены.
+   */
+  erase(changes: ReadonlyMap<string, readonly BoardElement[]>): void {
+    const targets = this.get(changes.keys()).filter((el) => this.canDelete(el));
+    if (targets.length === 0) return;
+    const now = Date.now();
+    this.transact(() => {
+      for (const el of targets) {
+        const [first, ...rest] = changes.get(el.id) ?? [];
+        const map = this.ymap(el.id);
+        if (!first || !map) {
+          this.elements.delete(el.id);
+          continue;
+        }
+        for (const key of ['x', 'y', 'width', 'height', 'points'] as const)
+          map.set(key, first[key as keyof BoardElement]);
+        map.set('updatedAt', now);
+        insertElements(this.ctx.doc, rest);
+      }
+    }, true);
+  }
+
   duplicate(ids: Iterable<string>, offset = 24): string[] {
     if (!this.canEdit || !this.canCopy) return [];
     const copies = cloneForPaste(this.get(this.withFrameChildren(ids)), {

@@ -71,6 +71,10 @@ export interface ToolOptions {
   penColor: string;
   penWidth: number;
   penMode: 'pen' | 'marker' | 'highlighter';
+  /** Ластик: area — стирает накрытое (как в Paint), stroke — росчерк целиком */
+  eraserMode: 'area' | 'stroke';
+  /** Сторона квадрата ластика, экранные px */
+  eraserSize: number;
   /** Маршрут новых линий и стрелок */
   lineRouting: LineRouting;
 }
@@ -150,6 +154,8 @@ const DEFAULT_TOOL_OPTIONS: ToolOptions = {
   penColor: '#1f2937',
   penWidth: 4,
   penMode: 'pen',
+  eraserMode: 'area',
+  eraserSize: 20,
   lineRouting: 'straight',
 };
 

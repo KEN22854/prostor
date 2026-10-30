@@ -129,7 +129,6 @@ export const EN: Readonly<Record<string, string>> = {
   Кто: 'Who',
   'Лазерная указка': 'Laser pointer',
   'Лазерная указка (K)': 'Laser pointer (K)',
-  'Ластик (стирает росчерки)': 'Eraser (erases pen strokes)',
   Линия: 'Line',
   'Маршрут (линии и стрелки)': 'Routing (lines and arrows)',
   Масштаб: 'Zoom',
@@ -903,4 +902,9 @@ export const EN: Readonly<Record<string, string>> = {
     'Pay by card or SBP via YooKassa, or via Stripe abroad. No auto-renewal: extend whenever you like',
   'Тариф вашей организации': 'Your organization plan',
   Ещё: 'More',
+  'Как в Paint': 'Like Paint',
+  'Росчерк целиком': 'Whole stroke',
+  'Размер {size}': 'Size {size}',
+  Ручка: 'Pen',
+  Выделитель: 'Highlighter',
 };

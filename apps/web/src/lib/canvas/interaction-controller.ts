@@ -10,6 +10,7 @@ import {
   buildSticky,
   buildTable,
   buildText,
+  newElementId,
 } from '@/lib/canvas/element-factory';
 import { cellAt } from '@/lib/canvas/table';
 import { anchorAt, isBindable, lineEnds, routeLine } from '@/lib/canvas/connectors';
@@ -17,6 +18,7 @@ import type { ElementStore } from '@/lib/canvas/element-store';
 import type { LaserRenderer } from '@/lib/canvas/laser-renderer';
 import { nextFrameTitle } from '@/lib/canvas/frames';
 import { rectFromPoints, translateBounds } from '@/lib/canvas/geometry';
+import { erasePath, eraserStamps, pathPiece } from '@/lib/canvas/erase';
 import { elementsInRect, hitElement, pointQuery, topmostAt } from '@/lib/canvas/hit-test';
 import type { OverlayRenderer } from '@/lib/canvas/overlay-renderer';
 import { simplifyPoints } from '@/lib/canvas/simplify';
@@ -194,7 +196,10 @@ export class InteractionController {
         return true;
       case 'eraser':
         if (!actions?.canEdit) return false;
-        this.session = new EraserSession(this.deps, world);
+        this.session =
+          state().toolOptions.eraserMode === 'stroke'
+            ? new EraserSession(this.deps, world)
+            : new AreaEraserSession(this.deps, world);
         return true;
       case 'image':
         this.deps.openImagePicker(world);
@@ -777,6 +782,64 @@ class PenSession implements Session {
 
 // ───────────────────────────── Ластик ─────────────────────────────
 
+/**
+ * Ластик «как в Paint»: квадрат стирает только накрытые участки росчерков и
+ * режет их на куски. Правки идут сразу, на каждом движении, но весь жест —
+ * один шаг отмены.
+ */
+class AreaEraserSession implements Session {
+  private last: Point;
+
+  constructor(
+    private readonly deps: ControllerDeps,
+    start: Point,
+  ) {
+    this.last = start;
+    deps.actions()?.beginGesture();
+    this.rub([start]);
+  }
+
+  private get half(): number {
+    return state().toolOptions.eraserSize / 2 / zoom();
+  }
+
+  private rub(stamps: readonly Point[]): void {
+    const actions = this.deps.actions();
+    if (!actions || stamps.length === 0) return;
+    const half = this.half;
+    // Запас на толщину росчерка: R-tree хранит рамку по точкам
+    const pad = half + 100;
+    const area = {
+      minX: Math.min(...stamps.map((s) => s.x)) - pad,
+      minY: Math.min(...stamps.map((s) => s.y)) - pad,
+      maxX: Math.max(...stamps.map((s) => s.x)) + pad,
+      maxY: Math.max(...stamps.map((s) => s.y)) + pad,
+    };
+    const changes = new Map<string, BoardElement[]>();
+    for (const el of this.deps.store.query(area)) {
+      if (el.type !== 'path' || !actions.canDelete(el)) continue;
+      const pieces = erasePath(el, stamps, half);
+      if (!pieces) continue;
+      changes.set(
+        el.id,
+        pieces.map((local, i) => pathPiece(el, local, i === 0 ? el.id : newElementId())),
+      );
+    }
+    if (changes.size > 0) actions.erase(changes);
+  }
+
+  move(world: Point): void {
+    const stamps = eraserStamps(this.last, world, this.half);
+    this.last = world;
+    this.rub(stamps);
+  }
+
+  end(): void {}
+
+  cancel(): void {}
+}
+
+/** Ластик-«росчерк целиком» (как в большинстве досок) */
 class EraserSession implements Session {
   private readonly hits = new Set<string>();
   private readonly faded: Konva.Node[] = [];
@@ -788,7 +851,6 @@ class EraserSession implements Session {
     this.collect(start);
   }
 
-  /** Ластик стирает росчерки карандаша целиком (как в большинстве досок) */
   private collect(world: Point): void {
     const r = ERASER_RADIUS_PX / zoom();
     for (const el of this.deps.store.query(pointQuery(world, r))) {

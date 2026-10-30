@@ -50,6 +50,8 @@ const SHAPES = SHAPE_KINDS.map((kind) => ({ kind, label: SHAPE_LABELS[kind] }));
 const PaletteSide = createContext<'right' | 'top'>('right');
 
 const PEN_WIDTHS = [2, 4, 8, 14] as const;
+/** Сторона квадрата ластика, экранные px */
+const ERASER_SIZES = [8, 20, 40, 72] as const;
 
 interface PaletteEntry {
   id: string;
@@ -381,7 +383,7 @@ export function ToolPalette({
                   className="h-7 px-2 text-xs"
                   onClick={() => setOptions({ penMode: mode })}
                 >
-                  {label}
+                  {t(label)}
                 </Button>
               ))}
             </div>
@@ -435,7 +437,49 @@ export function ToolPalette({
       id: 'eraser',
       tool: 'eraser',
       node: (
-        <ToolButton tool="eraser" icon={Eraser} label={t('Ластик (стирает росчерки)')} hotkey="E" />
+        <ToolWithOptions tool="eraser" icon={Eraser} label={t('Ластик')} hotkey="E">
+          <Section title={t('Режим')}>
+            <div className="flex gap-1">
+              {(
+                [
+                  ['area', 'Как в Paint'],
+                  ['stroke', 'Росчерк целиком'],
+                ] as const
+              ).map(([mode, label]) => (
+                <Button
+                  key={mode}
+                  size="sm"
+                  variant={options.eraserMode === mode ? 'secondary' : 'ghost'}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setOptions({ eraserMode: mode })}
+                >
+                  {t(label)}
+                </Button>
+              ))}
+            </div>
+          </Section>
+          {options.eraserMode === 'area' ? (
+            <Section title={t('Размер')}>
+              <div className="flex items-center gap-1">
+                {ERASER_SIZES.map((size) => (
+                  <Button
+                    key={size}
+                    variant="ghost"
+                    size="icon"
+                    className={cn('size-9', options.eraserSize === size && 'bg-accent')}
+                    aria-label={t('Размер {size}', { size })}
+                    onClick={() => setOptions({ eraserSize: size })}
+                  >
+                    <span
+                      className="rounded-[2px] border-2 border-foreground/70 bg-background"
+                      style={{ width: 6 + size / 3, height: 6 + size / 3 }}
+                    />
+                  </Button>
+                ))}
+              </div>
+            </Section>
+          ) : null}
+        </ToolWithOptions>
       ),
     },
     {

@@ -107,6 +107,16 @@ const TOOL_CURSOR: Partial<Record<CanvasTool, string>> = {
   vote: 'pointer',
 };
 
+/** Курсор ластика — квадрат его настоящего размера, как в Paint */
+function eraserCursor(size: number): string {
+  const d = Math.min(size + 2, 126);
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${d}' height='${d}'>` +
+    `<rect x='1' y='1' width='${d - 2}' height='${d - 2}' fill='white' fill-opacity='0.75' stroke='%237c3aed' stroke-width='1.5'/></svg>`;
+  const hot = Math.round(d / 2);
+  return `url("data:image/svg+xml,${svg}") ${hot} ${hot}, cell`;
+}
+
 /**
  * Бесконечный холст (Konva / Canvas2D).
  *
@@ -150,6 +160,9 @@ export function BoardCanvas({
   const size = useCanvasStore((s) => s.size);
   const detail = useCanvasStore((s) => detailLevel(s.camera.zoom));
   const tool = useCanvasStore((s) => s.tool);
+  const eraserArea = useCanvasStore((s) =>
+    s.toolOptions.eraserMode === 'area' ? s.toolOptions.eraserSize : 0,
+  );
   const spacePressed = useCanvasStore((s) => s.spacePressed);
   const isPanning = useCanvasStore((s) => s.isPanning);
   const editingId = useCanvasStore((s) => s.editingId);
@@ -414,7 +427,9 @@ export function BoardCanvas({
     ? 'grabbing'
     : tool === 'hand' || spacePressed
       ? 'grab'
-      : (TOOL_CURSOR[tool] ?? 'default');
+      : tool === 'eraser' && eraserArea > 0
+        ? eraserCursor(eraserArea)
+        : (TOOL_CURSOR[tool] ?? 'default');
 
   return (
     <div
