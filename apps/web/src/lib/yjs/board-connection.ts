@@ -1,4 +1,5 @@
 import * as decoding from 'lib0/decoding';
+import * as encoding from 'lib0/encoding';
 import { IndexeddbPersistence } from 'y-indexeddb';
 import { WebsocketProvider } from 'y-websocket';
 import * as Y from 'yjs';
@@ -75,6 +76,8 @@ export class BoardConnection {
   /** Подписчики на изменения комментариев (событие WS-сервера comments-changed) */
   private readonly commentListeners = new Set<(threadId: string) => void>();
   private readonly votingListeners = new Set<() => void>();
+  /** Сигналы WebRTC (созвон): от кого (awareness clientID) и JSON */
+  private readonly signalListeners = new Set<(from: number, payload: string) => void>();
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
   private destroyed = false;
 
@@ -108,6 +111,23 @@ export class BoardConnection {
     this.commentListeners.add(listener);
     return () => this.commentListeners.delete(listener);
   };
+
+  subscribeSignals = (listener: (from: number, payload: string) => void): (() => void) => {
+    this.signalListeners.add(listener);
+    return () => this.signalListeners.delete(listener);
+  };
+
+  /** Сигнал участнику созвона; false — нет соединения с сервером */
+  sendSignal(to: number, payload: string): boolean {
+    const ws = this.provider?.ws;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, WS_MESSAGE.signal);
+    encoding.writeVarUint(encoder, to);
+    encoding.writeVarString(encoder, payload);
+    ws.send(encoding.toUint8Array(encoder));
+    return true;
+  }
 
   subscribeVoting = (listener: () => void): (() => void) => {
     this.votingListeners.add(listener);
@@ -177,6 +197,15 @@ export class BoardConnection {
 
     // Серверные события (WS_MESSAGE.event) — расширение протокола y-websocket
     provider.messageHandlers[WS_MESSAGE.event] = (_encoder, decoder) => this.onServerEvent(decoder);
+    provider.messageHandlers[WS_MESSAGE.signal] = (_encoder, decoder) => {
+      try {
+        const from = decoding.readVarUint(decoder);
+        const payload = decoding.readVarString(decoder);
+        for (const l of this.signalListeners) l(from, payload);
+      } catch {
+        // Повреждённый сигнал — пропускаем
+      }
+    };
 
     provider.on('status', ({ status }) => {
       if (status === 'connected') {
@@ -289,6 +318,7 @@ export class BoardConnection {
     this.doc.destroy();
     this.listeners.clear();
     this.commentListeners.clear();
+    this.signalListeners.clear();
     this.votingListeners.clear();
   }
 }

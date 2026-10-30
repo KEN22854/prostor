@@ -123,6 +123,8 @@ export const RELAY = {
   syncRequest: 2,
   /** «Пришлите ваши awareness-состояния» */
   awarenessRequest: 3,
+  /** Сигнал WebRTC для участника на другом инстансе: payload — [кому, от кого, JSON] */
+  signal: 4,
 } as const;
 export type RelayKind = (typeof RELAY)[keyof typeof RELAY];
 
@@ -146,7 +148,7 @@ export function decodeRelay(buf: Uint8Array): RelayMessage | null {
     const instanceId = decoding.readVarString(decoder);
     const kind = decoding.readVarUint(decoder);
     const payload = decoding.readVarUint8Array(decoder);
-    if (kind > RELAY.awarenessRequest) return null;
+    if (kind > RELAY.signal) return null;
     return { instanceId, kind: kind as RelayKind, payload };
   } catch {
     return null;

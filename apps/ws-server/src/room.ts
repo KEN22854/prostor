@@ -7,6 +7,7 @@ import * as Y from 'yjs';
 import type { SnapshotReason } from '@prostor/db';
 import {
   REDIS_CHANNELS,
+  MAX_SIGNAL_BYTES,
   WS_MESSAGE,
   can,
   type BoardRole,
@@ -244,9 +245,43 @@ export class Room {
         this.send(conn, encoding.toUint8Array(encoder));
         return;
       }
+      case WS_MESSAGE.signal: {
+        // Адресный сигнал WebRTC: отправитель — awareness clientID этого соединения
+        const from = conn.clientIds.values().next().value;
+        if (from === undefined || data.byteLength > MAX_SIGNAL_BYTES) return;
+        const to = decoding.readVarUint(decoder);
+        const payload = decoding.readVarString(decoder);
+        this.deliverSignal(from, to, payload, conn);
+        return;
+      }
       default:
         // auth и неизвестные типы от клиента игнорируем
         return;
+    }
+  }
+
+  /** Сигнал участнику: на этом инстансе — напрямую, иначе через Redis; to = 0 — всем */
+  private deliverSignal(from: number, to: number, payload: string, origin: Conn | null): void {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, WS_MESSAGE.signal);
+    encoding.writeVarUint(encoder, from);
+    encoding.writeVarString(encoder, payload);
+    const message = encoding.toUint8Array(encoder);
+    let delivered = false;
+    for (const c of this.conns.values()) {
+      if (c === origin) continue;
+      if (to === 0 || c.clientIds.has(to)) {
+        this.send(c, message);
+        delivered = true;
+      }
+    }
+    // Получатель на другом инстансе (или широковещательный сигнал) — через Redis
+    if (origin && (to === 0 || !delivered)) {
+      const relay = encoding.createEncoder();
+      encoding.writeVarUint(relay, to);
+      encoding.writeVarUint(relay, from);
+      encoding.writeVarString(relay, payload);
+      this.relay(RELAY.signal, encoding.toUint8Array(relay));
     }
   }
 
@@ -412,6 +447,13 @@ export class Room {
         case RELAY.awareness:
           awarenessProtocol.applyAwarenessUpdate(this.awareness, msg.payload, REDIS_ORIGIN);
           break;
+        case RELAY.signal: {
+          const d = decoding.createDecoder(msg.payload);
+          const to = decoding.readVarUint(d);
+          const from = decoding.readVarUint(d);
+          this.deliverSignal(from, to, decoding.readVarString(d), null);
+          break;
+        }
         case RELAY.syncRequest:
           this.relay(RELAY.update, Y.encodeStateAsUpdate(this.doc, msg.payload));
           break;

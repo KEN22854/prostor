@@ -12,7 +12,16 @@ export const WS_MESSAGE = {
   queryAwareness: 3,
   /** Серверное событие (снапшот сохранён, роль изменена, доска удалена) */
   event: 10,
+  /**
+   * Сигнализация WebRTC (созвон на доске). Клиент → сервер: [11, кому (awareness
+   * clientID), JSON]; сервер → клиент: [11, от кого, JSON]. Сервер подставляет
+   * отправителя сам — подделать «от кого» нельзя.
+   */
+  signal: 11,
 } as const;
+
+/** Предел одного сигнального сообщения (SDP с кандидатами — единицы КБ) */
+export const MAX_SIGNAL_BYTES = 64 * 1024;
 
 /** Коды закрытия соединения (диапазон 4000–4999 — для приложений) */
 export const WS_CLOSE = {
@@ -73,6 +82,11 @@ export const awarenessStateSchema = z.object({
    * за ведущим (frameId — текущий фрейм в режиме презентации)
    */
   presenting: z.object({ since: z.number(), frameId: z.string().optional() }).nullable(),
+  /** Участие в созвоне на доске: включены ли микрофон, камера, показ экрана */
+  call: z
+    .object({ audio: z.boolean(), video: z.boolean(), screen: z.boolean() })
+    .nullable()
+    .optional(),
 });
 export type AwarenessState = z.infer<typeof awarenessStateSchema>;
 

@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
 import { describe, expect, it, vi } from 'vitest';
 import type { WebSocket } from 'ws';
@@ -231,5 +232,55 @@ describe('Room: защита от удаления чужих объектов',
     expect(room.doc.getMap('elements').has('foreign')).toBe(true);
     // Автор получил компенсирующий апдейт (восстановление)
     expect(authorWs.sent.length).toBeGreaterThan(sentBefore);
+  });
+});
+
+describe('Сигнализация WebRTC', () => {
+  const signal = (to: number, payload: string) => {
+    const encoder = encoding.createEncoder();
+    encoding.writeVarUint(encoder, WS_MESSAGE.signal);
+    encoding.writeVarUint(encoder, to);
+    encoding.writeVarString(encoder, payload);
+    return encoding.toUint8Array(encoder);
+  };
+  const lastSignal = (ws: FakeSocket) => {
+    const msg = [...ws.sent].reverse().find((m) => m[0] === WS_MESSAGE.signal);
+    if (!msg) return null;
+    const d = decoding.createDecoder(msg);
+    decoding.readVarUint(d);
+    return { from: decoding.readVarUint(d), payload: decoding.readVarString(d) };
+  };
+
+  it('сигнал доходит только адресату, в том числе на другом инстансе; отправитель — от сервера', async () => {
+    const bus = new FakeBus();
+    const a = await makeRoom(bus, 'ws-a');
+    const b = await makeRoom(bus, 'ws-b');
+    const senderWs = new FakeSocket();
+    const bystanderWs = new FakeSocket();
+    const targetWs = new FakeSocket();
+    const sender = a.addConn(senderWs as unknown as WebSocket, auth('VIEWER', 'u1'));
+    const bystander = a.addConn(bystanderWs as unknown as WebSocket, auth('EDITOR', 'u2'));
+    const target = b.addConn(targetWs as unknown as WebSocket, auth('EDITOR', 'u3'));
+    sender.clientIds.add(101);
+    bystander.clientIds.add(102);
+    target.clientIds.add(303);
+
+    a.handleMessage(sender, signal(303, '{"sdp":"offer"}'));
+    await flush();
+    expect(lastSignal(targetWs)).toEqual({ from: 101, payload: '{"sdp":"offer"}' });
+    expect(lastSignal(bystanderWs)).toBeNull();
+    expect(lastSignal(senderWs)).toBeNull();
+  });
+
+  it('без своего awareness-клиента сигналить нельзя', async () => {
+    const bus = new FakeBus();
+    const room = await makeRoom(bus, 'ws-a');
+    const anonWs = new FakeSocket();
+    const otherWs = new FakeSocket();
+    const anon = room.addConn(anonWs as unknown as WebSocket, auth('VIEWER', 'u1'));
+    room.addConn(otherWs as unknown as WebSocket, auth('EDITOR', 'u2')).clientIds.add(7);
+    room.handleMessage(anon, signal(7, '{}'));
+    await flush();
+    expect(lastSignal(otherWs)).toBeNull();
   });
 });

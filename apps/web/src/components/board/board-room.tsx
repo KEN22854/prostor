@@ -25,6 +25,8 @@ import { useUndoState } from '@/hooks/use-undo-state';
 import { useVersionHistory } from '@/hooks/use-version-history';
 import { useVotingSync } from '@/hooks/use-voting-sync';
 import { useYjs } from '@/hooks/use-yjs';
+import { useCall } from '@/hooks/use-call';
+import { CallButton, CallPanel } from '@/components/board/call-panel';
 
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useCommentsStore } from '@/stores/comments-store';
@@ -78,6 +80,7 @@ export function BoardRoom({
     useYjs(boardId);
   const awareness = connection?.provider?.awareness ?? null;
   const presence = usePresence(awareness);
+  const call = useCall(connection, awareness);
   const count = useElementCount(connection?.doc ?? null);
   const { canUndo, canRedo } = useUndoState(connection?.undoManager ?? null);
 
@@ -224,6 +227,7 @@ export function BoardRoom({
                 <TooltipContent>{t('История версий')}</TooltipContent>
               </Tooltip>
             ) : null}
+            {!preview ? <CallButton call={call} /> : null}
             <PresenceAvatars users={presence} awareness={preview ? null : awareness} />
             <ThemeToggle className="hidden sm:inline-flex" />
             {isAuthenticated ? <NotificationsBell /> : null}
@@ -258,6 +262,7 @@ export function BoardRoom({
               onClose={history.close}
             />
           ) : null}
+          <CallPanel call={call} />
           <CommentsPanel />
           {canEdit && isAuthenticated ? (
             <VersionHistoryPanel
